@@ -57,8 +57,6 @@ A powerful and flexible UI management system for Unity that provides a robust ab
 - **Unity** 6000.0 or higher
 - **Addressables** 2.6.0 or higher
 - **UniTask** 2.5.10 or higher
-- **TextMeshPro** 3.0.9 or higher
-- **Git** (for installation via Package Manager)
 
 ## Installation
 
@@ -1609,50 +1607,6 @@ We welcome contributions from the community! Here's how you can help:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
-
----
-
-## Migration Guide
-
-### Upgrading from v0.x to v1.0.0
-
-**Breaking Changes:**
-
-1. **DelayUiPresenter Removed**
-   - **Old (v0.x):**
-     ```csharp
-     public class MyPresenter : DelayUiPresenter
-     {
-         protected override void ConfigureDelayers()
-         {
-             OpeningDelayer = new TimeDelayer(0.5f);
-         }
-     }
-     ```
-   - **New (v1.0.0):**
-     ```csharp
-     [RequireComponent(typeof(TimeDelayFeature))]
-     public class MyPresenter : UiPresenter
-     {
-         [SerializeField] private TimeDelayFeature _delayFeature;
-         // Configure delays in Inspector
-     }
-     ```
-
-2. **LoadedPresenters Property Changed to Method**
-   - **Old:** `var loaded = _uiService.LoadedPresenters;`
-   - **New:** `var loaded = _uiService.GetLoadedPresenters();`
-
-3. **Multi-Instance API Changes**
-   - All methods now accept optional `instanceAddress` parameter
-   - Use `GetLoadedPresenters()` instead of accessing dictionary directly
-
-**Non-Breaking Additions:**
-- Feature composition system is additive (existing presenters still work)
-- Analytics is opt-in (no changes needed if not using)
-- Multi-instance support is backwards compatible (default instances work as before)
-
-For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

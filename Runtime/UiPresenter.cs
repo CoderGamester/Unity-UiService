@@ -80,6 +80,7 @@ namespace GameLovers.UiService
 
 			if (destroy)
 			{
+				// UI Service calls the Addressables.UnloadAsset that unloads the asset from the memory and destroys the game object
 				_uiService.UnloadUi(GetType());
 			}
 			else

@@ -132,12 +132,12 @@ namespace GameLoversEditor.UiService
 			var row1 = new VisualElement();
 			row1.style.flexDirection = FlexDirection.Row;
 			
-			var openButton = new Button(() => presenter.gameObject.SetActive(true)) { text = "Open UI" };
+			var openButton = new Button(() => presenter.InternalOpen()) { text = "Open UI" };
 			openButton.style.flexGrow = 1;
 			openButton.style.height = 30;
 			row1.Add(openButton);
 			
-			var closeButton = new Button(() => presenter.gameObject.SetActive(false)) { text = "Close UI" };
+			var closeButton = new Button(() => presenter.InternalClose(false)) { text = "Close UI" };
 			closeButton.style.flexGrow = 1;
 			closeButton.style.height = 30;
 			closeButton.style.marginLeft = 5;
@@ -152,7 +152,7 @@ namespace GameLoversEditor.UiService
 				if (EditorUtility.DisplayDialog("Destroy UI", 
 					"Are you sure you want to destroy this UI?", "Yes", "Cancel"))
 				{
-					DestroyImmediate(presenter.gameObject);
+					presenter.InternalClose(true);
 				}
 			}) { text = "Close & Destroy" };
 			closeDestroyButton.style.height = 25;

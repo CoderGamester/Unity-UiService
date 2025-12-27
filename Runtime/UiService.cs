@@ -391,7 +391,6 @@ namespace GameLovers.UiService
 			RemoveUi(type, instanceAddress);
 
 			_assetLoader.UnloadAsset(ui.gameObject);
-			
 			_analytics.TrackUnload(type, config.Layer);
 		}
 
