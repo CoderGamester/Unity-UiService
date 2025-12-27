@@ -1,28 +1,48 @@
 using System;
 using System.Collections.Generic;
-using NSubstitute;
 using UnityEngine.Events;
 
 namespace GameLovers.UiService.Tests
 {
 	/// <summary>
-	/// Hybrid analytics mock using NSubstitute for method call verification
-	/// while providing real UnityEvent instances (which NSubstitute cannot mock).
+	/// Analytics mock with internal call tracking for verification.
+	/// Works in both EditMode and PlayMode tests (no NSubstitute dependency).
 	/// 
 	/// Usage:
 	///   var mockAnalytics = new MockAnalytics();
 	///   // ... perform actions ...
-	///   mockAnalytics.Substitute.Received(1).TrackLoadComplete(typeof(MyPresenter), Arg.Any&lt;int&gt;());
+	///   mockAnalytics.VerifyLoadStartCalled(typeof(MyPresenter), times: 1);
+	///   mockAnalytics.VerifyLoadCompleteCalled(typeof(MyPresenter), layer: 0, times: 1);
 	/// </summary>
 	public class MockAnalytics : IUiAnalytics
 	{
 		/// <summary>
-		/// The underlying NSubstitute mock for verification.
-		/// Use this for .Received() assertions.
+		/// Record of a method call with its arguments
 		/// </summary>
-		public IUiAnalytics Substitute { get; }
+		public struct CallRecord
+		{
+			public Type UiType;
+			public int Layer;
+			public bool Destroyed;
 
-		// Real UnityEvent instances - NSubstitute cannot create these
+			public CallRecord(Type uiType, int layer = 0, bool destroyed = false)
+			{
+				UiType = uiType;
+				Layer = layer;
+				Destroyed = destroyed;
+			}
+		}
+
+		// Call tracking lists
+		private readonly List<CallRecord> _loadStartCalls = new();
+		private readonly List<CallRecord> _loadCompleteCalls = new();
+		private readonly List<CallRecord> _openStartCalls = new();
+		private readonly List<CallRecord> _openCompleteCalls = new();
+		private readonly List<CallRecord> _closeStartCalls = new();
+		private readonly List<CallRecord> _closeCompleteCalls = new();
+		private readonly List<CallRecord> _unloadCalls = new();
+
+		// Real UnityEvent instances
 		public UnityEvent<UiEventData> OnUiLoaded { get; } = new();
 		public UnityEvent<UiEventData> OnUiOpened { get; } = new();
 		public UnityEvent<UiEventData> OnUiClosed { get; } = new();
@@ -31,46 +51,41 @@ namespace GameLovers.UiService.Tests
 
 		private readonly Dictionary<Type, UiPerformanceMetrics> _metrics = new();
 
-		public MockAnalytics()
-		{
-			Substitute = NSubstitute.Substitute.For<IUiAnalytics>();
-		}
-
 		public IReadOnlyDictionary<Type, UiPerformanceMetrics> PerformanceMetrics => _metrics;
 
 		public void TrackLoadStart(Type uiType)
 		{
-			Substitute.TrackLoadStart(uiType);
+			_loadStartCalls.Add(new CallRecord(uiType));
 		}
 
 		public void TrackLoadComplete(Type uiType, int layer)
 		{
-			Substitute.TrackLoadComplete(uiType, layer);
+			_loadCompleteCalls.Add(new CallRecord(uiType, layer));
 		}
 
 		public void TrackOpenStart(Type uiType)
 		{
-			Substitute.TrackOpenStart(uiType);
+			_openStartCalls.Add(new CallRecord(uiType));
 		}
 
 		public void TrackOpenComplete(Type uiType, int layer)
 		{
-			Substitute.TrackOpenComplete(uiType, layer);
+			_openCompleteCalls.Add(new CallRecord(uiType, layer));
 		}
 
 		public void TrackCloseStart(Type uiType)
 		{
-			Substitute.TrackCloseStart(uiType);
+			_closeStartCalls.Add(new CallRecord(uiType));
 		}
 
 		public void TrackCloseComplete(Type uiType, int layer, bool destroyed)
 		{
-			Substitute.TrackCloseComplete(uiType, layer, destroyed);
+			_closeCompleteCalls.Add(new CallRecord(uiType, layer, destroyed));
 		}
 
 		public void TrackUnload(Type uiType, int layer)
 		{
-			Substitute.TrackUnload(uiType, layer);
+			_unloadCalls.Add(new CallRecord(uiType, layer));
 		}
 
 		public UiPerformanceMetrics GetMetrics(Type uiType)
@@ -80,19 +95,205 @@ namespace GameLovers.UiService.Tests
 
 		public void SetCallback(IUiAnalyticsCallback callback)
 		{
-			Substitute.SetCallback(callback);
+			// No-op for mock
 		}
 
 		public void Clear()
 		{
 			_metrics.Clear();
-			Substitute.Clear();
+			ClearCallRecords();
 		}
 
 		public void LogPerformanceSummary()
 		{
-			Substitute.LogPerformanceSummary();
+			// No-op for mock
+		}
+
+		/// <summary>
+		/// Clears all call records for fresh verification
+		/// </summary>
+		public void ClearCallRecords()
+		{
+			_loadStartCalls.Clear();
+			_loadCompleteCalls.Clear();
+			_openStartCalls.Clear();
+			_openCompleteCalls.Clear();
+			_closeStartCalls.Clear();
+			_closeCompleteCalls.Clear();
+			_unloadCalls.Clear();
+		}
+
+		/// <summary>
+		/// Gets the number of times TrackLoadStart was called for the specified type
+		/// </summary>
+		public int GetLoadStartCallCount(Type uiType = null)
+		{
+			return CountCalls(_loadStartCalls, uiType);
+		}
+
+		/// <summary>
+		/// Gets the number of times TrackLoadComplete was called for the specified type
+		/// </summary>
+		public int GetLoadCompleteCallCount(Type uiType = null)
+		{
+			return CountCalls(_loadCompleteCalls, uiType);
+		}
+
+		/// <summary>
+		/// Gets the number of times TrackOpenStart was called for the specified type
+		/// </summary>
+		public int GetOpenStartCallCount(Type uiType = null)
+		{
+			return CountCalls(_openStartCalls, uiType);
+		}
+
+		/// <summary>
+		/// Gets the number of times TrackOpenComplete was called for the specified type
+		/// </summary>
+		public int GetOpenCompleteCallCount(Type uiType = null)
+		{
+			return CountCalls(_openCompleteCalls, uiType);
+		}
+
+		/// <summary>
+		/// Gets the number of times TrackCloseStart was called for the specified type
+		/// </summary>
+		public int GetCloseStartCallCount(Type uiType = null)
+		{
+			return CountCalls(_closeStartCalls, uiType);
+		}
+
+		/// <summary>
+		/// Gets the number of times TrackCloseComplete was called for the specified type
+		/// </summary>
+		public int GetCloseCompleteCallCount(Type uiType = null)
+		{
+			return CountCalls(_closeCompleteCalls, uiType);
+		}
+
+		/// <summary>
+		/// Gets the number of times TrackUnload was called for the specified type
+		/// </summary>
+		public int GetUnloadCallCount(Type uiType = null)
+		{
+			return CountCalls(_unloadCalls, uiType);
+		}
+
+		/// <summary>
+		/// Verifies TrackLoadStart was called the expected number of times
+		/// </summary>
+		public void VerifyLoadStartCalled(Type uiType, int times)
+		{
+			var actual = GetLoadStartCallCount(uiType);
+			if (actual != times)
+			{
+				throw new AssertionException(
+					$"Expected TrackLoadStart({uiType.Name}) to be called {times} time(s), but was called {actual} time(s).");
+			}
+		}
+
+		/// <summary>
+		/// Verifies TrackLoadComplete was called the expected number of times
+		/// </summary>
+		public void VerifyLoadCompleteCalled(Type uiType, int times)
+		{
+			var actual = GetLoadCompleteCallCount(uiType);
+			if (actual != times)
+			{
+				throw new AssertionException(
+					$"Expected TrackLoadComplete({uiType.Name}) to be called {times} time(s), but was called {actual} time(s).");
+			}
+		}
+
+		/// <summary>
+		/// Verifies TrackOpenStart was called the expected number of times
+		/// </summary>
+		public void VerifyOpenStartCalled(Type uiType, int times)
+		{
+			var actual = GetOpenStartCallCount(uiType);
+			if (actual != times)
+			{
+				throw new AssertionException(
+					$"Expected TrackOpenStart({uiType.Name}) to be called {times} time(s), but was called {actual} time(s).");
+			}
+		}
+
+		/// <summary>
+		/// Verifies TrackOpenComplete was called the expected number of times
+		/// </summary>
+		public void VerifyOpenCompleteCalled(Type uiType, int times)
+		{
+			var actual = GetOpenCompleteCallCount(uiType);
+			if (actual != times)
+			{
+				throw new AssertionException(
+					$"Expected TrackOpenComplete({uiType.Name}) to be called {times} time(s), but was called {actual} time(s).");
+			}
+		}
+
+		/// <summary>
+		/// Verifies TrackCloseStart was called the expected number of times
+		/// </summary>
+		public void VerifyCloseStartCalled(Type uiType, int times)
+		{
+			var actual = GetCloseStartCallCount(uiType);
+			if (actual != times)
+			{
+				throw new AssertionException(
+					$"Expected TrackCloseStart({uiType.Name}) to be called {times} time(s), but was called {actual} time(s).");
+			}
+		}
+
+		/// <summary>
+		/// Verifies TrackCloseComplete was called the expected number of times
+		/// </summary>
+		public void VerifyCloseCompleteCalled(Type uiType, int times)
+		{
+			var actual = GetCloseCompleteCallCount(uiType);
+			if (actual != times)
+			{
+				throw new AssertionException(
+					$"Expected TrackCloseComplete({uiType.Name}) to be called {times} time(s), but was called {actual} time(s).");
+			}
+		}
+
+		/// <summary>
+		/// Verifies TrackUnload was called the expected number of times
+		/// </summary>
+		public void VerifyUnloadCalled(Type uiType, int times)
+		{
+			var actual = GetUnloadCallCount(uiType);
+			if (actual != times)
+			{
+				throw new AssertionException(
+					$"Expected TrackUnload({uiType.Name}) to be called {times} time(s), but was called {actual} time(s).");
+			}
+		}
+
+		private int CountCalls(List<CallRecord> calls, Type uiType)
+		{
+			if (uiType == null)
+			{
+				return calls.Count;
+			}
+
+			var count = 0;
+			foreach (var call in calls)
+			{
+				if (call.UiType == uiType)
+				{
+					count++;
+				}
+			}
+			return count;
 		}
 	}
-}
 
+	/// <summary>
+	/// Custom assertion exception for verification failures
+	/// </summary>
+	public class AssertionException : Exception
+	{
+		public AssertionException(string message) : base(message) { }
+	}
+}
