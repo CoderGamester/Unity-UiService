@@ -12,7 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0912607e574b4dacb5cee8cd4d10b13, type: 3}
   m_Name: UiConfigs
   m_EditorClassIdentifier: GameLovers.UiService::GameLovers.UiService.UiConfigs
-  _configs: []
+  _configs:
+  - AddressableAddress: UiService/Tests/TestDataUiPresenter.prefab
+    Layer: 1
+    UiType: GameLovers.UiService.Tests.PlayMode.Fixtures.TestDataUiPresenter, GameLovers.UiService.Tests.PlayMode,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - AddressableAddress: UiService/Tests/TestLayerUiPresenter.prefab
+    Layer: 0
+    UiType: GameLovers.UiService.Tests.PlayMode.Fixtures.TestLayerUiPresenter, GameLovers.UiService.Tests.PlayMode,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - AddressableAddress: UiService/Tests/TestUiPresenter.prefab
+    Layer: 2
+    UiType: GameLovers.UiService.Tests.PlayMode.Fixtures.TestUiPresenter, GameLovers.UiService.Tests.PlayMode,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   _sets:
   - SetId: 0
     UiEntries: []
