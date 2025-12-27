@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace GameLovers.UiService.Tests
 {
 	/// <summary>
-	/// Mock asset loader for testing without Addressables
+	/// Mock asset loader for testing without Addressables.
+	/// This is a Fake (not a Mock) because it has real behavior - it actually instantiates GameObjects.
+	/// NSubstitute cannot be used here because we need real Unity object lifecycle management.
 	/// </summary>
 	public class MockAssetLoader : IUiAssetLoader
 	{
@@ -84,44 +85,6 @@ namespace GameLovers.UiService.Tests
 			}
 			_prefabs.Clear();
 		}
-	}
-
-	/// <summary>
-	/// Mock analytics for testing
-	/// </summary>
-	public class MockAnalytics : IUiAnalytics
-	{
-		public List<(string Event, Type Type)> TrackedEvents { get; } = new();
-		public Dictionary<Type, UiPerformanceMetrics> Metrics { get; } = new();
-
-		public UnityEvent<UiEventData> OnUiLoaded { get; } = new();
-		public UnityEvent<UiEventData> OnUiOpened { get; } = new();
-		public UnityEvent<UiEventData> OnUiClosed { get; } = new();
-		public UnityEvent<UiEventData> OnUiUnloaded { get; } = new();
-		public UnityEvent<UiPerformanceMetrics> OnPerformanceMetricsUpdated { get; } = new();
-
-		public IReadOnlyDictionary<Type, UiPerformanceMetrics> PerformanceMetrics => Metrics;
-
-		public void TrackLoadStart(Type uiType) => TrackedEvents.Add(("LoadStart", uiType));
-		public void TrackLoadComplete(Type uiType, int layer) => TrackedEvents.Add(("LoadComplete", uiType));
-		public void TrackOpenStart(Type uiType) => TrackedEvents.Add(("OpenStart", uiType));
-		public void TrackOpenComplete(Type uiType, int layer) => TrackedEvents.Add(("OpenComplete", uiType));
-		public void TrackCloseStart(Type uiType) => TrackedEvents.Add(("CloseStart", uiType));
-		public void TrackCloseComplete(Type uiType, int layer, bool destroyed) => TrackedEvents.Add(("CloseComplete", uiType));
-		public void TrackUnload(Type uiType, int layer) => TrackedEvents.Add(("Unload", uiType));
-
-		public UiPerformanceMetrics GetMetrics(Type uiType)
-		{
-			return Metrics.TryGetValue(uiType, out var metrics) ? metrics : new UiPerformanceMetrics(uiType);
-		}
-
-		public void SetCallback(IUiAnalyticsCallback callback) { }
-		public void Clear()
-		{
-			TrackedEvents.Clear();
-			Metrics.Clear();
-		}
-		public void LogPerformanceSummary() { }
 	}
 }
 

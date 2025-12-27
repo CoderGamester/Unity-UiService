@@ -592,7 +592,6 @@ namespace GameLovers.UiService
 
 			// Clean up static events
 			// Note: We don't call RemoveAllListeners on static UnityEvents as it would affect other instances
-			// Users should unsubscribe from OnOrientationChanged and OnResolutionChanged in their own code
 
 			// Destroy UI parent GameObject
 			if (_uiParent != null)

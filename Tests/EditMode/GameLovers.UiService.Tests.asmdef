@@ -1,6 +1,6 @@
 {
     "name": "GameLovers.UiService.Tests",
-    "rootNamespace": "GameLovers.UiService.Tests",
+    "rootNamespace": "",
     "references": [
         "GUID:2385f06be155241f187357d856a0af52",
         "GUID:27619889b8ba8c24980f49ee34dbb44a",
@@ -14,7 +14,8 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "nunit.framework.dll"
+        "nunit.framework.dll",
+        "NSubstitute.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [
