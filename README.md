@@ -4,10 +4,41 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](CHANGELOG.md)
 
-A powerful and flexible UI management system for Unity that provides a robust abstraction layer for handling game UI with support for layers, async loading, and UI sets. This service streamlines UI development by managing the complete lifecycle of UI presenters, from loading and initialization to display and cleanup.
+> **Quick Links**: [Installation](#installation) | [Quick Start](#quick-start) | [API Docs](#api-documentation) | [Examples](#examples) | [Troubleshooting](#troubleshooting)
+
+<!-- TODO: Add a demo GIF or video showing the UiService in action -->
+<!-- Recommended content:
+     - Opening/closing UI presenters with animations
+     - Layer management demonstration
+     - Editor windows (Analytics Window, Hierarchy Window)
+     - UI Sets batch operations
+-->
+
+![UiService Demo](docs/images/demo.gif)
+
+---
+
+## Why Use This Package?
+
+Managing UI in Unity games often becomes a tangled mess of direct references, scattered open/close logic, and manual lifecycle management. This **UI Service** solves these pain points:
+
+| Problem | Solution |
+|---------|----------|
+| **Scattered UI logic** | Centralized service manages all UI lifecycle (load → open → close → unload) |
+| **Memory management headaches** | Addressables integration with automatic asset loading/unloading |
+| **Rigid UI hierarchies** | Layer-based organization with flexible depth sorting |
+| **Duplicated boilerplate** | Feature composition system extends behavior without inheritance complexity 
+| **Async loading complexity** | UniTask-powered async operations with cancellation support |
+| **No visibility into UI state** | Editor windows for real-time analytics, hierarchy debugging, and configuration |
+| **Difficult testing** | Injectable interfaces (`IUiService`, `IUiAssetLoader`) enable easy mocking |
+
+**Built for production:** Used in real games with WebGL, mobile, and desktop support. Zero per-frame allocations in hot paths.
+
+---
 
 ## Table of Contents
 
+- [Why Use This Package?](#why-use-this-package)
 - [Key Features](#key-features)
 - [System Requirements](#system-requirements)
 - [Installation](#installation)
@@ -38,25 +69,36 @@ A powerful and flexible UI management system for Unity that provides a robust ab
 
 ## Key Features
 
-- **🎭 UI Presenter Pattern** - Clean separation of UI logic with lifecycle management
-- **🧩 Feature Composition** - Modular feature system for extending presenter behavior
-- **📚 Layer-based Organization** - Organize UI elements by depth layers
-- **🔄 Async Loading** - Load UI assets asynchronously with UniTask support
-- **📦 UI Sets** - Group related UI elements for batch operations
-- **🔀 Multi-Instance Support** - Multiple instances of the same UI type with unique addresses
-- **💾 Memory Management** - Efficient loading/unloading of UI assets
-- **🎯 Type-safe API** - Generic methods for compile-time safety
-- **📊 Analytics & Performance Tracking** - Optional analytics system with dependency injection
-- **🛠️ Editor Tools** - Three powerful editor windows for debugging and monitoring
-- **📱 Responsive Design** - Built-in support for safe areas and screen size adjustments
-- **🔧 Addressables Integration** - Seamless integration with Unity's Addressables system
+- **🎭 UI Model-View-Presenter Pattern** - Clean separation of UI logic with lifecycle management
 - **🎨 UI Toolkit Support** - Compatible with both uGUI and UI Toolkit
+- **🧩 Feature Composition** - Modular feature system for extending presenter behavior
+- **🔄 Async Loading** - Load UI assets asynchronously with UniTask support
+- **📦 UI Group Organization** - Organize UI elements by depth layers and in groups for batch operations
+- **💾 Memory Management** - Efficient loading/unloading of UI assets with Unity's Addressables system
+- **📊 Analytics & Performance Tracking** - Optional analytics system with dependency injection
+- **🛠️ Editor Tools** - Powerful editor windows for debugging and monitoring
+- **📱 Responsive Design** - Built-in support for device safe areas (e.g. iPhone dynamic island)
 
 ## System Requirements
 
 - **Unity** 6000.0 or higher
 - **Addressables** 2.6.0 or higher
 - **UniTask** 2.5.10 or higher
+
+### Compatibility Matrix
+
+| Unity Version | Status | Notes |
+|---------------|--------|-------|
+| 6000.3.x (Unity 6) | ✅ Fully Tested | Primary development target |
+| 6000.0.x (Unity 6) | ✅ Fully Tested | Fully supported |
+| 2022.3 LTS | ⚠️ Untested | May require minor adaptations |
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Standalone (Windows/Mac/Linux) | ✅ Supported | Full feature support |
+| WebGL | ✅ Supported | Requires UniTask (no Task.Delay) |
+| Mobile (iOS/Android) | ✅ Supported | Full feature support |
+| Console | ⚠️ Untested | Should work with Addressables setup |
 
 ## Installation
 
@@ -79,6 +121,12 @@ Add the following line to your project's `Packages/manifest.json`:
     "com.gamelovers.uiservice": "https://github.com/CoderGamester/com.gamelovers.uiservice.git"
   }
 }
+```
+
+### Via OpenUPM
+
+```bash
+openupm add com.gamelovers.uiservice
 ```
 
 ## Package Structure
@@ -127,6 +175,18 @@ Add the following line to your project's `Packages/manifest.json`:
       ├── DelayedUiToolkit/            # Combined features examples
       └── Analytics/                   # Analytics integration example
 ```
+
+### Key files
+
+| Component | Responsibility |
+|-----------|----------------|
+| **IUiService** | Public API surface for all UI operations |
+| **UiService** | Core implementation managing lifecycle, layers, and state |
+| **UiPresenter** | Base class for all UI views with lifecycle hooks |
+| **UiConfigs** | ScriptableObject storing UI configuration and sets |
+| **UiAssetLoader** | Handles Addressables integration for async loading |
+| **IPresenterFeature** | Interface for composable presenter behaviors |
+| **UiInstanceId** | Enables multiple instances of the same presenter type |
 
 ## Dependencies
 
@@ -252,6 +312,9 @@ The package includes three powerful editor windows for managing, monitoring, and
 
 Monitor UI performance metrics and events in real-time during play mode.
 
+<!-- TODO: Add screenshot of Analytics Window -->
+![Analytics Window](docs/images/analytics-window.png)
+
 **Opening the Window:**
 - Navigate to **Tools → UI Service → Analytics**
 
@@ -284,6 +347,9 @@ var uiService = new UiService(new UiAssetLoader(), analytics);
 
 View and control all active UI presenters in the scene during play mode.
 
+<!-- TODO: Add screenshot of Hierarchy Window -->
+![Hierarchy Window](docs/images/hierarchy-window.png)
+
 **Opening the Window:**
 - Navigate to **Tools → UI Service → Hierarchy Window**
 
@@ -312,6 +378,9 @@ View and control all active UI presenters in the scene during play mode.
 #### 3. UiConfigs Inspector (Layer Visualizer)
 
 Built-in custom inspector for visualizing your UI configuration and layer organization.
+
+<!-- TODO: Add screenshot of UiConfigs Inspector -->
+![UiConfigs Inspector](docs/images/uiconfigs-inspector.png)
 
 **Features:**
 - **Visual Layer Hierarchy** - See all UIs grouped by layer number in the inspector
@@ -637,80 +706,66 @@ _uiService.CloseAllUiSet(setId: 2);
 _uiService.UnloadUiSet(setId: 2);
 ```
 
+---
+
 ### Multi-Instance Support
 
-The UI Service supports multiple instances of the same UI type using the `UiInstanceId` system. This allows you to have multiple instances of the same presenter active simultaneously, each with a unique instance address.
+By default, each UI presenter type has a single instance (singleton pattern). However, the UI Service supports **multiple instances of the same presenter type** using the `UiInstanceId` system. This is useful for scenarios like:
 
-#### Creating Multi-Instance UIs
+- Multiple tooltip windows
+- Stacked notification popups
+- Multiple player info panels in multiplayer games
+- Pooled UI elements
 
-```csharp
-// Load multiple instances of the same UI type
-var chest1 = await _uiService.LoadUiAsync<ChestRewardPresenter>(
-    instanceAddress: "chest_1");
-var chest2 = await _uiService.LoadUiAsync<ChestRewardPresenter>(
-    instanceAddress: "chest_2");
+#### Understanding UiInstanceId
 
-// Open with data
-await _uiService.OpenUiAsync<ChestRewardPresenter, ChestData>(
-    chestData1, instanceAddress: "chest_1");
-await _uiService.OpenUiAsync<ChestRewardPresenter, ChestData>(
-    chestData2, instanceAddress: "chest_2");
-```
-
-#### Working with Instances
+The `UiInstanceId` struct combines a presenter type with an optional instance address:
 
 ```csharp
-// Get specific instance
-var chest1 = _uiService.GetUi<ChestRewardPresenter>(instanceAddress: "chest_1");
+// Default/singleton instance (no address)
+var defaultId = UiInstanceId.Default(typeof(TooltipPresenter));
 
-// Check if specific instance is visible
-bool isVisible = _uiService.IsVisible<ChestRewardPresenter>(
-    instanceAddress: "chest_1");
+// Named instances for multiple tooltips
+var itemTooltipId = UiInstanceId.Named(typeof(TooltipPresenter), "item");
+var skillTooltipId = UiInstanceId.Named(typeof(TooltipPresenter), "skill");
 
-// Close specific instance
-_uiService.CloseUi<ChestRewardPresenter>(
-    instanceAddress: "chest_1", destroy: false);
-
-// Unload specific instance
-_uiService.UnloadUi<ChestRewardPresenter>(instanceAddress: "chest_1");
-```
-
-#### Getting All Instances
-
-```csharp
-// Get all loaded presenters
-var allInstances = _uiService.GetLoadedPresenters();
-
-foreach (var instance in allInstances)
+// Check if instance is the default singleton
+if (instanceId.IsDefault)
 {
-    Debug.Log($"Type: {instance.Type.Name}, Address: {instance.Address}");
+    Debug.Log("This is the singleton instance");
+}
+```
+
+#### Working with Multiple Instances
+
+```csharp
+// Get all loaded presenters (includes instance information)
+List<UiInstance> loadedPresenters = _uiService.GetLoadedPresenters();
+
+foreach (var instance in loadedPresenters)
+{
+    Debug.Log($"Type: {instance.Type.Name}");
+    Debug.Log($"Address: {instance.Address}"); // Empty for default instance
+    Debug.Log($"Presenter: {instance.Presenter.name}");
 }
 
-// Filter by type
-var chestInstances = allInstances
-    .Where(i => i.Type == typeof(ChestRewardPresenter))
-    .ToList();
+// Check visible presenters (returns UiInstanceId list)
+IReadOnlyList<UiInstanceId> visiblePresenters = _uiService.VisiblePresenters;
+
+foreach (var id in visiblePresenters)
+{
+    Debug.Log($"Visible: {id}"); // Outputs "TypeName" or "TypeName:address"
+}
 ```
 
-#### Default vs Named Instances
+#### UiInstance vs UiInstanceId
 
-```csharp
-// Default instance (singleton behavior)
-await _uiService.OpenUiAsync<MainMenuPresenter>();
+| Struct | Purpose | Contains |
+|--------|---------|----------|
+| `UiInstanceId` | **Identifier** for referencing instances | `PresenterType`, `InstanceAddress` |
+| `UiInstance` | **Full data** about a loaded instance | `Type`, `Address`, `Presenter` reference |
 
-// Named instances (multi-instance)
-await _uiService.OpenUiAsync<DialogPresenter>(
-    instanceAddress: "confirm_purchase");
-await _uiService.OpenUiAsync<DialogPresenter>(
-    instanceAddress: "confirm_exit");
-```
-
-**Best Practices:**
-- Use default instances (no address) for singleton UIs (HUD, main menu, etc.)
-- Use named instances for UIs that can appear multiple times (dialogs, notifications, rewards)
-- Always specify instance address when working with multi-instance UIs to avoid ambiguity
-
-**Note:** If you call `GetUi<T>()` without specifying an instance address when multiple instances exist, a warning will be logged and the first found instance will be returned.
+**Note:** The default instance address is normalized to `string.Empty`. Passing `null` or `""` both refer to the singleton instance.
 
 ---
 
@@ -743,20 +798,12 @@ var ui = await _uiService.LoadUiAsync<InventoryPresenter>();
 // Load and immediately open
 var ui = await _uiService.LoadUiAsync<InventoryPresenter>(openAfter: true);
 
-// Load with specific instance address (multi-instance)
-var ui = await _uiService.LoadUiAsync<NotificationPresenter>(
-    instanceAddress: "reward_notification", 
-    openAfter: false);
-
 // Check if loaded
 var loadedPresenters = _uiService.GetLoadedPresenters();
 bool isLoaded = loadedPresenters.Any(p => p.Type == typeof(InventoryPresenter));
 
 // Unload from memory
 _uiService.UnloadUi<InventoryPresenter>();
-
-// Unload specific instance
-_uiService.UnloadUi<NotificationPresenter>(instanceAddress: "reward_notification");
 ```
 
 #### Opening and Closing
@@ -1169,8 +1216,9 @@ _uiService.UnloadUiSet(setId: 1); // Free all menu memory
 
 ```csharp
 // Check what's currently loaded
-Debug.Log($"Loaded presenters: {_uiService.LoadedPresenters.Count}");
-foreach (var kvp in _uiService.LoadedPresenters)
+var loadedPresenters = _uiService.GetLoadedPresenters();
+Debug.Log($"Loaded presenters: {loadedPresenters.Count}");
+foreach (var instance in loadedPresenters)
 {
     Debug.Log($"  - {kvp.Key.Name}");
 }
@@ -1295,6 +1343,19 @@ public class ComplexAnimatedPopup : UiPresenter
 - Use `AnimationDelayFeature` only when synchronized with actual animations
 - Disable `Animation`/`Animator` components when UI is closed
 - Avoid adding unnecessary features - each feature adds minimal overhead but it adds up
+
+## Known Limitations
+
+Before implementing, be aware of these current limitations:
+
+| Limitation | Description | Workaround |
+|------------|-------------|------------|
+| **Layer Range** | Layers must be between 0-1000 | Use layer numbers within this range |
+| **UI Toolkit Unity Version** | UI Toolkit features require Unity 6000.0+ | Use uGUI for older versions |
+| **WebGL Task.Delay** | Standard `Task.Delay` doesn't work on WebGL | Package uses UniTask automatically |
+| **Synchronous Loading** | `LoadSynchronously` blocks main thread | Use sparingly, only for critical startup UIs |
+
+---
 
 ## Troubleshooting
 
