@@ -1,0 +1,460 @@
+# Core Concepts
+
+This document covers the fundamental concepts of the UI Service: presenters, layers, sets, features, and configuration.
+
+## Table of Contents
+
+- [UI Presenter](#ui-presenter)
+- [Presenter Features](#presenter-features)
+- [UI Layers](#ui-layers)
+- [UI Sets](#ui-sets)
+- [Multi-Instance Support](#multi-instance-support)
+- [UI Configuration](#ui-configuration)
+- [Editor Windows](#editor-windows)
+
+---
+
+## UI Presenter
+
+The `UiPresenter` is the base class for all UI elements in the system. It provides lifecycle management and service integration.
+
+### Lifecycle Hooks
+
+| Method | When Called | Use For |
+|--------|-------------|---------|
+| `OnInitialized()` | Once, when first loaded | Setup, event subscriptions |
+| `OnOpened()` | Every time UI is shown | Animations, data refresh |
+| `OnClosed()` | When UI is hidden | Cleanup, save state |
+
+### Basic Presenter
+
+```csharp
+public class BasicPopup : UiPresenter
+{
+    protected override void OnInitialized()
+    {
+        // Called once when the presenter is first loaded
+        // Set up UI elements, subscribe to events
+    }
+    
+    protected override void OnOpened()
+    {
+        // Called every time the UI is shown
+        // Start animations, refresh data
+    }
+    
+    protected override void OnClosed()
+    {
+        // Called when the UI is hidden
+        // Stop animations, save state
+    }
+}
+```
+
+### Data-Driven Presenter
+
+For UI that needs initialization data, use `UiPresenter<T>`:
+
+```csharp
+public struct QuestData
+{
+    public int QuestId;
+    public string Title;
+    public string Description;
+}
+
+public class QuestPresenter : UiPresenter<QuestData>
+{
+    [SerializeField] private Text _titleText;
+    [SerializeField] private Text _descriptionText;
+    
+    protected override void OnSetData()
+    {
+        // Access data via the Data property
+        _titleText.text = Data.Title;
+        _descriptionText.text = Data.Description;
+    }
+}
+
+// Usage
+var questData = new QuestData { QuestId = 1, Title = "Dragon Slayer", Description = "..." };
+await _uiService.OpenUiAsync<QuestPresenter, QuestData>(questData);
+```
+
+### Closing from Within
+
+Presenters can close themselves:
+
+```csharp
+public class ConfirmPopup : UiPresenter
+{
+    public void OnConfirmClicked()
+    {
+        // Close but keep in memory
+        Close(destroy: false);
+    }
+    
+    public void OnCancelClicked()
+    {
+        // Close and unload from memory
+        Close(destroy: true);
+    }
+}
+```
+
+---
+
+## Presenter Features
+
+The UI Service uses a **feature-based composition system** to extend presenter behavior without inheritance complexity.
+
+### Built-in Features
+
+#### TimeDelayFeature
+
+Adds time-based delays to UI opening and closing:
+
+```csharp
+[RequireComponent(typeof(TimeDelayFeature))]
+public class DelayedPopup : UiPresenter
+{
+    [SerializeField] private TimeDelayFeature _delayFeature;
+    
+    protected override void OnInitialized()
+    {
+        _delayFeature.OnOpenCompletedEvent += OnDelayComplete;
+    }
+    
+    private void OnDelayComplete()
+    {
+        Debug.Log("Opening delay completed!");
+    }
+}
+```
+
+**Inspector Configuration:**
+- `Open Delay In Seconds` - Time to wait after opening (default: 0.5s)
+- `Close Delay In Seconds` - Time to wait before closing (default: 0.3s)
+
+#### AnimationDelayFeature
+
+Synchronizes UI lifecycle with animation clips:
+
+```csharp
+[RequireComponent(typeof(AnimationDelayFeature))]
+public class AnimatedPopup : UiPresenter
+{
+    [SerializeField] private AnimationDelayFeature _animationFeature;
+    
+    protected override void OnInitialized()
+    {
+        _animationFeature.OnOpenCompletedEvent += OnAnimationComplete;
+    }
+}
+```
+
+**Inspector Configuration:**
+- `Animation Component` - Auto-detected or manually assigned
+- `Intro Animation Clip` - Plays when opening
+- `Outro Animation Clip` - Plays when closing
+
+#### UiToolkitPresenterFeature
+
+Provides UI Toolkit (UI Elements) integration:
+
+```csharp
+[RequireComponent(typeof(UiToolkitPresenterFeature))]
+public class UIToolkitMenu : UiPresenter
+{
+    [SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
+    
+    private Button _playButton;
+    
+    protected override void OnInitialized()
+    {
+        var root = _toolkitFeature.Root;
+        _playButton = root.Q<Button>("play-button");
+        _playButton.clicked += OnPlayClicked;
+    }
+}
+```
+
+### Composing Multiple Features
+
+Features can be combined freely:
+
+```csharp
+[RequireComponent(typeof(TimeDelayFeature))]
+[RequireComponent(typeof(UiToolkitPresenterFeature))]
+public class DelayedUiToolkitPresenter : UiPresenter
+{
+    [SerializeField] private TimeDelayFeature _delayFeature;
+    [SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
+    
+    protected override void OnInitialized()
+    {
+        _toolkitFeature.Root.SetEnabled(false);
+        _delayFeature.OnOpenCompletedEvent += () => _toolkitFeature.Root.SetEnabled(true);
+    }
+}
+```
+
+### Creating Custom Features
+
+Extend `PresenterFeatureBase`:
+
+```csharp
+[RequireComponent(typeof(CanvasGroup))]
+public class FadeFeature : PresenterFeatureBase
+{
+    [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private float _fadeDuration = 0.3f;
+    
+    public override void OnPresenterOpening()
+    {
+        _canvasGroup.alpha = 0f;
+    }
+    
+    public override void OnPresenterOpened()
+    {
+        StartCoroutine(FadeIn());
+    }
+    
+    private IEnumerator FadeIn()
+    {
+        float elapsed = 0f;
+        while (elapsed < _fadeDuration)
+        {
+            _canvasGroup.alpha = elapsed / _fadeDuration;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        _canvasGroup.alpha = 1f;
+    }
+}
+```
+
+**Available Lifecycle Hooks:**
+- `OnPresenterInitialized(UiPresenter presenter)`
+- `OnPresenterOpening()`
+- `OnPresenterOpened()`
+- `OnPresenterClosing()`
+- `OnPresenterClosed()`
+
+---
+
+## UI Layers
+
+UI elements are organized into layers, where higher layer numbers appear on top (closer to camera).
+
+### Layer Organization
+
+```csharp
+// Recommended layer structure:
+// Layer 0: Background UI (skyboxes, parallax)
+// Layer 1: Game HUD (health bars, minimap)
+// Layer 2: Menus (main menu, settings)
+// Layer 3: Popups (confirmations, rewards)
+// Layer 4: System messages (errors, loading)
+// Layer 5: Debug overlays
+```
+
+### Layer Operations
+
+```csharp
+// Close all UI in a specific layer
+_uiService.CloseAllUi(layer: 2);
+
+// Layers are configured per-presenter in UiConfigs
+```
+
+### How Layers Work
+
+- Each presenter is assigned a layer in `UiConfigs`
+- `Canvas.sortingOrder` (uGUI) or `UIDocument.sortingOrder` (UI Toolkit) is set automatically
+- Higher layers render on top of lower layers
+
+---
+
+## UI Sets
+
+Group related UI elements for batch operations.
+
+### Defining Sets
+
+Sets are defined in your `UiConfigs` asset. Each presenter can optionally belong to a set by its Set ID.
+
+```
+Set 0: Core UI (always loaded)
+Set 1: Main Menu (logo, menu buttons, background)
+Set 2: Gameplay (HUD, minimap, chat)
+Set 3: Shop (shop window, inventory, currency)
+```
+
+### Set Operations
+
+```csharp
+// Load all UI in a set (returns array of tasks)
+var loadTasks = _uiService.LoadUiSetAsync(setId: 1);
+await UniTask.WhenAll(loadTasks);
+
+// Close all UI in a set
+_uiService.CloseAllUiSet(setId: 1);
+
+// Unload set from memory
+_uiService.UnloadUiSet(setId: 1);
+
+// Remove set and get removed presenters
+var removed = _uiService.RemoveUiSet(setId: 2);
+foreach (var presenter in removed)
+{
+    Destroy(presenter.gameObject);
+}
+```
+
+### Recommended Set Organization
+
+| Set ID Range | Purpose |
+|--------------|---------|
+| 0 | Core/Persistent UI (always loaded) |
+| 1-10 | Scene-specific UI |
+| 11-20 | Feature-specific UI (shop, inventory) |
+
+---
+
+## Multi-Instance Support
+
+By default, each UI presenter type is a singleton. The `UiInstanceId` system enables multiple instances of the same type.
+
+### Use Cases
+
+- Multiple tooltip windows
+- Stacked notification popups
+- Multiple player info panels (multiplayer)
+- Pooled UI elements
+
+### UiInstanceId
+
+```csharp
+// Default/singleton instance
+var defaultId = UiInstanceId.Default(typeof(TooltipPresenter));
+
+// Named instances
+var itemTooltipId = UiInstanceId.Named(typeof(TooltipPresenter), "item");
+var skillTooltipId = UiInstanceId.Named(typeof(TooltipPresenter), "skill");
+
+// Check if default
+if (instanceId.IsDefault)
+{
+    Debug.Log("This is the singleton instance");
+}
+```
+
+### Working with Instances
+
+```csharp
+// Get all loaded presenters
+List<UiInstance> loaded = _uiService.GetLoadedPresenters();
+
+foreach (var instance in loaded)
+{
+    Debug.Log($"Type: {instance.Type.Name}");
+    Debug.Log($"Address: {instance.Address}"); // Empty for default
+    Debug.Log($"Presenter: {instance.Presenter.name}");
+}
+
+// Check visible presenters
+IReadOnlyList<UiInstanceId> visible = _uiService.VisiblePresenters;
+```
+
+### UiInstance vs UiInstanceId
+
+| Struct | Purpose | Contains |
+|--------|---------|----------|
+| `UiInstanceId` | Identifier for referencing | `PresenterType`, `InstanceAddress` |
+| `UiInstance` | Full data about loaded instance | `Type`, `Address`, `Presenter` |
+
+---
+
+## UI Configuration
+
+The `UiConfigs` ScriptableObject stores all UI configuration.
+
+### Creating UiConfigs
+
+1. Right-click in Project View
+2. Navigate to `Create` → `ScriptableObjects` → `Configs` → `UiConfigs`
+
+### Configuration Properties
+
+| Property | Description |
+|----------|-------------|
+| **Type** | The presenter class type |
+| **Addressable Address** | Addressable key to the UI prefab |
+| **Layer** | Depth layer (higher = closer to camera) |
+| **Load Synchronously** | Block main thread during load (use sparingly) |
+| **UI Set ID** | Optional grouping for batch operations |
+
+### Runtime Configuration
+
+```csharp
+// Add configuration at runtime
+var config = new UiConfig(typeof(DynamicPopup), "UI/DynamicPopup", layer: 3);
+_uiService.AddUiConfig(config);
+
+// Add UI set at runtime
+var setConfig = new UiSetConfig(setId: 5, new[] { typeof(ShopUI), typeof(InventoryUI) });
+_uiService.AddUiSet(setConfig);
+
+// Add instantiated UI
+var dynamicUi = Instantiate(uiPrefab);
+_uiService.AddUi(dynamicUi, layer: 3, openAfter: true);
+```
+
+---
+
+## Editor Windows
+
+The package includes three editor windows for development and debugging.
+
+### Analytics Window
+
+**Menu:** `Tools → UI Service → Analytics`
+
+<!-- TODO: Add screenshot of Analytics Window -->
+![Analytics Window](docs/analytics-window.png)
+
+Monitor UI performance metrics in real-time during play mode:
+- Load, open, close durations
+- Open/close counts
+- Color-coded performance indicators
+- Timeline information
+
+**Performance Thresholds:**
+- Load: <0.1s green, <0.5s yellow, ≥0.5s red
+- Open/Close: <0.05s green, <0.2s yellow, ≥0.2s red
+
+### Hierarchy Window
+
+**Menu:** `Tools → UI Service → Hierarchy Window`
+
+<!-- TODO: Add screenshot of Hierarchy Window -->
+![Hierarchy Window](docs/hierarchy-window.png)
+
+View and control active presenters:
+- Live hierarchy grouped by layer
+- Open (🟢) / closed (🔴) status
+- Quick open/close buttons
+- GameObject navigation
+
+### UiConfigs Inspector
+
+![UiConfigs Inspector](uiconfigs-inspector.gif)
+
+Select any `UiConfigs` asset to see the enhanced inspector:
+- Visual layer hierarchy
+- Color-coded layers
+- Drag & drop reordering
+- Statistics panel
+- UI set management
+
