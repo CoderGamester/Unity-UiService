@@ -35,7 +35,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - Typed presenters: `UiPresenter<T>` (data assigned during open via `OpenUiAsync(type, initialData, ...)`).
   - Presenter features are discovered via `GetComponents(_features)` at init time and are notified in the open/close lifecycle.
 - **Composable features**: `Runtime/Features/*`
-  - `IPresenterFeature` and `PresenterFeatureBase` allow attaching components to a presenter prefab to hook lifecycle.
+  - `PresenterFeatureBase` allows attaching components to a presenter prefab to hook lifecycle.
   - Built-in features:
     - `TimeDelayFeature`
     - `AnimationDelayFeature`
@@ -134,7 +134,7 @@ When you need third-party source/docs, prefer the locally-cached UPM packages:
 - **Add multi-instance flows**
   - Use `UiInstanceId` (default = `string.Empty`) and prefer calling `UiService` overloads that take `instanceAddress` when multiple instances may exist.
 - **Add a presenter feature**
-  - Implement `IPresenterFeature` (or extend `PresenterFeatureBase`) and attach it to the presenter prefab.
+  - Extend `PresenterFeatureBase` and attach it to the presenter prefab.
   - Features are discovered via `GetComponents` at init time and notified during open/close.
 - **Change loading strategy**
   - Prefer extending/replacing `IUiAssetLoader` for tests/special loading; keep Addressables calls centralized in `UiAssetLoader`.

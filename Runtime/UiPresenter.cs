@@ -20,7 +20,7 @@ namespace GameLovers.UiService
 	public abstract class UiPresenter : MonoBehaviour
 	{
 		protected IUiService _uiService;
-		private List<IPresenterFeature> _features;
+		private List<PresenterFeatureBase> _features;
 
 		/// <summary>
 		/// Requests the open status of the <see cref="UiPresenter"/>
@@ -103,7 +103,7 @@ namespace GameLovers.UiService
 
 		private void InitializeFeatures()
 		{
-			_features = new List<IPresenterFeature>();
+			_features = new List<PresenterFeatureBase>();
 			GetComponents(_features);
 
 			foreach (var feature in _features)

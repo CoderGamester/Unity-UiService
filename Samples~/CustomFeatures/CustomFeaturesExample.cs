@@ -7,8 +7,7 @@ namespace GameLovers.UiService.Examples
 	/// Example demonstrating how to create and use custom presenter features.
 	/// 
 	/// Key concepts:
-	/// - IPresenterFeature: Interface for features that hook into presenter lifecycle
-	/// - PresenterFeatureBase: Base class that provides common functionality
+	/// - PresenterFeatureBase: Base class for features that hook into presenter lifecycle
 	/// - Feature composition: Attach multiple features to a single presenter
 	/// 
 	/// This sample includes three custom features:

@@ -139,7 +139,7 @@ Editor/
 | **UiPresenter** | Base class for all UI views with lifecycle hooks |
 | **UiConfigs** | ScriptableObject storing UI configuration and sets |
 | **UiAssetLoader** | Handles Addressables integration for async loading |
-| **IPresenterFeature** | Interface for composable presenter behaviors |
+| **PresenterFeatureBase** | Base class for composable presenter behaviors |
 | **UiInstanceId** | Enables multiple instances of the same presenter type |
 
 ---

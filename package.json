@@ -55,7 +55,7 @@
     },
     {
       "displayName": "Custom Features",
-      "description": "Create custom presenter features (fade, scale, sound) using IPresenterFeature and PresenterFeatureBase.",
+      "description": "Create custom presenter features (fade, scale, sound) by extending PresenterFeatureBase.",
       "path": "Samples~/CustomFeatures"
     }
   ]
