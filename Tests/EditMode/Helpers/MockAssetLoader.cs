@@ -51,6 +51,16 @@ namespace GameLovers.UiService.Tests
 			}
 
 			var instance = UnityEngine.Object.Instantiate(prefab, parent);
+			
+			// Briefly activate to trigger Awake() on all components, then deactivate
+			// This mimics how Addressables instantiation works with active prefabs
+			var wasActive = instance.activeSelf;
+			if (!wasActive)
+			{
+				instance.SetActive(true);
+				instance.SetActive(false);
+			}
+			
 			_instantiatedObjects.Add(instance);
 			return instance;
 		}

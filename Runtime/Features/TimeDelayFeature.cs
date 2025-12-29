@@ -13,6 +13,8 @@ namespace GameLovers.UiService
 		[SerializeField, Range(0f, float.MaxValue)] private float _openDelayInSeconds = 0.5f;
 		[SerializeField, Range(0f, float.MaxValue)] private float _closeDelayInSeconds = 0.3f;
 
+		private UniTaskCompletionSource _currentDelayCompletion;
+
 		/// <summary>
 		/// Gets the delay in seconds before opening the presenter
 		/// </summary>
@@ -24,9 +26,10 @@ namespace GameLovers.UiService
 		public float CloseDelayInSeconds => _closeDelayInSeconds;
 
 		/// <summary>
-		/// Gets the UniTask of the current delay process
+		/// Gets the UniTask of the current delay process.
+		/// This task can be awaited to wait for the current transition to complete.
 		/// </summary>
-		public UniTask CurrentDelayTask { get; private set; }
+		public UniTask CurrentDelayTask => _currentDelayCompletion?.Task ?? UniTask.CompletedTask;
 
 		/// <inheritdoc />
 		public override void OnPresenterOpened()
@@ -75,29 +78,35 @@ namespace GameLovers.UiService
 
 		private async UniTask OpenWithDelayAsync()
 		{
+			_currentDelayCompletion = new UniTaskCompletionSource();
+			
 			OnOpenStarted();
 
-			CurrentDelayTask = UniTask.Delay(TimeSpan.FromSeconds(_openDelayInSeconds));
-			await CurrentDelayTask;
+			await UniTask.Delay(TimeSpan.FromSeconds(_openDelayInSeconds));
 
-			if (gameObject != null)
+			if (gameObject != null && this != null)
 			{
 				OnOpenedCompleted();
 			}
+			
+			_currentDelayCompletion?.TrySetResult();
 		}
 
 		private async UniTask CloseWithDelayAsync()
 		{
+			_currentDelayCompletion = new UniTaskCompletionSource();
+			
 			OnCloseStarted();
 
-			CurrentDelayTask = UniTask.Delay(TimeSpan.FromSeconds(_closeDelayInSeconds));
-			await CurrentDelayTask;
+			await UniTask.Delay(TimeSpan.FromSeconds(_closeDelayInSeconds));
 
-			if (gameObject != null)
+			if (gameObject != null && this != null)
 			{
 				gameObject.SetActive(false);
 				OnClosedCompleted();
 			}
+			
+			_currentDelayCompletion?.TrySetResult();
 		}
 	}
 }

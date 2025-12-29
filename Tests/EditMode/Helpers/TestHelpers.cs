@@ -49,8 +49,8 @@ namespace GameLovers.UiService.Tests
 		public static GameObject CreateTestPresenterPrefab<T>(string name = null) where T : UiPresenter
 		{
 			var go = new GameObject(name ?? typeof(T).Name);
-			go.AddComponent<T>();
 			go.AddComponent<Canvas>(); // Most presenters need a canvas
+			go.AddComponent<T>(); // Add presenter after canvas so it can find it
 			go.SetActive(false);
 			return go;
 		}
@@ -82,8 +82,12 @@ namespace GameLovers.UiService.Tests
 		public bool WasInitialized { get; private set; }
 		public bool WasOpened { get; private set; }
 		public bool WasClosed { get; private set; }
+		public bool WasOpenTransitionCompleted { get; private set; }
+		public bool WasCloseTransitionCompleted { get; private set; }
 		public int OpenCount { get; private set; }
 		public int CloseCount { get; private set; }
+		public int OpenTransitionCompletedCount { get; private set; }
+		public int CloseTransitionCompletedCount { get; private set; }
 
 		protected override void OnInitialized()
 		{
@@ -100,6 +104,18 @@ namespace GameLovers.UiService.Tests
 		{
 			WasClosed = true;
 			CloseCount++;
+		}
+
+		protected override void OnOpenTransitionCompleted()
+		{
+			WasOpenTransitionCompleted = true;
+			OpenTransitionCompletedCount++;
+		}
+
+		protected override void OnCloseTransitionCompleted()
+		{
+			WasCloseTransitionCompleted = true;
+			CloseTransitionCompletedCount++;
 		}
 	}
 	

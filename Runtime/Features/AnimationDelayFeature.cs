@@ -15,6 +15,8 @@ namespace GameLovers.UiService
 		[SerializeField] private AnimationClip _introAnimationClip;
 		[SerializeField] private AnimationClip _outroAnimationClip;
 
+		private UniTaskCompletionSource _currentDelayCompletion;
+
 		/// <summary>
 		/// Gets the Animation component
 		/// </summary>
@@ -33,17 +35,18 @@ namespace GameLovers.UiService
 		/// <summary>
 		/// Gets the delay in seconds for opening (based on intro animation length)
 		/// </summary>
-		public float OpenDelayInSeconds => _introAnimationClip?.length ?? 0f;
+		public float OpenDelayInSeconds => _introAnimationClip == null ? 0f : _introAnimationClip.length;
 
 		/// <summary>
 		/// Gets the delay in seconds for closing (based on outro animation length)
 		/// </summary>
-		public float CloseDelayInSeconds => _outroAnimationClip?.length ?? 0f;
+		public float CloseDelayInSeconds => _outroAnimationClip == null ? 0f : _outroAnimationClip.length;
 
 		/// <summary>
-		/// Gets the UniTask of the current delay process
+		/// Gets the UniTask of the current delay process.
+		/// This task can be awaited to wait for the current transition to complete.
 		/// </summary>
-		public UniTask CurrentDelayTask { get; private set; }
+		public UniTask CurrentDelayTask => _currentDelayCompletion?.Task ?? UniTask.CompletedTask;
 
 		private void OnValidate()
 		{
@@ -71,7 +74,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		protected virtual void OnOpenStarted()
 		{
-			if (!_introAnimationClip)
+			if (_introAnimationClip != null)
 			{
 				_animation.clip = _introAnimationClip;
 				_animation.Play();
@@ -93,7 +96,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		protected virtual void OnCloseStarted()
 		{
-			if (!_outroAnimationClip)
+			if (_outroAnimationClip != null)
 			{
 				_animation.clip = _outroAnimationClip;
 				_animation.Play();
@@ -111,29 +114,35 @@ namespace GameLovers.UiService
 
 		private async UniTask OpenWithAnimationAsync()
 		{
+			_currentDelayCompletion = new UniTaskCompletionSource();
+			
 			OnOpenStarted();
 
-			CurrentDelayTask = UniTask.Delay(TimeSpan.FromSeconds(OpenDelayInSeconds));
-			await CurrentDelayTask;
+			await UniTask.Delay(TimeSpan.FromSeconds(OpenDelayInSeconds));
 
-			if (gameObject != null)
+			if (gameObject != null && this != null)
 			{
 				OnOpenedCompleted();
 			}
+			
+			_currentDelayCompletion?.TrySetResult();
 		}
 
 		private async UniTask CloseWithAnimationAsync()
 		{
+			_currentDelayCompletion = new UniTaskCompletionSource();
+			
 			OnCloseStarted();
 
-			CurrentDelayTask = UniTask.Delay(TimeSpan.FromSeconds(CloseDelayInSeconds));
-			await CurrentDelayTask;
+			await UniTask.Delay(TimeSpan.FromSeconds(CloseDelayInSeconds));
 
-			if (gameObject != null)
+			if (gameObject != null && this != null)
 			{
 				gameObject.SetActive(false);
 				OnClosedCompleted();
 			}
+			
+			_currentDelayCompletion?.TrySetResult();
 		}
 	}
 }

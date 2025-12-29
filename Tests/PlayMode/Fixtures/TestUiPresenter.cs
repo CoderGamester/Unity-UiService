@@ -9,8 +9,12 @@ namespace GameLovers.UiService.Tests.PlayMode.Fixtures
 		public bool WasInitialized { get; private set; }
 		public bool WasOpened { get; private set; }
 		public bool WasClosed { get; private set; }
+		public bool WasOpenTransitionCompleted { get; private set; }
+		public bool WasCloseTransitionCompleted { get; private set; }
 		public int OpenCount { get; private set; }
 		public int CloseCount { get; private set; }
+		public int OpenTransitionCompletedCount { get; private set; }
+		public int CloseTransitionCompletedCount { get; private set; }
 
 		protected override void OnInitialized()
 		{
@@ -27,6 +31,18 @@ namespace GameLovers.UiService.Tests.PlayMode.Fixtures
 		{
 			WasClosed = true;
 			CloseCount++;
+		}
+
+		protected override void OnOpenTransitionCompleted()
+		{
+			WasOpenTransitionCompleted = true;
+			OpenTransitionCompletedCount++;
+		}
+
+		protected override void OnCloseTransitionCompleted()
+		{
+			WasCloseTransitionCompleted = true;
+			CloseTransitionCompletedCount++;
 		}
 	}
 }
