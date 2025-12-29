@@ -94,6 +94,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		protected virtual void OnOpenedCompleted()
 		{
+			Presenter.NotifyOpenTransitionCompleted();
 			OnOpenCompletedEvent?.Invoke();
 		}
 
@@ -116,6 +117,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		protected virtual void OnClosedCompleted()
 		{
+			Presenter.NotifyCloseTransitionCompleted();
 			OnCloseCompletedEvent?.Invoke();
 		}
 

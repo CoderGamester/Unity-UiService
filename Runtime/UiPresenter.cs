@@ -50,6 +50,18 @@ namespace GameLovers.UiService
 		/// </summary>
 		protected virtual void OnClosed() {}
 
+		/// <summary>
+		/// Called after all open transitions (animations, delays) have completed.
+		/// Override this to react when the UI is fully visible and ready for interaction.
+		/// </summary>
+		protected virtual void OnOpenTransitionCompleted() {}
+
+		/// <summary>
+		/// Called after all close transitions (animations, delays) have completed.
+		/// Override this to react when the UI has finished its closing transition.
+		/// </summary>
+		protected virtual void OnCloseTransitionCompleted() {}
+
 		internal void Init(IUiService uiService)
 		{
 			_uiService = uiService;
@@ -138,6 +150,24 @@ namespace GameLovers.UiService
 			{
 				feature.OnPresenterClosed();
 			}
+		}
+
+		/// <summary>
+		/// Called by features to notify that their open transition has completed.
+		/// This triggers <see cref="OnOpenTransitionCompleted"/>.
+		/// </summary>
+		internal void NotifyOpenTransitionCompleted()
+		{
+			OnOpenTransitionCompleted();
+		}
+
+		/// <summary>
+		/// Called by features to notify that their close transition has completed.
+		/// This triggers <see cref="OnCloseTransitionCompleted"/>.
+		/// </summary>
+		internal void NotifyCloseTransitionCompleted()
+		{
+			OnCloseTransitionCompleted();
 		}
 	}
 

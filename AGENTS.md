@@ -1,73 +1,121 @@
 # GameLovers.UiService - AI Agent Guide
 
 ## 1. Package Overview
-**Package**: `com.gamelovers.uiservice`  
-**Unity**: 6000.0+  
-**Dependencies**: Addressables, UniTask (see `package.json`)
+- **Package**: `com.gamelovers.uiservice`
+- **Unity**: 6000.0+
+- **Dependencies** (see `package.json`)
+  - `com.unity.addressables` (2.6.0)
+  - `com.cysharp.unitask` (2.5.10)
 
-This package provides a UI management service that coordinates UI presenter **load/open/close/unload**, supports **layering**, **UI sets**, and **multi-instance** presenters, and integrates with **Addressables** + **UniTask**.
+This package provides a centralized UI management service that coordinates presenter **load/open/close/unload**, supports **layering**, **UI sets**, and **multi-instance** presenters, and integrates with **Addressables** + **UniTask**.
+
+For user-facing docs, treat `docs/README.md` (and linked pages) as the primary documentation set; this file is for contributors/agents working on the package itself.
 
 ## 2. Runtime Architecture (high level)
-- **Service core**: `Runtime/UiService.cs` (`IUiServiceInit`)
-  - Owns UI configs, loaded presenter instances, visible list, and set configs.
-  - Creates a `DontDestroyOnLoad` parent GameObject named `"Ui"` and attaches `UiServiceMonoComponent` for screen/orientation tracking.
+- **Service core**: `Runtime/UiService.cs` (`UiService : IUiServiceInit`)
+  - Owns configs, loaded presenter instances, visible list, and UI set configs.
+  - Creates a `DontDestroyOnLoad` parent GameObject named `"Ui"` and attaches `UiServiceMonoComponent` for resolution/orientation tracking.
+  - Tracks presenters as **instances**: `Dictionary<Type, IList<UiInstance>>` where each `UiInstance` stores `(Type, Address, UiPresenter)`.
+- **Public API surface**: `Runtime/IUiService.cs`
+  - Exposes lifecycle operations (load/open/close/unload) and readonly views:
+    - `VisiblePresenters : IReadOnlyList<UiInstanceId>`
+    - `UiSets : IReadOnlyDictionary<int, UiSetConfig>`
+    - `GetLoadedPresenters() : List<UiInstance>`
+  - Note: **multi-instance overloads** (explicit `instanceAddress`) exist on `UiService` (concrete type), not on `IUiService`.
 - **Configuration**: `Runtime/UiConfigs.cs` (`ScriptableObject`)
-  - Holds `UiConfig` entries (type + addressable address + layer + load-sync flag).
-  - Holds `UiSetConfig` entries (grouped UIs by `setId`).
+  - Stores UI configs as `UiConfigs.UiConfigSerializable` (address + layer + type name).
+  - Stores UI sets as `UiSetConfigSerializable` containing `UiSetEntry` items.
+- **UI Sets**: `Runtime/UiSetConfig.cs`
+  - `UiSetEntry` stores:
+    - presenter type as `AssemblyQualifiedName` string
+    - optional `InstanceAddress` (empty string means default instance)
+  - `UiSetConfig` is the runtime shape: `SetId` + `UiInstanceId[]`.
 - **Presenter pattern**: `Runtime/UiPresenter.cs`
-  - Base presenter lifecycle hooks: `OnInitialized`, `OnOpened`, `OnClosed`.
-  - Optional typed-data presenters: `UiPresenter<T>` (data set on open).
+  - Lifecycle hooks: `OnInitialized`, `OnOpened`, `OnClosed`.
+  - Typed presenters: `UiPresenter<T>` (data assigned during open via `OpenUiAsync(type, initialData, ...)`).
+  - Presenter features are discovered via `GetComponents(_features)` at init time and are notified in the open/close lifecycle.
 - **Composable features**: `Runtime/Features/*`
-  - Implement `IPresenterFeature` and attach to presenter GameObjects to extend lifecycle (delays, UI Toolkit integration, etc.).
+  - `IPresenterFeature` and `PresenterFeatureBase` allow attaching components to a presenter prefab to hook lifecycle.
+  - Built-in features:
+    - `TimeDelayFeature`
+    - `AnimationDelayFeature`
+    - `UiToolkitPresenterFeature` (UI Toolkit support via `UIDocument`)
+- **Helper views**: `Runtime/Views/*` (`GameLovers.UiService.Views`)
+  - `SafeAreaHelperView`: adjusts anchors/size based on safe area (notches).
+  - `NonDrawingView`: raycast target without rendering (extends `Graphic`).
+  - `AdjustScreenSizeFitterView`: layout fitter that clamps between min/flexible size.
+  - `InteractableTextView`: TMP link click handling.
 - **Asset loading**: `Runtime/UiAssetLoader.cs`
-  - `IUiAssetLoader` abstraction; default implementation instantiates via `Addressables.InstantiateAsync` and unloads via `Addressables.ReleaseInstance`.
+  - `IUiAssetLoader` abstraction; default uses `Addressables.InstantiateAsync` and `Addressables.ReleaseInstance`.
+  - Supports optional synchronous instantiation via `UiConfig.LoadSynchronously`.
 - **Analytics (optional)**: `Runtime/UiAnalytics.cs`
-  - `IUiAnalytics` is injectable; `UiService` falls back to `NullAnalytics`.
-  - `UiService.CurrentAnalytics` is an **internal** static reference intended for editor tooling/inspection.
+  - `IUiAnalytics` + `UiAnalytics` track lifecycle events and simple performance timings.
+  - `UiService` defaults to `NullAnalytics` when none is provided.
+  - `UiService.CurrentAnalytics` is an **internal** static reference used by editor windows in this package.
 
 ## 3. Key Directories / Files
-- **Runtime**
-  - `Runtime/IUiService.cs` — public API surface
-  - `Runtime/UiService.cs` — core implementation
-  - `Runtime/UiPresenter.cs` — presenter base classes
-  - `Runtime/UiAssetLoader.cs` — Addressables integration
-  - `Runtime/UiConfigs.cs` — configs + sets storage/serialization helpers
-  - `Runtime/UiInstanceId.cs` — multi-instance identity
+- **Docs (user-facing)**: `docs/`
+  - `docs/README.md` — doc entry point (Getting Started, Core Concepts, API Reference, Advanced, Troubleshooting)
+- **Runtime**: `Runtime/`
+  - `Runtime/IUiService.cs` — public API surface + `IUiServiceInit`
+  - `Runtime/UiService.cs` — core implementation (multi-instance, sets, analytics hooks)
+  - `Runtime/UiPresenter.cs` — presenter base classes + feature hooks
+  - `Runtime/UiConfigs.cs` — config storage/serialization
+  - `Runtime/UiSetConfig.cs` — UI set + serialization helpers
+  - `Runtime/UiInstanceId.cs` — multi-instance identity (normalizes null/empty to `string.Empty`)
+  - `Runtime/UiAssetLoader.cs` — Addressables integration (+ optional sync load)
+  - `Runtime/UiAnalytics.cs` — analytics + metrics
   - `Runtime/UiServiceMonoComponent.cs` — emits resolution/orientation change events
-  - `Runtime/UiAnalytics.cs` — analytics + performance metrics
-- **Editor**
-  - `Editor/UiConfigsEditor.cs` — config authoring; sets `UiConfig.LoadSynchronously` using `LoadSynchronouslyAttribute`
-  - `Editor/UiPresenterEditor.cs` — quick controls for presenters
-  - `Editor/UiAnalyticsWindow.cs`, `Editor/UiServiceHierarchyWindow.cs` — debugging/monitoring
-- **Tests**
-  - `Tests/EditMode/Helpers/MockAssetLoader.cs` — avoids Addressables
-  - `Tests/EditMode/Helpers/TestHelpers.cs` — presenter/prefab helpers
-  - `TESTING_PLAN.md` — source-of-truth test strategy and coverage goals
+  - `Runtime/Features/*` — composable presenter features
+  - `Runtime/Views/*` — helper view components (safe area, non-drawing, sizing, TMP links)
+- **Editor**: `Editor/` (assembly: `Editor/GameLovers.UiService.Editor.asmdef`)
+  - `Editor/UiConfigsEditor.cs` — UI Toolkit inspector for `UiConfigs` + layer visualizer + menu items
+  - `Editor/DefaultUiConfigsEditor.cs` — default out-of-the-box `UiConfigs` editor using `DefaultUiSetId`
+  - `Editor/UiAnalyticsWindow.cs` — play-mode analytics viewer
+  - `Editor/UiServiceHierarchyWindow.cs` — play-mode hierarchy/debug window
+  - `Editor/UiPresenterEditor.cs` — quick open/close controls for a `UiPresenter` in play mode
+  - `Editor/NonDrawingViewEditor.cs` — inspector for `NonDrawingView` (raycast controls)
+- **Samples**: `Samples~/`
+  - Demonstrates basic flows, data presenters, delay features, UI Toolkit integration, analytics.
+- **Tests**: `Tests/`
+  - `Tests/EditMode/*` — unit tests (configs, sets, analytics, core service behavior)
+  - `Tests/PlayMode/*` — integration/performance/smoke tests + fixtures/prefabs
 
 ## 4. Important Behaviors / Gotchas
-- **Default instance address**:
+- **Instance address normalization**
   - `UiInstanceId` normalizes `null/""` to `string.Empty`.
-  - Prefer **`string.Empty`** for the default/singleton instance and avoid passing `null` around unless you’re sure the call site normalizes it.
-- **Layering**:
+  - Prefer **`string.Empty`** as the default/singleton instance identifier.
+- **Ambiguous “default instance” calls**
+  - `UiService` uses an internal `ResolveInstanceAddress(type)` when an API is called without an explicit `instanceAddress`.
+  - If **multiple instances** exist, it logs a warning and selects the **first** instance. For multi-instance usage, prefer calling `UiService` overloads that include `instanceAddress`.
+- **Presenter self-close + destroy with multi-instance**
+  - `UiPresenter.Close(destroy: true)` ultimately calls `_uiService.UnloadUi(GetType())` (no instance address), which can be ambiguous when multiple instances exist.
+  - For multi-instance cleanup, close/unload via `UiService` overloads using `(Type, instanceAddress)` (or by tracking your own `UiInstanceId` externally).
+- **Layering**
   - `UiService` enforces sorting by setting `Canvas.sortingOrder` or `UIDocument.sortingOrder` to the config layer when adding/loading.
-- **Close vs Unload**:
-  - `CloseUi(..., destroy: false)` hides the presenter (`SetActive(false)`).
-  - `CloseUi(..., destroy: true)` ultimately unloads via `UnloadUi` (Addressables release + removal from service).
-- **Static events**:
-  - `UiService.OnResolutionChanged` / `UiService.OnOrientationChanged` are static `UnityEvent`s.
+  - Loaded presenters are instantiated under the `"Ui"` root directly (no per-layer container GameObjects).
+- **UI Sets store types, not addresses**
+  - UI sets are serialized as `UiSetEntry` (type name + instance address). The default editor populates `InstanceAddress` with the **addressable address** for uniqueness.
+- **`LoadSynchronously` persistence**
+  - `UiConfig.LoadSynchronously` exists and is respected by `UiAssetLoader`.
+  - **However**: `UiConfigs.UiConfigSerializable` currently does **not** serialize `LoadSynchronously`, so configs loaded from a `UiConfigs` asset will produce `LoadSynchronously = false` in `UiConfigs.Configs`.
+- **Static events**
+  - `UiService.OnResolutionChanged` / `UiService.OnOrientationChanged` are static `UnityEvent`s raised by `UiServiceMonoComponent`.
   - The service does not clear listeners; consumers must unsubscribe appropriately.
-- **Disposal**:
-  - `UiService.Dispose()` attempts to close/unload everything and destroys the `"Ui"` root GameObject. Call it in tests / controlled lifetimes.
+- **Disposal**
+  - `UiService.Dispose()` closes all visible UI, attempts to unload all loaded instances, clears collections, and destroys the `"Ui"` root GameObject.
+- **Editor debugging tools**
+  - Some editor windows toggle `presenter.gameObject.SetActive(...)` directly for convenience; this may not reflect in `IUiService.VisiblePresenters` since it bypasses `UiService` bookkeeping.
 
 ## 5. Coding Standards (Unity 6 / C# 9.0)
 - **C#**: C# 9.0 syntax; no global `using`s; keep **explicit namespaces**.
-- **Assemblies**:
-  - Runtime code must not reference `UnityEditor`.
-  - Editor tools live under `Editor/` and `GameLovers.UiService.Editor.asmdef`.
-- **Async**:
-  - Use `UniTask` for async flows; thread through `CancellationToken` where available.
-- **Memory / allocations**:
-  - Avoid per-frame allocations; keep API properties allocation-free (see `UiService` read-only wrappers pattern).
+- **Assemblies**
+  - Runtime code should avoid `UnityEditor` references; editor-only tooling belongs under `Editor/` and `GameLovers.UiService.Editor.asmdef`.
+  - If you must add editor-only code near runtime types, guard it with `#if UNITY_EDITOR` and keep it minimal.
+- **Async**
+  - Use `UniTask`; thread `CancellationToken` through async APIs where available.
+- **Memory / allocations**
+  - Avoid per-frame allocations; keep API properties allocation-free (see `UiService` read-only wrappers for `VisiblePresenters` and `UiSets`).
 
 ## 6. External Package Sources (for API lookups)
 When you need third-party source/docs, prefer the locally-cached UPM packages:
@@ -77,17 +125,25 @@ When you need third-party source/docs, prefer the locally-cached UPM packages:
 ## 7. Dev Workflows (common changes)
 - **Add a new presenter**
   - Create a prefab with a component deriving `UiPresenter` (or `UiPresenter<T>`).
-  - Mark the prefab as Addressable and set its address.
-  - Add/update the entry in `UiConfigs` via the custom editor tooling.
+  - Ensure it has a `Canvas` or `UIDocument` if you want layer sorting to apply.
+  - Mark the prefab Addressable and set its address.
+  - Add/update the entry in `UiConfigs` (menu: `Tools/UI Service/Select UiConfigs`).
+- **Add / update UI sets**
+  - The default `UiConfigs` inspector uses `DefaultUiSetId` (out-of-the-box).
+  - To customize set ids, create your own enum and your own `[CustomEditor(typeof(UiConfigs))] : UiConfigsEditor<TEnum>`.
+- **Add multi-instance flows**
+  - Use `UiInstanceId` (default = `string.Empty`) and prefer calling `UiService` overloads that take `instanceAddress` when multiple instances may exist.
 - **Add a presenter feature**
-  - Implement `IPresenterFeature` (or extend `PresenterFeatureBase`), then attach it to the presenter prefab.
+  - Implement `IPresenterFeature` (or extend `PresenterFeatureBase`) and attach it to the presenter prefab.
+  - Features are discovered via `GetComponents` at init time and notified during open/close.
 - **Change loading strategy**
   - Prefer extending/replacing `IUiAssetLoader` for tests/special loading; keep Addressables calls centralized in `UiAssetLoader`.
+- **Update docs/samples**
+  - User-facing docs live in `docs/` and should be updated when behavior/API changes.
+  - If you add a new core capability, consider adding/adjusting a sample under `Samples~/`.
 
 ## 8. Update Policy
 Update this file when:
-- Public API changes (`IUiService`, presenter lifecycle, config formats)
-- New core runtime systems/features are introduced
-- Editor tooling changes how configs are generated or interpreted
-
-
+- Public API changes (`IUiService`, `IUiServiceInit`, presenter lifecycle, config formats)
+- Core runtime systems/features are introduced/removed (features, views, analytics, multi-instance)
+- Editor tooling changes how configs or sets are generated/serialized

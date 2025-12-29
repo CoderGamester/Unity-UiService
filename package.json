@@ -11,5 +11,52 @@
     "com.cysharp.unitask": "2.5.10"
   },
   "type": "library",
-  "hideInEditor": false
+  "hideInEditor": false,
+  "samples": [
+    {
+      "displayName": "Basic UI Flow",
+      "description": "Basic UI presenter lifecycle: loading, opening, closing, and unloading UI.",
+      "path": "Samples~/BasicUiFlow"
+    },
+    {
+      "displayName": "Data Presenter",
+      "description": "Data-driven UI with UiPresenter<T> and the OnSetData lifecycle hook.",
+      "path": "Samples~/DataPresenter"
+    },
+    {
+      "displayName": "Delayed Presenter",
+      "description": "Time and animation-based delay features with TimeDelayFeature and AnimationDelayFeature.",
+      "path": "Samples~/DelayedPresenter"
+    },
+    {
+      "displayName": "UI Toolkit",
+      "description": "UI Toolkit integration using UiToolkitPresenterFeature.",
+      "path": "Samples~/UiToolkit"
+    },
+    {
+      "displayName": "Delayed UI Toolkit",
+      "description": "Combining delay features with UI Toolkit for advanced composition patterns.",
+      "path": "Samples~/DelayedUiToolkit"
+    },
+    {
+      "displayName": "Analytics",
+      "description": "Analytics callback integration for tracking UI lifecycle events and performance.",
+      "path": "Samples~/Analytics"
+    },
+    {
+      "displayName": "UI Sets",
+      "description": "Group multiple UIs to load, open, and close together (e.g., game HUD with health, currency, minimap).",
+      "path": "Samples~/UiSets"
+    },
+    {
+      "displayName": "Multi-Instance",
+      "description": "Create multiple instances of the same UI type (e.g., notification popups, chat windows).",
+      "path": "Samples~/MultiInstance"
+    },
+    {
+      "displayName": "Custom Features",
+      "description": "Create custom presenter features (fade, scale, sound) using IPresenterFeature and PresenterFeatureBase.",
+      "path": "Samples~/CustomFeatures"
+    }
+  ]
 }

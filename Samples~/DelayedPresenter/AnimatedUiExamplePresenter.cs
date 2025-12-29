@@ -6,7 +6,8 @@ namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Example UI Presenter with animation-based delays using the self-contained AnimationDelayFeature.
-	/// Demonstrates how animations automatically control timing and respond to animation completion.
+	/// Demonstrates how animations automatically control timing via the unified virtual hooks pattern.
+	/// No manual event subscription required - just override OnOpenTransitionCompleted/OnCloseTransitionCompleted.
 	/// </summary>
 	[RequireComponent(typeof(AnimationDelayFeature))]
 	public class AnimatedUiExamplePresenter : UiPresenter
@@ -24,13 +25,6 @@ namespace GameLovers.UiService.Examples
 			if (_closeButton != null)
 			{
 				_closeButton.onClick.AddListener(() => Close(destroy: false));
-			}
-			
-			// Subscribe to animation completion events
-			if (_animationFeature != null)
-			{
-				_animationFeature.OnOpenCompletedEvent += OnOpenAnimationCompleted;
-				_animationFeature.OnCloseCompletedEvent += OnCloseAnimationCompleted;
 			}
 		}
 
@@ -57,7 +51,11 @@ namespace GameLovers.UiService.Examples
 			Debug.Log("[AnimatedUiExample] UI Closed, outro animation playing...");
 		}
 
-		private void OnOpenAnimationCompleted()
+		/// <summary>
+		/// Called automatically when the animation feature completes its open transition.
+		/// No manual subscription needed - just override this virtual method.
+		/// </summary>
+		protected override void OnOpenTransitionCompleted()
 		{
 			Debug.Log("[AnimatedUiExample] Intro animation completed!");
 			
@@ -67,19 +65,13 @@ namespace GameLovers.UiService.Examples
 			}
 		}
 
-		private void OnCloseAnimationCompleted()
+		/// <summary>
+		/// Called automatically when the animation feature completes its close transition.
+		/// No manual subscription needed - just override this virtual method.
+		/// </summary>
+		protected override void OnCloseTransitionCompleted()
 		{
 			Debug.Log("[AnimatedUiExample] Outro animation completed!");
-		}
-
-		private void OnDestroy()
-		{
-			// Clean up event subscriptions
-			if (_animationFeature != null)
-			{
-				_animationFeature.OnOpenCompletedEvent -= OnOpenAnimationCompleted;
-				_animationFeature.OnCloseCompletedEvent -= OnCloseAnimationCompleted;
-			}
 		}
 	}
 }

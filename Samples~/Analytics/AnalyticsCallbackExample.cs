@@ -4,8 +4,8 @@ using GameLovers.UiService;
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example implementation of custom analytics callback
-	/// This demonstrates how to integrate with external analytics services
+	/// Example implementation of custom analytics callback.
+	/// This demonstrates how to integrate with external analytics services.
 	/// </summary>
 	public class CustomAnalyticsCallback : IUiAnalyticsCallback
 	{
@@ -70,29 +70,36 @@ namespace GameLovers.UiService.Examples
 	}
 
 	/// <summary>
-	/// Example demonstrating UI analytics integration
+	/// Example demonstrating UI analytics integration.
+	/// Shows how to:
+	/// - Create and configure a UiAnalytics instance
+	/// - Set a custom callback for analytics events
+	/// - Subscribe to analytics UnityEvents
+	/// - View performance metrics
 	/// </summary>
 	public class AnalyticsExample : MonoBehaviour
 	{
 		[SerializeField] private UiConfigs _uiConfigs;
 		
-		private IUiService _uiService;
+		private UiService _uiService;
+		private UiAnalytics _analytics;
 		private CustomAnalyticsCallback _analyticsCallback;
 
 		private void Start()
 		{
-			// Initialize analytics callback
+			// Create analytics instance
+			_analytics = new UiAnalytics();
+			
+			// Set custom callback for analytics events
 			_analyticsCallback = new CustomAnalyticsCallback();
-			UiAnalytics.SetCallback(_analyticsCallback);
+			_analytics.SetCallback(_analyticsCallback);
 			
-			// Enable analytics (enabled by default)
-			UiAnalytics.IsEnabled = true;
-			
-			// Subscribe to analytics events
+			// Subscribe to analytics UnityEvents (alternative to callback)
 			SubscribeToAnalyticsEvents();
 			
-			// Initialize UI Service
-			_uiService = new UiService();
+			// Initialize UI Service with analytics
+			// Note: Pass analytics to the UiService constructor
+			_uiService = new UiService(new UiAssetLoader(), _analytics);
 			_uiService.Init(_uiConfigs);
 			
 			Debug.Log("=== Analytics Example Started ===");
@@ -107,6 +114,9 @@ namespace GameLovers.UiService.Examples
 		{
 			// Unsubscribe from events
 			UnsubscribeFromAnalyticsEvents();
+			
+			// Dispose the UI service
+			_uiService?.Dispose();
 		}
 
 		private void Update()
@@ -114,12 +124,12 @@ namespace GameLovers.UiService.Examples
 			if (Input.GetKeyDown(KeyCode.Alpha1))
 			{
 				Debug.Log("Loading UI with analytics tracking...");
-				_uiService.LoadUi<BasicUiExamplePresenter>();
+				_uiService.LoadUiAsync<BasicUiExamplePresenter>();
 			}
 			else if (Input.GetKeyDown(KeyCode.Alpha2))
 			{
 				Debug.Log("Opening UI with analytics tracking...");
-				_uiService.OpenUi<BasicUiExamplePresenter>();
+				_uiService.OpenUiAsync<BasicUiExamplePresenter>();
 			}
 			else if (Input.GetKeyDown(KeyCode.Alpha3))
 			{
@@ -129,10 +139,10 @@ namespace GameLovers.UiService.Examples
 			else if (Input.GetKeyDown(KeyCode.Alpha4))
 			{
 				Debug.Log("Displaying performance summary...");
-				UiAnalytics.LogPerformanceSummary();
+				_analytics.LogPerformanceSummary();
 				
 				// Get specific metrics
-				var metrics = UiAnalytics.GetMetrics(typeof(BasicUiExamplePresenter));
+				var metrics = _analytics.GetMetrics(typeof(BasicUiExamplePresenter));
 				Debug.Log($"\nDetailed metrics for BasicUiExamplePresenter:");
 				Debug.Log($"  Opens: {metrics.OpenCount}, Closes: {metrics.CloseCount}");
 				Debug.Log($"  Lifetime: {metrics.TotalLifetime:F1}s");
@@ -140,26 +150,29 @@ namespace GameLovers.UiService.Examples
 			else if (Input.GetKeyDown(KeyCode.Alpha5))
 			{
 				Debug.Log("Clearing all analytics data...");
-				UiAnalytics.Clear();
+				_analytics.Clear();
 			}
 		}
 
 		private void SubscribeToAnalyticsEvents()
 		{
-			UiAnalytics.OnUiLoaded.AddListener(OnUiLoadedEvent);
-			UiAnalytics.OnUiOpened.AddListener(OnUiOpenedEvent);
-			UiAnalytics.OnUiClosed.AddListener(OnUiClosedEvent);
-			UiAnalytics.OnUiUnloaded.AddListener(OnUiUnloadedEvent);
-			UiAnalytics.OnPerformanceMetricsUpdated.AddListener(OnPerformanceUpdatedEvent);
+			// Subscribe to UnityEvents from the analytics instance
+			_analytics.OnUiLoaded.AddListener(OnUiLoadedEvent);
+			_analytics.OnUiOpened.AddListener(OnUiOpenedEvent);
+			_analytics.OnUiClosed.AddListener(OnUiClosedEvent);
+			_analytics.OnUiUnloaded.AddListener(OnUiUnloadedEvent);
+			_analytics.OnPerformanceMetricsUpdated.AddListener(OnPerformanceUpdatedEvent);
 		}
 
 		private void UnsubscribeFromAnalyticsEvents()
 		{
-			UiAnalytics.OnUiLoaded.RemoveListener(OnUiLoadedEvent);
-			UiAnalytics.OnUiOpened.RemoveListener(OnUiOpenedEvent);
-			UiAnalytics.OnUiClosed.RemoveListener(OnUiClosedEvent);
-			UiAnalytics.OnUiUnloaded.RemoveListener(OnUiUnloadedEvent);
-			UiAnalytics.OnPerformanceMetricsUpdated.RemoveListener(OnPerformanceUpdatedEvent);
+			if (_analytics == null) return;
+			
+			_analytics.OnUiLoaded.RemoveListener(OnUiLoadedEvent);
+			_analytics.OnUiOpened.RemoveListener(OnUiOpenedEvent);
+			_analytics.OnUiClosed.RemoveListener(OnUiClosedEvent);
+			_analytics.OnUiUnloaded.RemoveListener(OnUiUnloadedEvent);
+			_analytics.OnPerformanceMetricsUpdated.RemoveListener(OnPerformanceUpdatedEvent);
 		}
 
 		private void OnUiLoadedEvent(UiEventData data)
@@ -189,4 +202,3 @@ namespace GameLovers.UiService.Examples
 		}
 	}
 }
-
