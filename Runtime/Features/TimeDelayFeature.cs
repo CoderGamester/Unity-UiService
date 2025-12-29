@@ -84,7 +84,7 @@ namespace GameLovers.UiService
 
 			await UniTask.Delay(TimeSpan.FromSeconds(_openDelayInSeconds));
 
-			if (gameObject != null && this != null)
+			if (this && gameObject)
 			{
 				OnOpenedCompleted();
 			}
@@ -100,7 +100,7 @@ namespace GameLovers.UiService
 
 			await UniTask.Delay(TimeSpan.FromSeconds(_closeDelayInSeconds));
 
-			if (gameObject != null && this != null)
+			if (this && gameObject)
 			{
 				gameObject.SetActive(false);
 				OnClosedCompleted();
