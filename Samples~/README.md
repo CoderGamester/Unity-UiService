@@ -107,7 +107,7 @@ _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(playerData);
 **Demonstrates:**
 - Using `TimeDelayFeature` for time-based delays
 - Using `AnimationDelayFeature` for animation-synchronized delays
-- Subscribing to delay completion events
+- Reacting to delay completion via presenter lifecycle hooks
 
 **Pattern (Time Delay):**
 ```csharp
@@ -116,21 +116,22 @@ public class DelayedUiExamplePresenter : UiPresenter
 {
     [SerializeField] private TimeDelayFeature _delayFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpened()
     {
-        base.OnInitialized();
-        _delayFeature.OnOpenCompletedEvent += OnDelayComplete;
+        base.OnOpened();
+        // UI is visible, delay is starting...
     }
     
-    private void OnDelayComplete()
+    protected override void OnOpenTransitionCompleted()
     {
-        // Called after delay finishes
+        // Called after delay finishes - UI is fully ready for interaction
+        Debug.Log($"Opened after {_delayFeature.OpenDelayInSeconds}s delay!");
     }
     
-    private void OnDestroy()
+    protected override void OnCloseTransitionCompleted()
     {
-        if (_delayFeature != null)
-            _delayFeature.OnOpenCompletedEvent -= OnDelayComplete;
+        // Called after close delay finishes
+        Debug.Log("Closing transition completed!");
     }
 }
 ```
@@ -142,10 +143,10 @@ public class AnimatedUiExamplePresenter : UiPresenter
 {
     [SerializeField] private AnimationDelayFeature _animationFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpenTransitionCompleted()
     {
-        base.OnInitialized();
-        _animationFeature.OnOpenCompletedEvent += OnAnimationComplete;
+        // Called after intro animation finishes
+        Debug.Log("Intro animation completed!");
     }
 }
 ```
@@ -209,14 +210,18 @@ public class UiToolkitExamplePresenter : UiPresenter
 [RequireComponent(typeof(UiToolkitPresenterFeature))]
 public class TimeDelayedUiToolkitPresenter : UiPresenter
 {
-    [SerializeField] private TimeDelayFeature _delayFeature;
     [SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpened()
     {
-        base.OnInitialized();
+        base.OnOpened();
         _toolkitFeature.Root.SetEnabled(false);
-        _delayFeature.OnOpenCompletedEvent += () => _toolkitFeature.Root.SetEnabled(true);
+    }
+    
+    protected override void OnOpenTransitionCompleted()
+    {
+        // Enable UI after delay completes
+        _toolkitFeature.Root.SetEnabled(true);
     }
 }
 ```
@@ -383,8 +388,6 @@ public class FadeFeature : PresenterFeatureBase
 {
     [SerializeField] private float _fadeInDuration = 0.3f;
     [SerializeField] private CanvasGroup _canvasGroup;
-    
-    public event System.Action OnFadeInComplete;
 
     private void OnValidate()
     {
@@ -411,7 +414,9 @@ public class FadeFeature : PresenterFeatureBase
             yield return null;
         }
         _canvasGroup.alpha = 1f;
-        OnFadeInComplete?.Invoke();
+        
+        // Notify presenter that transition is complete
+        Presenter.NotifyOpenTransitionCompleted();
     }
 }
 ```
@@ -423,17 +428,10 @@ public class FadeFeature : PresenterFeatureBase
 [RequireComponent(typeof(SoundFeature))]
 public class FullFeaturedPresenter : UiPresenter
 {
-    [SerializeField] private FadeFeature _fadeFeature;
-    
-    protected override void OnInitialized()
+    protected override void OnOpenTransitionCompleted()
     {
-        base.OnInitialized();
-        _fadeFeature.OnFadeInComplete += OnAllAnimationsComplete;
-    }
-    
-    private void OnAllAnimationsComplete()
-    {
-        // All features work together automatically!
+        // Called when feature notifies transition completion
+        Debug.Log("All animations complete - UI is ready!");
     }
 }
 ```
@@ -452,23 +450,21 @@ public class FullFeaturedPresenter : UiPresenter
 
 ## Best Practices
 
-### 1. Event Subscription Pattern
+### 1. Use Presenter Lifecycle Hooks for Transitions
 
-Always subscribe in `OnInitialized()` and unsubscribe in `OnDestroy()`:
+Override `OnOpenTransitionCompleted()` and `OnCloseTransitionCompleted()` to react to feature transitions:
 
 ```csharp
-protected override void OnInitialized()
+protected override void OnOpenTransitionCompleted()
 {
-    base.OnInitialized();
-    _delayFeature.OnOpenCompletedEvent += MyHandler;
+    // Called when delay/animation features complete their open transition
+    Debug.Log("UI is fully ready for interaction!");
 }
 
-private void OnDestroy()
+protected override void OnCloseTransitionCompleted()
 {
-    if (_delayFeature != null)
-    {
-        _delayFeature.OnOpenCompletedEvent -= MyHandler;
-    }
+    // Called when delay/animation features complete their close transition
+    Debug.Log("UI closing transition finished!");
 }
 ```
 
@@ -524,7 +520,7 @@ public class MyPresenter : UiPresenter { }
 3. **Copy the pattern** to your own presenter
 4. **Add required features** via `[RequireComponent]`
 5. **Configure in inspector** - delays, animations, etc.
-6. **Subscribe to events** for feature completion notifications
+6. **Override transition hooks** (`OnOpenTransitionCompleted`, `OnCloseTransitionCompleted`) to react to feature completions
 
 ---
 

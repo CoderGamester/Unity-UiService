@@ -17,6 +17,7 @@ namespace GameLovers.UiService.Examples
 	/// - Start with alpha 0 when opening
 	/// - Fade in over the configured duration
 	/// - Fade out when closing
+	/// - Notify the presenter when transitions complete via OnOpenTransitionCompleted/OnCloseTransitionCompleted
 	/// </summary>
 	[RequireComponent(typeof(CanvasGroup))]
 	public class FadeFeature : PresenterFeatureBase
@@ -25,16 +26,6 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private float _fadeInDuration = 0.3f;
 		[SerializeField] private float _fadeOutDuration = 0.2f;
 		[SerializeField] private CanvasGroup _canvasGroup;
-		
-		/// <summary>
-		/// Event fired when fade in completes
-		/// </summary>
-		public event System.Action OnFadeInComplete;
-		
-		/// <summary>
-		/// Event fired when fade out completes
-		/// </summary>
-		public event System.Action OnFadeOutComplete;
 
 		private Coroutine _fadeCoroutine;
 
@@ -53,19 +44,12 @@ namespace GameLovers.UiService.Examples
 			{
 				_canvasGroup = GetComponent<CanvasGroup>();
 			}
-			
-			Debug.Log("[FadeFeature] Initialized");
 		}
 
 		public override void OnPresenterOpening()
 		{
 			// Start invisible
-			if (_canvasGroup != null)
-			{
-				_canvasGroup.alpha = 0f;
-			}
-			
-			Debug.Log("[FadeFeature] Starting fade in...");
+			_canvasGroup.alpha = 0f;
 		}
 
 		public override void OnPresenterOpened()
@@ -86,8 +70,6 @@ namespace GameLovers.UiService.Examples
 				StopCoroutine(_fadeCoroutine);
 			}
 			_fadeCoroutine = StartCoroutine(FadeOut());
-			
-			Debug.Log("[FadeFeature] Starting fade out...");
 		}
 
 		private IEnumerator FadeIn()
@@ -104,9 +86,10 @@ namespace GameLovers.UiService.Examples
 				yield return null;
 			}
 			
-			_canvasGroup.alpha = 1f;
-			Debug.Log("[FadeFeature] Fade in complete");
-			OnFadeInComplete?.Invoke();
+		_canvasGroup.alpha = 1f;
+		
+		// Notify presenter that open transition is complete
+		Presenter.NotifyOpenTransitionCompleted();
 		}
 
 		private IEnumerator FadeOut()
@@ -123,9 +106,10 @@ namespace GameLovers.UiService.Examples
 				yield return null;
 			}
 			
-			_canvasGroup.alpha = 0f;
-			Debug.Log("[FadeFeature] Fade out complete");
-			OnFadeOutComplete?.Invoke();
+		_canvasGroup.alpha = 0f;
+		
+		// Notify presenter that close transition is complete
+		Presenter.NotifyCloseTransitionCompleted();
 		}
 
 		private void OnDisable()

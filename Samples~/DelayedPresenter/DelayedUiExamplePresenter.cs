@@ -6,7 +6,7 @@ namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Example UI Presenter with time-based delays using the new self-contained TimeDelayFeature.
-	/// Demonstrates how to configure delays and respond to delay completion events.
+	/// Demonstrates how to configure delays and respond to delay completion via presenter lifecycle hooks.
 	/// </summary>
 	[RequireComponent(typeof(TimeDelayFeature))]
 	public class DelayedUiExamplePresenter : UiPresenter
@@ -24,13 +24,6 @@ namespace GameLovers.UiService.Examples
 			if (_closeButton != null)
 			{
 				_closeButton.onClick.AddListener(() => Close(destroy: false));
-			}
-			
-			// Subscribe to delay completion events
-			if (_delayFeature != null)
-			{
-				_delayFeature.OnOpenCompletedEvent += OnOpenDelayCompleted;
-				_delayFeature.OnCloseCompletedEvent += OnCloseDelayCompleted;
 			}
 		}
 
@@ -56,7 +49,7 @@ namespace GameLovers.UiService.Examples
 			Debug.Log($"[DelayedUiExample] UI Closed after {_delayFeature.CloseDelayInSeconds}s delay");
 		}
 
-		private void OnOpenDelayCompleted()
+		protected override void OnOpenTransitionCompleted()
 		{
 			Debug.Log("[DelayedUiExample] Opening delay completed!");
 			
@@ -66,19 +59,9 @@ namespace GameLovers.UiService.Examples
 			}
 		}
 
-		private void OnCloseDelayCompleted()
+		protected override void OnCloseTransitionCompleted()
 		{
 			Debug.Log("[DelayedUiExample] Closing delay completed!");
-		}
-
-		private void OnDestroy()
-		{
-			// Clean up event subscriptions
-			if (_delayFeature != null)
-			{
-				_delayFeature.OnOpenCompletedEvent -= OnOpenDelayCompleted;
-				_delayFeature.OnCloseCompletedEvent -= OnCloseDelayCompleted;
-			}
 		}
 	}
 }

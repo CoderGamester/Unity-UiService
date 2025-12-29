@@ -16,6 +16,7 @@ namespace GameLovers.UiService.Examples
 	/// - Start at minimum scale when opening
 	/// - Scale up with the configured curve
 	/// - Scale down when closing
+	/// - Notify the presenter when transitions complete via OnOpenTransitionCompleted/OnCloseTransitionCompleted
 	/// </summary>
 	public class ScaleFeature : PresenterFeatureBase
 	{
@@ -31,16 +32,6 @@ namespace GameLovers.UiService.Examples
 		
 		[Header("Target (optional)")]
 		[SerializeField] private Transform _targetTransform;
-		
-		/// <summary>
-		/// Event fired when scale in completes
-		/// </summary>
-		public event System.Action OnScaleInComplete;
-		
-		/// <summary>
-		/// Event fired when scale out completes
-		/// </summary>
-		public event System.Action OnScaleOutComplete;
 
 		private Coroutine _scaleCoroutine;
 
@@ -61,19 +52,12 @@ namespace GameLovers.UiService.Examples
 			{
 				_targetTransform = transform;
 			}
-			
-			Debug.Log("[ScaleFeature] Initialized");
 		}
 
 		public override void OnPresenterOpening()
 		{
 			// Start at minimum scale
-			if (_targetTransform != null)
-			{
-				_targetTransform.localScale = _startScale;
-			}
-			
-			Debug.Log("[ScaleFeature] Starting scale in...");
+			_targetTransform.localScale = _startScale;
 		}
 
 		public override void OnPresenterOpened()
@@ -94,8 +78,6 @@ namespace GameLovers.UiService.Examples
 				StopCoroutine(_scaleCoroutine);
 			}
 			_scaleCoroutine = StartCoroutine(ScaleOut());
-			
-			Debug.Log("[ScaleFeature] Starting scale out...");
 		}
 
 		private IEnumerator ScaleIn()
@@ -114,8 +96,9 @@ namespace GameLovers.UiService.Examples
 			}
 			
 			_targetTransform.localScale = _endScale;
-			Debug.Log("[ScaleFeature] Scale in complete");
-			OnScaleInComplete?.Invoke();
+			
+			// Notify presenter that open transition is complete
+			Presenter.NotifyOpenTransitionCompleted();
 		}
 
 		private IEnumerator ScaleOut()
@@ -134,8 +117,9 @@ namespace GameLovers.UiService.Examples
 			}
 			
 			_targetTransform.localScale = _startScale;
-			Debug.Log("[ScaleFeature] Scale out complete");
-			OnScaleOutComplete?.Invoke();
+			
+			// Notify presenter that close transition is complete
+			Presenter.NotifyCloseTransitionCompleted();
 		}
 
 		private void OnDisable()

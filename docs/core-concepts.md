@@ -25,6 +25,8 @@ The `UiPresenter` is the base class for all UI elements in the system. It provid
 | `OnInitialized()` | Once, when first loaded | Setup, event subscriptions |
 | `OnOpened()` | Every time UI is shown | Animations, data refresh |
 | `OnClosed()` | When UI is hidden | Cleanup, save state |
+| `OnOpenTransitionCompleted()` | After delay/animation features finish opening | Post-transition logic |
+| `OnCloseTransitionCompleted()` | After delay/animation features finish closing | Post-transition cleanup |
 
 ### Basic Presenter
 
@@ -120,14 +122,20 @@ public class DelayedPopup : UiPresenter
 {
     [SerializeField] private TimeDelayFeature _delayFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpened()
     {
-        _delayFeature.OnOpenCompletedEvent += OnDelayComplete;
+        base.OnOpened();
+        Debug.Log($"Opening with {_delayFeature.OpenDelayInSeconds}s delay...");
     }
     
-    private void OnDelayComplete()
+    protected override void OnOpenTransitionCompleted()
     {
-        Debug.Log("Opening delay completed!");
+        Debug.Log("Opening delay completed - UI is ready!");
+    }
+    
+    protected override void OnCloseTransitionCompleted()
+    {
+        Debug.Log("Closing delay completed!");
     }
 }
 ```
@@ -146,9 +154,14 @@ public class AnimatedPopup : UiPresenter
 {
     [SerializeField] private AnimationDelayFeature _animationFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpenTransitionCompleted()
     {
-        _animationFeature.OnOpenCompletedEvent += OnAnimationComplete;
+        Debug.Log("Intro animation completed - UI is ready!");
+    }
+    
+    protected override void OnCloseTransitionCompleted()
+    {
+        Debug.Log("Outro animation completed!");
     }
 }
 ```
@@ -188,13 +201,18 @@ Features can be combined freely:
 [RequireComponent(typeof(UiToolkitPresenterFeature))]
 public class DelayedUiToolkitPresenter : UiPresenter
 {
-    [SerializeField] private TimeDelayFeature _delayFeature;
     [SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpened()
     {
+        base.OnOpened();
         _toolkitFeature.Root.SetEnabled(false);
-        _delayFeature.OnOpenCompletedEvent += () => _toolkitFeature.Root.SetEnabled(true);
+    }
+    
+    protected override void OnOpenTransitionCompleted()
+    {
+        // Enable UI after delay completes
+        _toolkitFeature.Root.SetEnabled(true);
     }
 }
 ```
@@ -230,6 +248,9 @@ public class FadeFeature : PresenterFeatureBase
             yield return null;
         }
         _canvasGroup.alpha = 1f;
+        
+        // Notify presenter that transition is complete
+        Presenter.NotifyOpenTransitionCompleted();
     }
 }
 ```
@@ -240,6 +261,11 @@ public class FadeFeature : PresenterFeatureBase
 - `OnPresenterOpened()`
 - `OnPresenterClosing()`
 - `OnPresenterClosed()`
+
+**Notifying Transition Completion:**
+- Call `Presenter.NotifyOpenTransitionCompleted()` when your feature's open transition finishes
+- Call `Presenter.NotifyCloseTransitionCompleted()` when your feature's close transition finishes
+- This triggers the presenter's `OnOpenTransitionCompleted()` / `OnCloseTransitionCompleted()` hooks
 
 ---
 

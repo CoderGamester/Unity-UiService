@@ -31,12 +31,6 @@ namespace GameLovers.UiServiceExamples
 		{
 			Debug.Log("TimeDelayedUiToolkitPresenter: Initialized");
 
-			// Subscribe to delay completion
-			if (_delayFeature != null)
-			{
-				_delayFeature.OnOpenCompletedEvent += OnOpenDelayCompleted;
-			}
-
 			// Query UI Toolkit elements
 			var root = _toolkitFeature.Root;
 			_titleLabel = root.Q<Label>("Title");
@@ -66,7 +60,8 @@ namespace GameLovers.UiServiceExamples
 			}
 		}
 
-		private void OnOpenDelayCompleted()
+		/// <inheritdoc />
+		protected override void OnOpenTransitionCompleted()
 		{
 			Debug.Log("TimeDelayedUiToolkitPresenter: Opening delay completed!");
 			
@@ -90,12 +85,6 @@ namespace GameLovers.UiServiceExamples
 
 		private void OnDestroy()
 		{
-			// Clean up event subscriptions
-			if (_delayFeature != null)
-			{
-				_delayFeature.OnOpenCompletedEvent -= OnOpenDelayCompleted;
-			}
-
 			if (_closeButton != null)
 			{
 				_closeButton.clicked -= OnCloseButtonClicked;

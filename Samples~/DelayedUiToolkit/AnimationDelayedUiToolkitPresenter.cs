@@ -44,12 +44,6 @@ namespace GameLovers.UiServiceExamples
 		{
 			Debug.Log("AnimationDelayedUiToolkitPresenter: Initialized");
 
-			// Subscribe to animation completion
-			if (_animationFeature != null)
-			{
-				_animationFeature.OnOpenCompletedEvent += OnOpenAnimationCompleted;
-			}
-
 			// Query UI Toolkit elements
 			var root = _toolkitFeature.Root;
 			_titleLabel = root.Q<Label>("Title");
@@ -99,7 +93,8 @@ namespace GameLovers.UiServiceExamples
 			}
 		}
 
-		private void OnOpenAnimationCompleted()
+		/// <inheritdoc />
+		protected override void OnOpenTransitionCompleted()
 		{
 			Debug.Log("AnimationDelayedUiToolkitPresenter: Opening animation completed!");
 			
@@ -123,12 +118,6 @@ namespace GameLovers.UiServiceExamples
 
 		private void OnDestroy()
 		{
-			// Clean up event subscriptions
-			if (_animationFeature != null)
-			{
-				_animationFeature.OnOpenCompletedEvent -= OnOpenAnimationCompleted;
-			}
-
 			if (_closeButton != null)
 			{
 				_closeButton.clicked -= OnCloseButtonClicked;

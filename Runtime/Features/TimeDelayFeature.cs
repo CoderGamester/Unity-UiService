@@ -28,16 +28,6 @@ namespace GameLovers.UiService
 		/// </summary>
 		public UniTask CurrentDelayTask { get; private set; }
 
-		/// <summary>
-		/// Event triggered when the opening delay is completed
-		/// </summary>
-		internal event Action OnOpenCompletedEvent;
-
-		/// <summary>
-		/// Event triggered when the closing delay is completed
-		/// </summary>
-		internal event Action OnCloseCompletedEvent;
-
 		/// <inheritdoc />
 		public override void OnPresenterOpened()
 		{
@@ -66,7 +56,6 @@ namespace GameLovers.UiService
 		protected virtual void OnOpenedCompleted()
 		{
 			Presenter.NotifyOpenTransitionCompleted();
-			OnOpenCompletedEvent?.Invoke();
 		}
 
 		/// <summary>
@@ -82,7 +71,6 @@ namespace GameLovers.UiService
 		protected virtual void OnClosedCompleted()
 		{
 			Presenter.NotifyCloseTransitionCompleted();
-			OnCloseCompletedEvent?.Invoke();
 		}
 
 		private async UniTask OpenWithDelayAsync()
