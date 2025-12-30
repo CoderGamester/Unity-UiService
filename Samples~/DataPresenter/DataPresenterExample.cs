@@ -1,14 +1,22 @@
 using UnityEngine;
+using UnityEngine.UI;
 using GameLovers.UiService;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example demonstrating data-driven UI presenters
+	/// Example demonstrating data-driven UI presenters.
+	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// </summary>
 	public class DataPresenterExample : MonoBehaviour
 	{
 		[SerializeField] private UiConfigs _uiConfigs;
+		
+		[Header("UI Buttons")]
+		[SerializeField] private Button _showWarriorButton;
+		[SerializeField] private Button _showMageButton;
+		[SerializeField] private Button _showRogueButton;
+		[SerializeField] private Button _updateLowHealthButton;
 		
 		private IUiService _uiService;
 
@@ -18,34 +26,32 @@ namespace GameLovers.UiService.Examples
 			_uiService = new UiService();
 			_uiService.Init(_uiConfigs);
 			
+			// Setup button listeners
+			_showWarriorButton?.onClick.AddListener(ShowWarriorData);
+			_showMageButton?.onClick.AddListener(ShowMageData);
+			_showRogueButton?.onClick.AddListener(ShowRogueData);
+			_updateLowHealthButton?.onClick.AddListener(UpdateToLowHealth);
+			
 			Debug.Log("=== Data Presenter Example Started ===");
-			Debug.Log("Press 1: Show Warrior Data");
-			Debug.Log("Press 2: Show Mage Data");
-			Debug.Log("Press 3: Show Rogue Data");
-			Debug.Log("Press 4: Update to Low Health");
+			Debug.Log("Use the UI buttons to show different character data:");
+			Debug.Log("  Warrior: High health warrior character");
+			Debug.Log("  Mage: High level mage character");
+			Debug.Log("  Rogue: Full health rogue character");
+			Debug.Log("  Low Health: Update to wounded state");
 		}
 
-		private void Update()
+		private void OnDestroy()
 		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
-			{
-				ShowWarriorData();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
-			{
-				ShowMageData();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha3))
-			{
-				ShowRogueData();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha4))
-			{
-				UpdateToLowHealth();
-			}
+			_showWarriorButton?.onClick.RemoveListener(ShowWarriorData);
+			_showMageButton?.onClick.RemoveListener(ShowMageData);
+			_showRogueButton?.onClick.RemoveListener(ShowRogueData);
+			_updateLowHealthButton?.onClick.RemoveListener(UpdateToLowHealth);
 		}
 
-		private void ShowWarriorData()
+		/// <summary>
+		/// Shows the warrior character data
+		/// </summary>
+		public void ShowWarriorData()
 		{
 			var data = new PlayerData
 			{
@@ -59,7 +65,10 @@ namespace GameLovers.UiService.Examples
 			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
 		}
 
-		private void ShowMageData()
+		/// <summary>
+		/// Shows the mage character data
+		/// </summary>
+		public void ShowMageData()
 		{
 			var data = new PlayerData
 			{
@@ -73,7 +82,10 @@ namespace GameLovers.UiService.Examples
 			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
 		}
 
-		private void ShowRogueData()
+		/// <summary>
+		/// Shows the rogue character data
+		/// </summary>
+		public void ShowRogueData()
 		{
 			var data = new PlayerData
 			{
@@ -87,7 +99,10 @@ namespace GameLovers.UiService.Examples
 			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
 		}
 
-		private void UpdateToLowHealth()
+		/// <summary>
+		/// Updates the UI to show low health state
+		/// </summary>
+		public void UpdateToLowHealth()
 		{
 			var data = new PlayerData
 			{
@@ -102,4 +117,3 @@ namespace GameLovers.UiService.Examples
 		}
 	}
 }
-

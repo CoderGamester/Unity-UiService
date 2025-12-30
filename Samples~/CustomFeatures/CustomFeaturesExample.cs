@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.UI;
 using GameLovers.UiService;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Example demonstrating how to create and use custom presenter features.
+	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// 
 	/// Key concepts:
 	/// - PresenterFeatureBase: Base class for features that hook into presenter lifecycle
@@ -19,6 +21,12 @@ namespace GameLovers.UiService.Examples
 	{
 		[SerializeField] private UiConfigs _uiConfigs;
 		
+		[Header("UI Buttons")]
+		[SerializeField] private Button _openFadeButton;
+		[SerializeField] private Button _openScaleButton;
+		[SerializeField] private Button _openAllFeaturesButton;
+		[SerializeField] private Button _closeAllButton;
+		
 		private IUiService _uiService;
 
 		private void Start()
@@ -26,6 +34,12 @@ namespace GameLovers.UiService.Examples
 			// Initialize UI Service
 			_uiService = new UiService();
 			_uiService.Init(_uiConfigs);
+			
+			// Setup button listeners
+			_openFadeButton?.onClick.AddListener(OpenFadeUi);
+			_openScaleButton?.onClick.AddListener(OpenScaleUi);
+			_openAllFeaturesButton?.onClick.AddListener(OpenAllFeaturesUi);
+			_closeAllButton?.onClick.AddListener(CloseAllUi);
 			
 			Debug.Log("=== Custom Features Example Started ===");
 			Debug.Log("This example demonstrates creating custom presenter features.");
@@ -37,40 +51,53 @@ namespace GameLovers.UiService.Examples
 			Debug.Log("  - OnPresenterClosing: Called before presenter is hidden");
 			Debug.Log("  - OnPresenterClosed: Called after presenter is hidden");
 			Debug.Log("");
-			Debug.Log("Press 1: Open UI with FadeFeature (fades in/out)");
-			Debug.Log("Press 2: Open UI with ScaleFeature (scales in/out)");
-			Debug.Log("Press 3: Open UI with all features combined");
-			Debug.Log("Press 4: Close all UIs");
+			Debug.Log("Use the UI buttons to test different feature combinations.");
 		}
 
 		private void OnDestroy()
 		{
+			_openFadeButton?.onClick.RemoveListener(OpenFadeUi);
+			_openScaleButton?.onClick.RemoveListener(OpenScaleUi);
+			_openAllFeaturesButton?.onClick.RemoveListener(OpenAllFeaturesUi);
+			_closeAllButton?.onClick.RemoveListener(CloseAllUi);
+			
 			_uiService?.Dispose();
 		}
 
-		private void Update()
+		/// <summary>
+		/// Opens UI with FadeFeature (fades in/out)
+		/// </summary>
+		public void OpenFadeUi()
 		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
-			{
-				Debug.Log("Opening UI with FadeFeature...");
-				_uiService.OpenUiAsync<FadingPresenter>();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
-			{
-				Debug.Log("Opening UI with ScaleFeature...");
-				_uiService.OpenUiAsync<ScalingPresenter>();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha3))
-			{
-				Debug.Log("Opening UI with all features...");
-				_uiService.OpenUiAsync<FullFeaturedPresenter>();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha4))
-			{
-				Debug.Log("Closing all UIs...");
-				_uiService.CloseAllUi();
-			}
+			Debug.Log("Opening UI with FadeFeature...");
+			_uiService.OpenUiAsync<FadingPresenter>();
+		}
+
+		/// <summary>
+		/// Opens UI with ScaleFeature (scales in/out)
+		/// </summary>
+		public void OpenScaleUi()
+		{
+			Debug.Log("Opening UI with ScaleFeature...");
+			_uiService.OpenUiAsync<ScalingPresenter>();
+		}
+
+		/// <summary>
+		/// Opens UI with all features combined
+		/// </summary>
+		public void OpenAllFeaturesUi()
+		{
+			Debug.Log("Opening UI with all features...");
+			_uiService.OpenUiAsync<FullFeaturedPresenter>();
+		}
+
+		/// <summary>
+		/// Closes all open UIs
+		/// </summary>
+		public void CloseAllUi()
+		{
+			Debug.Log("Closing all UIs...");
+			_uiService.CloseAllUi();
 		}
 	}
 }
-

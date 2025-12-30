@@ -1,16 +1,15 @@
 using UnityEngine;
 
-namespace GameLovers.UiService.Tests.PlayMode.Fixtures
+namespace GameLovers.UiService.Tests.PlayMode
 {
 	/// <summary>
-	/// Test presenter with TimeDelayFeature for testing delay behavior
+	/// Test presenter with zero delay for edge case testing
 	/// </summary>
 	[RequireComponent(typeof(TimeDelayFeature))]
-	public class TestTimeDelayPresenter : UiPresenter
+	public class TestZeroDelayPresenter : UiPresenter
 	{
 		public TimeDelayFeature DelayFeature { get; private set; }
 		public bool WasOpenTransitionCompleted { get; private set; }
-		public bool WasCloseTransitionCompleted { get; private set; }
 
 		private void Awake()
 		{
@@ -20,28 +19,18 @@ namespace GameLovers.UiService.Tests.PlayMode.Fixtures
 				DelayFeature = gameObject.AddComponent<TimeDelayFeature>();
 			}
 			
-			// Set short delays for testing
-			SetDelayValues(0.1f, 0.05f);
-		}
-
-		private void SetDelayValues(float open, float close)
-		{
+			// Set zero delays
 			var openField = typeof(TimeDelayFeature).GetField("_openDelayInSeconds", 
 				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 			var closeField = typeof(TimeDelayFeature).GetField("_closeDelayInSeconds", 
 				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-			openField?.SetValue(DelayFeature, open);
-			closeField?.SetValue(DelayFeature, close);
+			openField?.SetValue(DelayFeature, 0f);
+			closeField?.SetValue(DelayFeature, 0f);
 		}
 
 		protected override void OnOpenTransitionCompleted()
 		{
 			WasOpenTransitionCompleted = true;
-		}
-
-		protected override void OnCloseTransitionCompleted()
-		{
-			WasCloseTransitionCompleted = true;
 		}
 	}
 }

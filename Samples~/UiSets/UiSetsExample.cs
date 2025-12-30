@@ -1,6 +1,7 @@
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 using GameLovers.UiService;
 
 namespace GameLovers.UiService.Examples
@@ -8,6 +9,7 @@ namespace GameLovers.UiService.Examples
 	/// <summary>
 	/// Example demonstrating UI Sets - grouping multiple UIs that are loaded/opened/closed together.
 	/// Common use case: Game HUD with multiple elements (health bar, currency, minimap, etc.)
+	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// </summary>
 	public class UiSetsExample : MonoBehaviour
 	{
@@ -23,64 +25,63 @@ namespace GameLovers.UiService.Examples
 
 		[SerializeField] private UiConfigs _uiConfigs;
 		
+		[Header("UI Buttons")]
+		[SerializeField] private Button _loadSetButton;
+		[SerializeField] private Button _openSetButton;
+		[SerializeField] private Button _closeSetButton;
+		[SerializeField] private Button _unloadSetButton;
+		[SerializeField] private Button _loadAndOpenButton;
+		[SerializeField] private Button _listSetsButton;
+		
 		private UiService _uiService;
 
-		private async void Start()
+		private void Start()
 		{
 			// Initialize UI Service
 			_uiService = new UiService();
 			_uiService.Init(_uiConfigs);
 			
+			// Setup button listeners
+			_loadSetButton?.onClick.AddListener(LoadUiSetWrapper);
+			_openSetButton?.onClick.AddListener(OpenUiSetWrapper);
+			_closeSetButton?.onClick.AddListener(CloseUiSetExample);
+			_unloadSetButton?.onClick.AddListener(UnloadUiSetExample);
+			_loadAndOpenButton?.onClick.AddListener(LoadAndOpenUiSetWrapper);
+			_listSetsButton?.onClick.AddListener(ListUiSets);
+			
 			Debug.Log("=== UI Sets Example Started ===");
 			Debug.Log("UI Sets allow you to group multiple UIs and manage them together.");
 			Debug.Log("");
-			Debug.Log("Press 1: Load Game HUD Set (loads all HUD elements)");
-			Debug.Log("Press 2: Open Game HUD Set (shows all HUD elements)");
-			Debug.Log("Press 3: Close Game HUD Set (hides all HUD elements)");
-			Debug.Log("Press 4: Unload Game HUD Set (destroys all HUD elements)");
-			Debug.Log("Press 5: Load & Open HUD Set (combined)");
-			Debug.Log("");
-			Debug.Log("Press L: List all configured UI Sets");
+			Debug.Log("Use the UI buttons to manage UI Sets:");
+			Debug.Log("  Load: Load all HUD elements into memory");
+			Debug.Log("  Open: Show all HUD elements");
+			Debug.Log("  Close: Hide all HUD elements (keep in memory)");
+			Debug.Log("  Unload: Destroy all HUD elements");
+			Debug.Log("  Load & Open: Combined operation");
+			Debug.Log("  List Sets: Show all configured UI Sets");
 		}
 
 		private void OnDestroy()
 		{
+			_loadSetButton?.onClick.RemoveListener(LoadUiSetWrapper);
+			_openSetButton?.onClick.RemoveListener(OpenUiSetWrapper);
+			_closeSetButton?.onClick.RemoveListener(CloseUiSetExample);
+			_unloadSetButton?.onClick.RemoveListener(UnloadUiSetExample);
+			_loadAndOpenButton?.onClick.RemoveListener(LoadAndOpenUiSetWrapper);
+			_listSetsButton?.onClick.RemoveListener(ListUiSets);
+			
 			_uiService?.Dispose();
 		}
 
-		private void Update()
-		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
-			{
-				LoadUiSetExample().Forget();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
-			{
-				OpenUiSetExample().Forget();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha3))
-			{
-				CloseUiSetExample();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha4))
-			{
-				UnloadUiSetExample();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha5))
-			{
-				LoadAndOpenUiSetExample().Forget();
-			}
-			else if (Input.GetKeyDown(KeyCode.L))
-			{
-				ListUiSets();
-			}
-		}
+		private void LoadUiSetWrapper() => LoadUiSetExample().Forget();
+		private void OpenUiSetWrapper() => OpenUiSetExample().Forget();
+		private void LoadAndOpenUiSetWrapper() => LoadAndOpenUiSetExample().Forget();
 
 		/// <summary>
 		/// Load all UIs in a set (but don't show them yet)
 		/// This is useful for preloading UIs to avoid hitches when opening
 		/// </summary>
-		private async UniTaskVoid LoadUiSetExample()
+		public async UniTaskVoid LoadUiSetExample()
 		{
 			Debug.Log($"Loading UI Set: GameHud...");
 			
@@ -102,7 +103,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Open all UIs in a set (loads them first if needed)
 		/// </summary>
-		private async UniTaskVoid OpenUiSetExample()
+		public async UniTaskVoid OpenUiSetExample()
 		{
 			Debug.Log($"Opening UI Set: GameHud...");
 			
@@ -123,7 +124,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Close all UIs in a set (keeps them in memory)
 		/// </summary>
-		private void CloseUiSetExample()
+		public void CloseUiSetExample()
 		{
 			Debug.Log($"Closing UI Set: GameHud...");
 			
@@ -136,7 +137,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Unload all UIs in a set (destroys them)
 		/// </summary>
-		private void UnloadUiSetExample()
+		public void UnloadUiSetExample()
 		{
 			Debug.Log($"Unloading UI Set: GameHud...");
 			
@@ -155,7 +156,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Combined load and open for convenience
 		/// </summary>
-		private async UniTaskVoid LoadAndOpenUiSetExample()
+		public async UniTaskVoid LoadAndOpenUiSetExample()
 		{
 			Debug.Log("Loading and opening UI Set: GameHud...");
 			
@@ -182,7 +183,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// List all configured UI Sets
 		/// </summary>
-		private void ListUiSets()
+		public void ListUiSets()
 		{
 			Debug.Log("=== Configured UI Sets ===");
 			
@@ -205,4 +206,3 @@ namespace GameLovers.UiService.Examples
 		}
 	}
 }
-

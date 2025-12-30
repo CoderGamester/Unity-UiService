@@ -1,14 +1,23 @@
 using UnityEngine;
+using UnityEngine.UI;
 using GameLovers.UiService;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example demonstrating basic UI flow: loading, opening, closing, unloading
+	/// Example demonstrating basic UI flow: loading, opening, closing, unloading.
+	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// </summary>
 	public class BasicUiFlowExample : MonoBehaviour
 	{
 		[SerializeField] private UiConfigs _uiConfigs;
+		
+		[Header("UI Buttons")]
+		[SerializeField] private Button _loadButton;
+		[SerializeField] private Button _openButton;
+		[SerializeField] private Button _closeButton;
+		[SerializeField] private Button _unloadButton;
+		[SerializeField] private Button _loadAndOpenButton;
 		
 		private IUiService _uiService;
 
@@ -18,47 +27,79 @@ namespace GameLovers.UiService.Examples
 			_uiService = new UiService();
 			_uiService.Init(_uiConfigs);
 			
+			// Setup button listeners
+			_loadButton?.onClick.AddListener(LoadUi);
+			_openButton?.onClick.AddListener(OpenUi);
+			_closeButton?.onClick.AddListener(CloseUi);
+			_unloadButton?.onClick.AddListener(UnloadUi);
+			_loadAndOpenButton?.onClick.AddListener(LoadAndOpenUi);
+			
 			Debug.Log("=== Basic UI Flow Example Started ===");
-			Debug.Log("Press 1: Load UI");
-			Debug.Log("Press 2: Open UI");
-			Debug.Log("Press 3: Close UI (keep in memory)");
-			Debug.Log("Press 4: Unload UI (destroy)");
-			Debug.Log("Press 5: Load & Open (combined)");
+			Debug.Log("Use the UI buttons to interact with the example:");
+			Debug.Log("  Load: Load UI into memory (not visible)");
+			Debug.Log("  Open: Make UI visible");
+			Debug.Log("  Close: Hide UI (keep in memory)");
+			Debug.Log("  Unload: Destroy UI from memory");
+			Debug.Log("  Load & Open: Combined operation");
 		}
 
-		private void Update()
+		private void OnDestroy()
 		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
-			{
-				Debug.Log("Loading BasicUiExamplePresenter...");
-				_uiService.LoadUi<BasicUiExamplePresenter>();
-				Debug.Log("UI Loaded (but not visible yet)");
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
-			{
-				Debug.Log("Opening BasicUiExamplePresenter...");
-				_uiService.OpenUi<BasicUiExamplePresenter>();
-				Debug.Log("UI Opened and visible");
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha3))
-			{
-				Debug.Log("Closing BasicUiExamplePresenter (destroy: false)...");
-				_uiService.CloseUi<BasicUiExamplePresenter>(destroy: false);
-				Debug.Log("UI Closed but still in memory");
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha4))
-			{
-				Debug.Log("Unloading BasicUiExamplePresenter...");
-				_uiService.UnloadUi<BasicUiExamplePresenter>();
-				Debug.Log("UI Destroyed and removed from memory");
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha5))
-			{
-				Debug.Log("Loading and Opening BasicUiExamplePresenter (combined)...");
-				_uiService.LoadUi<BasicUiExamplePresenter>(openAfter: true);
-				Debug.Log("UI Loaded and Opened in one call");
-			}
+			_loadButton?.onClick.RemoveListener(LoadUi);
+			_openButton?.onClick.RemoveListener(OpenUi);
+			_closeButton?.onClick.RemoveListener(CloseUi);
+			_unloadButton?.onClick.RemoveListener(UnloadUi);
+			_loadAndOpenButton?.onClick.RemoveListener(LoadAndOpenUi);
+		}
+
+		/// <summary>
+		/// Loads the UI into memory without showing it
+		/// </summary>
+		public void LoadUi()
+		{
+			Debug.Log("Loading BasicUiExamplePresenter...");
+			_uiService.LoadUi<BasicUiExamplePresenter>();
+			Debug.Log("UI Loaded (but not visible yet)");
+		}
+
+		/// <summary>
+		/// Opens (shows) the UI
+		/// </summary>
+		public void OpenUi()
+		{
+			Debug.Log("Opening BasicUiExamplePresenter...");
+			_uiService.OpenUi<BasicUiExamplePresenter>();
+			Debug.Log("UI Opened and visible");
+		}
+
+		/// <summary>
+		/// Closes the UI but keeps it in memory
+		/// </summary>
+		public void CloseUi()
+		{
+			Debug.Log("Closing BasicUiExamplePresenter (destroy: false)...");
+			_uiService.CloseUi<BasicUiExamplePresenter>(destroy: false);
+			Debug.Log("UI Closed but still in memory");
+		}
+
+		/// <summary>
+		/// Unloads (destroys) the UI from memory
+		/// </summary>
+		public void UnloadUi()
+		{
+			Debug.Log("Unloading BasicUiExamplePresenter...");
+			_uiService.UnloadUi<BasicUiExamplePresenter>();
+			Debug.Log("UI Destroyed and removed from memory");
+		}
+
+		/// <summary>
+		/// Loads and opens the UI in one call
+		/// </summary>
+		public void LoadAndOpenUi()
+		{
+			Debug.Log("Loading and Opening BasicUiExamplePresenter (combined)...");
+			_uiService.LoadUi<BasicUiExamplePresenter>(openAfter: true);
+			Debug.Log("UI Loaded and Opened in one call");
 		}
 	}
 }
-

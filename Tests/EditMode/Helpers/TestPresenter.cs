@@ -1,8 +1,9 @@
-namespace GameLovers.UiService.Tests.PlayMode.Fixtures
+using GameLovers.UiService;
+
+namespace GameLovers.UiService.Tests
 {
 	/// <summary>
-	/// Simple test presenter for basic tests.
-	/// This class is in a runtime-compatible assembly so it can be added to prefabs.
+	/// Simple test presenter for basic tests
 	/// </summary>
 	public class TestUiPresenter : UiPresenter
 	{
@@ -43,6 +44,27 @@ namespace GameLovers.UiService.Tests.PlayMode.Fixtures
 		{
 			WasCloseTransitionCompleted = true;
 			CloseTransitionCompletedCount++;
+		}
+	}
+	
+	/// <summary>
+	/// Test presenter with data support
+	/// </summary>
+	public struct TestPresenterData
+	{
+		public int Id;
+		public string Name;
+	}
+
+	public class TestDataUiPresenter : UiPresenter<TestPresenterData>
+	{
+		public bool WasDataSet { get; private set; }
+		public TestPresenterData ReceivedData { get; private set; }
+
+		protected override void OnSetData()
+		{
+			WasDataSet = true;
+			ReceivedData = Data;
 		}
 	}
 }

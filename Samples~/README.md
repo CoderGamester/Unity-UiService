@@ -513,14 +513,66 @@ public class MyPresenter : UiPresenter { }
 
 ---
 
+## Sample Scene Setup
+
+All samples use **UI buttons** for input to avoid dependency on any specific input system (legacy vs new). This ensures samples work regardless of your project's input configuration.
+
+### Prefab Structure
+
+When setting up a sample scene, create a UI Canvas with control buttons. Example structure:
+
+```
+Scene
+├── EventSystem (with StandaloneInputModule or InputSystemUIInputModule)
+├── SampleControlsCanvas (Screen Space - Overlay)
+│   └── VerticalLayoutGroup
+│       ├── HeaderText ("Sample Name")
+│       ├── Button_Action1 ("Load UI")
+│       ├── Button_Action2 ("Open UI")
+│       ├── Button_Action3 ("Close UI")
+│       └── ... more buttons as needed
+├── SampleExample (MonoBehaviour)
+│   ├── UiConfigs reference
+│   └── Button references (serialized fields)
+└── (UI presenter prefabs are instantiated at runtime by UiService)
+```
+
+### Button Wiring
+
+Each sample MonoBehaviour exposes button fields that should be wired in the inspector:
+
+```csharp
+[Header("UI Buttons")]
+[SerializeField] private Button _loadButton;
+[SerializeField] private Button _openButton;
+[SerializeField] private Button _closeButton;
+```
+
+The sample will:
+1. Subscribe to button click events in `Start()`
+2. Unsubscribe in `OnDestroy()` to prevent memory leaks
+3. Expose public methods that can also be called from code
+
+### Input System Compatibility
+
+| Project Setting | What Works |
+|-----------------|------------|
+| Legacy Input Manager | ✅ Buttons work via `StandaloneInputModule` |
+| New Input System | ✅ Buttons work via `InputSystemUIInputModule` |
+| Both | ✅ Either module works |
+
+---
+
 ## Getting Started
 
 1. **Choose a sample** that matches your use case
 2. **Import it** via Package Manager
-3. **Copy the pattern** to your own presenter
-4. **Add required features** via `[RequireComponent]`
-5. **Configure in inspector** - delays, animations, etc.
-6. **Override transition hooks** (`OnOpenTransitionCompleted`, `OnCloseTransitionCompleted`) to react to feature completions
+3. **Create a scene** with a control Canvas and buttons (see structure above)
+4. **Wire button references** in the sample MonoBehaviour inspector
+5. **Copy the pattern** to your own presenter
+6. **Add required features** via `[RequireComponent]`
+7. **Configure in inspector** - delays, animations, etc.
+8. **Override transition hooks** (`OnOpenTransitionCompleted`, `OnCloseTransitionCompleted`) to react to feature completions
 
 ---
 

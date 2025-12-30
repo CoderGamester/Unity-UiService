@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace GameLovers.UiService.Tests
+namespace GameLovers.UiService.Tests.PlayMode
 {
 	/// <summary>
 	/// Helper methods for creating test objects

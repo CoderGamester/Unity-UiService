@@ -1,6 +1,7 @@
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 using GameLovers.UiService;
 
 namespace GameLovers.UiService.Examples
@@ -8,6 +9,7 @@ namespace GameLovers.UiService.Examples
 	/// <summary>
 	/// Example demonstrating multi-instance UI support.
 	/// Shows how to create multiple instances of the same UI type (e.g., multiple popups, notifications).
+	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// 
 	/// Key concepts:
 	/// - UiInstanceId: Combines Type + InstanceAddress for unique identification
@@ -18,56 +20,62 @@ namespace GameLovers.UiService.Examples
 	{
 		[SerializeField] private UiConfigs _uiConfigs;
 		
+		[Header("UI Buttons")]
+		[SerializeField] private Button _spawnPopupButton;
+		[SerializeField] private Button _closeRecentButton;
+		[SerializeField] private Button _closeAllButton;
+		[SerializeField] private Button _listActiveButton;
+		
 		private UiService _uiService;
 		private int _popupCounter = 0;
 		private readonly List<string> _activePopupIds = new List<string>();
 
-		private async void Start()
+		private void Start()
 		{
 			// Initialize UI Service
 			_uiService = new UiService();
 			_uiService.Init(_uiConfigs);
 			
+			// Setup button listeners
+			_spawnPopupButton?.onClick.AddListener(SpawnNewPopupWrapper);
+			_closeRecentButton?.onClick.AddListener(CloseRecentPopup);
+			_closeAllButton?.onClick.AddListener(CloseAllPopups);
+			_listActiveButton?.onClick.AddListener(ListActivePopups);
+			
 			Debug.Log("=== Multi-Instance Example Started ===");
 			Debug.Log("This example shows how to spawn multiple instances of the same UI type.");
 			Debug.Log("");
-			Debug.Log("Press 1: Spawn a new popup (creates a new instance)");
-			Debug.Log("Press 2: Close the most recent popup");
-			Debug.Log("Press 3: Close all popups");
-			Debug.Log("Press 4: List all active popups");
+			Debug.Log("Use the UI buttons to manage popup instances:");
+			Debug.Log("  Spawn: Creates a new popup with unique instance address");
+			Debug.Log("  Close Recent: Closes the most recently opened popup");
+			Debug.Log("  Close All: Closes all active popups");
+			Debug.Log("  List Active: Shows all currently active popup instances");
 			Debug.Log("");
 			Debug.Log("Each popup has a unique instance address (e.g., 'popup_1', 'popup_2')");
 		}
 
 		private void OnDestroy()
 		{
+			_spawnPopupButton?.onClick.RemoveListener(SpawnNewPopupWrapper);
+			_closeRecentButton?.onClick.RemoveListener(CloseRecentPopup);
+			_closeAllButton?.onClick.RemoveListener(CloseAllPopups);
+			_listActiveButton?.onClick.RemoveListener(ListActivePopups);
+			
 			_uiService?.Dispose();
 		}
 
-		private void Update()
+		/// <summary>
+		/// Wrapper to call async spawn method from button
+		/// </summary>
+		private void SpawnNewPopupWrapper()
 		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
-			{
-				SpawnNewPopup().Forget();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
-			{
-				CloseRecentPopup();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha3))
-			{
-				CloseAllPopups();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha4))
-			{
-				ListActivePopups();
-			}
+			SpawnNewPopup().Forget();
 		}
 
 		/// <summary>
 		/// Spawn a new popup with a unique instance address
 		/// </summary>
-		private async UniTaskVoid SpawnNewPopup()
+		public async UniTaskVoid SpawnNewPopup()
 		{
 			_popupCounter++;
 			var instanceAddress = $"popup_{_popupCounter}";
@@ -88,7 +96,7 @@ namespace GameLovers.UiService.Examples
 			{
 				popup.SetNotification(
 					$"Notification #{_popupCounter}",
-					$"This is popup instance '{instanceAddress}'.\nClick to close or press 2.",
+					$"This is popup instance '{instanceAddress}'.\nClick to close or use Close Recent button.",
 					instanceAddress
 				);
 			}
@@ -103,7 +111,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Close the most recently opened popup
 		/// </summary>
-		private void CloseRecentPopup()
+		public void CloseRecentPopup()
 		{
 			if (_activePopupIds.Count == 0)
 			{
@@ -126,7 +134,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Close all active popups
 		/// </summary>
-		private void CloseAllPopups()
+		public void CloseAllPopups()
 		{
 			if (_activePopupIds.Count == 0)
 			{
@@ -150,7 +158,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// List all active popup instances
 		/// </summary>
-		private void ListActivePopups()
+		public void ListActivePopups()
 		{
 			Debug.Log("=== Active Popup Instances ===");
 			
@@ -191,4 +199,3 @@ namespace GameLovers.UiService.Examples
 		}
 	}
 }
-

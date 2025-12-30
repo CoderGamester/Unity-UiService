@@ -1,6 +1,5 @@
 using System.Collections;
 using Cysharp.Threading.Tasks;
-using GameLovers.UiService.Tests.PlayMode.Fixtures;
 using NUnit.Framework;
 using UnityEngine.TestTools;
 
