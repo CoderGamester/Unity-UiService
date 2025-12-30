@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
@@ -16,7 +17,7 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _openButton;
 		[SerializeField] private Button _closeButton;
 		
-		private IUiService _uiService;
+		private IUiServiceInit _uiService;
 
 		private void Start()
 		{
@@ -46,7 +47,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenUiToolkit()
 		{
 			Debug.Log("Opening UI Toolkit UI...");
-			_uiService.OpenUi<UiToolkitExamplePresenter>();
+			_uiService.OpenUiAsync<UiToolkitExamplePresenter>().Forget();
 		}
 
 		/// <summary>

@@ -18,7 +18,7 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _openAnimationDelayedButton;
 		[SerializeField] private Button _closeAllButton;
 
-		private IUiService _uiService;
+		private IUiServiceInit _uiService;
 
 		private void Start()
 		{

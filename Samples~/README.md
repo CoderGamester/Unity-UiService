@@ -23,6 +23,46 @@ All samples use the self-contained feature pattern:
 - **Features:** Self-contained components (`TimeDelayFeature`, `AnimationDelayFeature`, `UiToolkitPresenterFeature`)
 - **Composition:** Mix features as needed using `[RequireComponent]`
 
+### Service Interfaces (Important for AI Assistants)
+
+The UI Service uses **two interfaces** with different purposes:
+
+| Interface | Purpose | Has `Init()` | Has `Dispose()` |
+|-----------|---------|--------------|-----------------|
+| `IUiService` | **Consuming** - Use when you only need to open/close/query UI | ❌ No | ❌ No |
+| `IUiServiceInit` | **Initializing** - Use when you create and initialize the service | ✅ Yes | ✅ Yes |
+
+**⚠️ Critical:** The `Init(UiConfigs)` method is **only available on `IUiServiceInit`**, not on `IUiService`.
+
+**Correct initialization pattern:**
+```csharp
+// ✅ CORRECT - Use IUiServiceInit when you need to call Init()
+private IUiServiceInit _uiService;
+
+void Start()
+{
+    _uiService = new UiService();
+    _uiService.Init(_uiConfigs);  // Works!
+}
+
+void OnDestroy()
+{
+    _uiService?.Dispose();  // Also available on IUiServiceInit
+}
+```
+
+**Common mistake (will cause CS1061 error):**
+```csharp
+// ❌ WRONG - IUiService does NOT have Init()
+private IUiService _uiService;
+
+void Start()
+{
+    _uiService = new UiService();
+    _uiService.Init(_uiConfigs);  // ERROR: CS1061
+}
+```
+
 ---
 
 ## Samples Included
@@ -248,8 +288,8 @@ var analytics = new UiAnalytics();
 analytics.SetCallback(new CustomAnalyticsCallback());
 
 // Pass to UiService constructor
-_uiService = new UiService(new UiAssetLoader(), analytics);
-_uiService.Init(_uiConfigs);
+IUiServiceInit uiService = new UiService(new UiAssetLoader(), analytics);
+uiService.Init(_uiConfigs);
 
 // Subscribe to UnityEvents
 analytics.OnUiOpened.AddListener(data => Debug.Log($"Opened: {data.UiName}"));

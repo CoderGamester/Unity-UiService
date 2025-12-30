@@ -33,8 +33,11 @@ The UI Service provides a centralized system for managing UI in Unity games. Key
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│                    IUiService                           │
-│         (Public API for all UI operations)              │
+│              IUiServiceInit : IUiService                │
+│    ┌────────────────────────────────────────────────┐   │
+│    │ IUiService (consume: open/close/load/unload)   │   │
+│    └────────────────────────────────────────────────┘   │
+│    + Init(UiConfigs) + Dispose()                        │
 └─────────────────────┬───────────────────────────────────┘
                       │
         ┌─────────────┼─────────────┐
@@ -50,6 +53,17 @@ The UI Service provides a centralized system for managing UI in Unity games. Key
               │ (Composable) │
               └──────────────┘
 ```
+
+### Service Interfaces
+
+The UI Service exposes **two interfaces**:
+
+| Interface | Purpose | Key Capability |
+|-----------|---------|----------------|
+| `IUiService` | **Consuming** - open/close/query UI | All UI lifecycle operations |
+| `IUiServiceInit` | **Initializing** - extends `IUiService` | `Init(UiConfigs)` + `Dispose()` |
+
+> **⚠️ Important:** Use `IUiServiceInit` when you need to call `Init()`. The `Init()` method is **not** available on `IUiService`. See [Core Concepts - Service Interfaces](core-concepts.md#service-interfaces) for details.
 
 ## Package Structure
 

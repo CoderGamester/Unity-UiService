@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
@@ -15,9 +16,9 @@ namespace GameLovers.UiService.Examples
 		[Header("UI Buttons")]
 		[SerializeField] private Button _openTimeDelayedButton;
 		[SerializeField] private Button _openAnimatedButton;
-		[SerializeField] private Button _closeButton;
+		[SerializeField] 		private Button _closeButton;
 		
-		private IUiService _uiService;
+		private IUiServiceInit _uiService;
 
 		private void Start()
 		{
@@ -50,7 +51,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenTimeDelayedUi()
 		{
 			Debug.Log("Opening Time-Delayed UI (watch for delayed appearance)...");
-			_uiService.OpenUi<DelayedUiExamplePresenter>();
+			_uiService.OpenUiAsync<DelayedUiExamplePresenter>().Forget();
 		}
 
 		/// <summary>
@@ -59,7 +60,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenAnimatedUi()
 		{
 			Debug.Log("Opening Animation-Delayed UI (watch for animation)...");
-			_uiService.OpenUi<AnimatedUiExamplePresenter>();
+			_uiService.OpenUiAsync<AnimatedUiExamplePresenter>().Forget();
 		}
 
 		/// <summary>
@@ -69,11 +70,11 @@ namespace GameLovers.UiService.Examples
 		{
 			Debug.Log("Closing UI...");
 			
-			if (_uiService.IsUiOpen<DelayedUiExamplePresenter>())
+			if (_uiService.IsVisible<DelayedUiExamplePresenter>())
 			{
 				_uiService.CloseUi<DelayedUiExamplePresenter>(destroy: false);
 			}
-			else if (_uiService.IsUiOpen<AnimatedUiExamplePresenter>())
+			else if (_uiService.IsVisible<AnimatedUiExamplePresenter>())
 			{
 				_uiService.CloseUi<AnimatedUiExamplePresenter>(destroy: false);
 			}

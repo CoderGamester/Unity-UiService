@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
@@ -18,7 +19,7 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _showRogueButton;
 		[SerializeField] private Button _updateLowHealthButton;
 		
-		private IUiService _uiService;
+		private IUiServiceInit _uiService;
 
 		private void Start()
 		{
@@ -62,7 +63,7 @@ namespace GameLovers.UiService.Examples
 			};
 			
 			Debug.Log("Opening UI with Warrior data...");
-			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
+			_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data).Forget();
 		}
 
 		/// <summary>
@@ -79,7 +80,7 @@ namespace GameLovers.UiService.Examples
 			};
 			
 			Debug.Log("Opening UI with Mage data...");
-			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
+			_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data).Forget();
 		}
 
 		/// <summary>
@@ -96,7 +97,7 @@ namespace GameLovers.UiService.Examples
 			};
 			
 			Debug.Log("Opening UI with Rogue data...");
-			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
+			_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data).Forget();
 		}
 
 		/// <summary>
@@ -113,7 +114,7 @@ namespace GameLovers.UiService.Examples
 			};
 			
 			Debug.Log("Updating to low health data...");
-			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
+			_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data).Forget();
 		}
 	}
 }

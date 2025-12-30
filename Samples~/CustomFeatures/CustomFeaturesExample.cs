@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
@@ -27,7 +28,7 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _openAllFeaturesButton;
 		[SerializeField] private Button _closeAllButton;
 		
-		private IUiService _uiService;
+		private IUiServiceInit _uiService;
 
 		private void Start()
 		{
@@ -70,7 +71,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenFadeUi()
 		{
 			Debug.Log("Opening UI with FadeFeature...");
-			_uiService.OpenUiAsync<FadingPresenter>();
+			_uiService.OpenUiAsync<FadingPresenter>().Forget();
 		}
 
 		/// <summary>
@@ -79,7 +80,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenScaleUi()
 		{
 			Debug.Log("Opening UI with ScaleFeature...");
-			_uiService.OpenUiAsync<ScalingPresenter>();
+			_uiService.OpenUiAsync<ScalingPresenter>().Forget();
 		}
 
 		/// <summary>
@@ -88,7 +89,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenAllFeaturesUi()
 		{
 			Debug.Log("Opening UI with all features...");
-			_uiService.OpenUiAsync<FullFeaturedPresenter>();
+			_uiService.OpenUiAsync<FullFeaturedPresenter>().Forget();
 		}
 
 		/// <summary>

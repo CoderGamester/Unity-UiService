@@ -225,7 +225,7 @@ void Update()
 
 ```csharp
 // ❌ WRONG - Service not initialized
-private IUiService _uiService = new UiService();
+private IUiServiceInit _uiService = new UiService();
 
 async void Start()
 {

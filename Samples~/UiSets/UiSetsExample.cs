@@ -33,7 +33,7 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _loadAndOpenButton;
 		[SerializeField] private Button _listSetsButton;
 		
-		private UiService _uiService;
+		private IUiServiceInit _uiService;
 
 		private void Start()
 		{

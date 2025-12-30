@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
@@ -91,7 +92,7 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _viewSummaryButton;
 		[SerializeField] private Button _clearDataButton;
 		
-		private UiService _uiService;
+		private IUiServiceInit _uiService;
 		private UiAnalytics _analytics;
 		private CustomAnalyticsCallback _analyticsCallback;
 
@@ -150,7 +151,7 @@ namespace GameLovers.UiService.Examples
 		public void LoadUi()
 		{
 			Debug.Log("Loading UI with analytics tracking...");
-			_uiService.LoadUiAsync<BasicUiExamplePresenter>();
+			_uiService.LoadUiAsync<BasicUiExamplePresenter>().Forget();
 		}
 
 		/// <summary>
@@ -159,7 +160,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenUi()
 		{
 			Debug.Log("Opening UI with analytics tracking...");
-			_uiService.OpenUiAsync<BasicUiExamplePresenter>();
+			_uiService.OpenUiAsync<BasicUiExamplePresenter>().Forget();
 		}
 
 		/// <summary>

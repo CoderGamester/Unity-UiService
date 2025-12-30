@@ -4,6 +4,7 @@ This document covers the fundamental concepts of the UI Service: presenters, lay
 
 ## Table of Contents
 
+- [Service Interfaces](#service-interfaces)
 - [UI Presenter](#ui-presenter)
 - [Presenter Features](#presenter-features)
 - [UI Layers](#ui-layers)
@@ -11,6 +12,108 @@ This document covers the fundamental concepts of the UI Service: presenters, lay
 - [Multi-Instance Support](#multi-instance-support)
 - [UI Configuration](#ui-configuration)
 - [Editor Windows](#editor-windows)
+
+---
+
+## Service Interfaces
+
+The UI Service exposes **two interfaces** for different use cases:
+
+| Interface | Purpose | Key Methods |
+|-----------|---------|-------------|
+| `IUiService` | **Consuming** the service | `OpenUiAsync`, `CloseUi`, `LoadUiAsync`, `UnloadUi`, `IsVisible`, `GetUi` |
+| `IUiServiceInit` | **Initializing** the service | Inherits `IUiService` + `Init(UiConfigs)`, `Dispose()` |
+
+### When to Use Each Interface
+
+**Use `IUiServiceInit` when:**
+- You create and own the `UiService` instance
+- You need to call `Init(UiConfigs)` to initialize
+- You need to call `Dispose()` to clean up
+
+**Use `IUiService` when:**
+- You receive the service via dependency injection
+- You only need to open/close/query UI
+- You don't manage the service lifecycle
+
+### Correct Initialization Pattern
+
+```csharp
+using UnityEngine;
+using GameLovers.UiService;
+
+public class GameInitializer : MonoBehaviour
+{
+    [SerializeField] private UiConfigs _uiConfigs;
+    
+    // ✅ Use IUiServiceInit - you need Init() and Dispose()
+    private IUiServiceInit _uiService;
+    
+    void Start()
+    {
+        _uiService = new UiService();
+        _uiService.Init(_uiConfigs);  // Available on IUiServiceInit
+    }
+    
+    void OnDestroy()
+    {
+        _uiService?.Dispose();  // Available on IUiServiceInit
+    }
+}
+```
+
+### Common Mistake
+
+```csharp
+// ❌ WRONG - IUiService does NOT have Init()
+private IUiService _uiService;
+
+void Start()
+{
+    _uiService = new UiService();
+    _uiService.Init(_uiConfigs);  // CS1061: 'IUiService' does not contain 'Init'
+}
+```
+
+### Dependency Injection Pattern
+
+```csharp
+// Service locator or DI container registers with IUiServiceInit
+public class ServiceLocator
+{
+    private IUiServiceInit _uiService;
+    
+    public void Initialize(UiConfigs configs)
+    {
+        _uiService = new UiService();
+        _uiService.Init(configs);
+    }
+    
+    // Consumers get IUiService (no access to Init/Dispose)
+    public IUiService GetUiService() => _uiService;
+    
+    public void Shutdown()
+    {
+        _uiService?.Dispose();
+    }
+}
+
+// Consumer class only needs IUiService
+public class ShopController
+{
+    private readonly IUiService _uiService;
+    
+    public ShopController(IUiService uiService)
+    {
+        _uiService = uiService;
+    }
+    
+    public async void OpenShop()
+    {
+        await _uiService.OpenUiAsync<ShopPresenter>();
+    }
+}
+```
 
 ---
 

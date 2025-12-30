@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
@@ -19,7 +20,7 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _unloadButton;
 		[SerializeField] private Button _loadAndOpenButton;
 		
-		private IUiService _uiService;
+		private IUiServiceInit _uiService;
 
 		private void Start()
 		{
@@ -58,7 +59,7 @@ namespace GameLovers.UiService.Examples
 		public void LoadUi()
 		{
 			Debug.Log("Loading BasicUiExamplePresenter...");
-			_uiService.LoadUi<BasicUiExamplePresenter>();
+			_uiService.LoadUiAsync<BasicUiExamplePresenter>().Forget();
 			Debug.Log("UI Loaded (but not visible yet)");
 		}
 
@@ -68,7 +69,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenUi()
 		{
 			Debug.Log("Opening BasicUiExamplePresenter...");
-			_uiService.OpenUi<BasicUiExamplePresenter>();
+			_uiService.OpenUiAsync<BasicUiExamplePresenter>().Forget();
 			Debug.Log("UI Opened and visible");
 		}
 
@@ -98,7 +99,7 @@ namespace GameLovers.UiService.Examples
 		public void LoadAndOpenUi()
 		{
 			Debug.Log("Loading and Opening BasicUiExamplePresenter (combined)...");
-			_uiService.LoadUi<BasicUiExamplePresenter>(openAfter: true);
+			_uiService.LoadUiAsync<BasicUiExamplePresenter>(openAfter: true).Forget();
 			Debug.Log("UI Loaded and Opened in one call");
 		}
 	}
