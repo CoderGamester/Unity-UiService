@@ -16,9 +16,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added `AGENTS.md` documentation for AI coding agents
 - Added structured documentation under `docs/` folder with separate pages for getting started, core concepts, API reference, advanced topics, and troubleshooting
 - Added new samples: `MultiInstance`, `CustomFeatures`, `UiSets`
+- Added multiple `IUiAssetLoader` implementations to support different asset loading scenarios:
+  - `AddressablesUiAssetLoader` (default): Integration with Unity Addressables.
+  - `PrefabRegistryUiAssetLoader`: Simple loader for direct prefab references (useful for testing and samples).
+  - `ResourcesUiAssetLoader`: Support for loading from Unity's `Resources` folder.
 
 **Changed**:
 - **BREAKING**: Removed `IPresenterFeature` interface; features now extend `PresenterFeatureBase` directly
+- **BREAKING**: Renamed `UiAssetLoader` to `AddressablesUiAssetLoader` to reflect its specific loading mechanism.
 - Refactored `AnimationDelayFeature` and `TimeDelayFeature` to use `Presenter.NotifyOpenTransitionCompleted()` and `Presenter.NotifyCloseTransitionCompleted()` instead of internal events
 - Removed `OnOpenCompletedEvent` and `OnCloseCompletedEvent` internal events from delay features
 - Updated all samples to use UI buttons instead of input system dependencies for better project compatibility

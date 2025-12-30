@@ -28,7 +28,7 @@ namespace GameLovers.UiService.Examples
 		private void Start()
 		{
 			// Initialize UI Service
-			var loader = new SampleUiAssetLoader();
+			var loader = new PrefabRegistryUiAssetLoader();
 			foreach (var prefab in _presenterPrefabs)
 			{
 				var presenter = prefab.GetComponent<UiPresenter>();

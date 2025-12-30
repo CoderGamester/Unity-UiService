@@ -33,7 +33,7 @@ public class GameInitializer : MonoBehaviour
         var analytics = new UiAnalytics();
         
         // Inject into UI service
-        var uiService = new UiService(new UiAssetLoader(), analytics);
+        var uiService = new UiService(new AddressablesUiAssetLoader(), analytics);
         uiService.Init(_uiConfigs);
     }
 }

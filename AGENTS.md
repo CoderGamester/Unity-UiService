@@ -45,9 +45,12 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `NonDrawingView`: raycast target without rendering (extends `Graphic`).
   - `AdjustScreenSizeFitterView`: layout fitter that clamps between min/flexible size.
   - `InteractableTextView`: TMP link click handling.
-- **Asset loading**: `Runtime/UiAssetLoader.cs`
-  - `IUiAssetLoader` abstraction; default uses `Addressables.InstantiateAsync` and `Addressables.ReleaseInstance`.
-  - Supports optional synchronous instantiation via `UiConfig.LoadSynchronously`.
+- **Asset loading**: `Runtime/Loaders/IUiAssetLoader.cs`
+  - `IUiAssetLoader` abstraction with multiple implementations under `Runtime/Loaders/`:
+    - `AddressablesUiAssetLoader` (default): uses `Addressables.InstantiateAsync` and `Addressables.ReleaseInstance`.
+    - `PrefabRegistryUiAssetLoader`: uses direct prefab references (useful for samples/testing).
+    - `ResourcesUiAssetLoader`: uses `Resources.Load`.
+  - Supports optional synchronous instantiation via `UiConfig.LoadSynchronously` (in Addressables loader).
 - **Analytics (optional)**: `Runtime/UiAnalytics.cs`
   - `IUiAnalytics` + `UiAnalytics` track lifecycle events and simple performance timings.
   - `UiService` defaults to `NullAnalytics` when none is provided.
@@ -63,7 +66,10 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `Runtime/UiConfigs.cs` — config storage/serialization
   - `Runtime/UiSetConfig.cs` — UI set + serialization helpers
   - `Runtime/UiInstanceId.cs` — multi-instance identity (normalizes null/empty to `string.Empty`)
-  - `Runtime/UiAssetLoader.cs` — Addressables integration (+ optional sync load)
+  - `Runtime/Loaders/IUiAssetLoader.cs` — Asset loading abstraction
+  - `Runtime/Loaders/AddressablesUiAssetLoader.cs` — Addressables integration (+ optional sync load)
+  - `Runtime/Loaders/PrefabRegistryUiAssetLoader.cs` — Direct prefab references
+  - `Runtime/Loaders/ResourcesUiAssetLoader.cs` — Resources.Load implementation
   - `Runtime/UiAnalytics.cs` — analytics + metrics
   - `Runtime/UiServiceMonoComponent.cs` — emits resolution/orientation change events
   - `Runtime/Features/*` — composable presenter features
@@ -97,7 +103,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
 - **UI Sets store types, not addresses**
   - UI sets are serialized as `UiSetEntry` (type name + instance address). The default editor populates `InstanceAddress` with the **addressable address** for uniqueness.
 - **`LoadSynchronously` persistence**
-  - `UiConfig.LoadSynchronously` exists and is respected by `UiAssetLoader`.
+  - `UiConfig.LoadSynchronously` exists and is respected by `AddressablesUiAssetLoader`.
   - **However**: `UiConfigs.UiConfigSerializable` currently does **not** serialize `LoadSynchronously`, so configs loaded from a `UiConfigs` asset will produce `LoadSynchronously = false` in `UiConfigs.Configs`.
 - **Static events**
   - `UiService.OnResolutionChanged` / `UiService.OnOrientationChanged` are static `UnityEvent`s raised by `UiServiceMonoComponent`.
@@ -137,7 +143,7 @@ When you need third-party source/docs, prefer the locally-cached UPM packages:
   - Extend `PresenterFeatureBase` and attach it to the presenter prefab.
   - Features are discovered via `GetComponents` at init time and notified during open/close.
 - **Change loading strategy**
-  - Prefer extending/replacing `IUiAssetLoader` for tests/special loading; keep Addressables calls centralized in `UiAssetLoader`.
+  - Prefer using one of the built-in loaders (`AddressablesUiAssetLoader`, `PrefabRegistryUiAssetLoader`, `ResourcesUiAssetLoader`) or extending `IUiAssetLoader` for custom needs.
 - **Update docs/samples**
   - User-facing docs live in `docs/` and should be updated when behavior/API changes.
   - If you add a new core capability, consider adding/adjusting a sample under `Samples~/`.

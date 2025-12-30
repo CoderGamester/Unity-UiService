@@ -48,7 +48,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		public IUiAnalytics Analytics => _analytics;
 
-		public UiService() : this(new UiAssetLoader(), null) { }
+		public UiService() : this(new AddressablesUiAssetLoader(), null) { }
 
 		public UiService(IUiAssetLoader assetLoader) : this(assetLoader, null) { }
 

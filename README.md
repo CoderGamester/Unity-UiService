@@ -28,7 +28,7 @@ Managing UI in Unity games often becomes a tangled mess of direct references, sc
 | **Duplicated boilerplate** | Feature composition system extends behavior without inheritance complexity |
 | **Async loading complexity** | UniTask-powered async operations with cancellation support |
 | **No visibility into UI state** | Editor windows for real-time analytics, hierarchy debugging, and configuration |
-| **Difficult testing** | Injectable interfaces (`IUiService`, `IUiAssetLoader`) enable easy mocking |
+| **Difficult testing** | Injectable interfaces (`IUiService`, `IUiAssetLoader`) and built-in loaders enable easy mocking |
 
 **Built for production:** Used in real games with WebGL, mobile, and desktop support. Zero per-frame allocations in hot paths.
 
@@ -114,6 +114,11 @@ openupm add com.gamelovers.uiservice
 
 ```
 Runtime/
+├── Loaders/
+│   ├── IUiAssetLoader.cs          # Asset loading interface
+│   ├── AddressablesUiAssetLoader.cs # Addressables implementation
+│   ├── PrefabRegistryUiAssetLoader.cs # Direct prefab references
+│   └── ResourcesUiAssetLoader.cs # Resources.Load implementation
 ├── IUiService.cs          # Public API interface
 ├── UiService.cs           # Core implementation
 ├── UiPresenter.cs         # Base presenter classes
@@ -138,7 +143,10 @@ Editor/
 | **UiService** | Core implementation managing lifecycle, layers, and state |
 | **UiPresenter** | Base class for all UI views with lifecycle hooks |
 | **UiConfigs** | ScriptableObject storing UI configuration and sets |
-| **UiAssetLoader** | Handles Addressables integration for async loading |
+| **IUiAssetLoader** | Interface for custom asset loading strategies |
+| **AddressablesUiAssetLoader** | Handles Addressables integration for async loading |
+| **PrefabRegistryUiAssetLoader** | Simple loader for direct prefab references |
+| **ResourcesUiAssetLoader** | Loads UI from Unity's Resources folder |
 | **PresenterFeatureBase** | Base class for composable presenter behaviors |
 | **UiInstanceId** | Enables multiple instances of the same presenter type |
 

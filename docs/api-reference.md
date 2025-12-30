@@ -403,10 +403,26 @@ IUiServiceInit uiService = new UiService();
 uiService.Init(uiConfigs);
 
 // Or with custom loader and analytics
-var loader = new UiAssetLoader();
+var loader = new AddressablesUiAssetLoader();
 var analytics = new UiAnalytics();
 IUiServiceInit uiService = new UiService(loader, analytics);
 uiService.Init(uiConfigs);
+
+// Using other built-in loaders
+var prefabLoader = new PrefabRegistryUiAssetLoader();
+var resourcesLoader = new ResourcesUiAssetLoader();
+```
+
+### IUiAssetLoader Interface
+
+Custom asset loading strategies can be implemented using this interface.
+
+```csharp
+public interface IUiAssetLoader
+{
+    UniTask<GameObject> InstantiatePrefab(UiConfig config, Transform parent, CancellationToken ct = default);
+    void UnloadAsset(GameObject asset);
+}
 ```
 
 ### Dispose

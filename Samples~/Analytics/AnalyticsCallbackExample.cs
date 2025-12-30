@@ -112,7 +112,7 @@ namespace GameLovers.UiService.Examples
 			SubscribeToAnalyticsEvents();
 			
 			// Initialize UI Service with analytics
-			var loader = new SampleUiAssetLoader();
+			var loader = new PrefabRegistryUiAssetLoader();
 			foreach (var prefab in _presenterPrefabs)
 			{
 				var presenter = prefab.GetComponent<UiPresenter>();

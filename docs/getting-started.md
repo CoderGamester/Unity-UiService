@@ -93,7 +93,28 @@ void Start()
     var analytics = new UiAnalytics();
     
     // Inject into UI service
-    _uiService = new UiService(new UiAssetLoader(), analytics);
+    _uiService = new UiService(new AddressablesUiAssetLoader(), analytics);
+    _uiService.Init(_uiConfigs);
+}
+```
+
+### Choosing an Asset Loader
+
+The UI Service supports multiple asset loading strategies out of the box:
+
+| Loader | Scenario |
+|--------|----------|
+| `AddressablesUiAssetLoader` | **Recommended** - Uses Unity's Addressables system for async loading. |
+| `PrefabRegistryUiAssetLoader` | Best for samples or when prefabs are directly referenced in game code. |
+| `ResourcesUiAssetLoader` | Loads assets from the `Resources` folder (traditional Unity workflow). |
+
+Example using the `ResourcesUiAssetLoader`:
+
+```csharp
+void Start()
+{
+    // Initialize using Resources loader
+    _uiService = new UiService(new ResourcesUiAssetLoader());
     _uiService.Init(_uiConfigs);
 }
 ```

@@ -290,7 +290,7 @@ var analytics = new UiAnalytics();
 analytics.SetCallback(new CustomAnalyticsCallback());
 
 // Pass to UiService constructor
-IUiServiceInit uiService = new UiService(new UiAssetLoader(), analytics);
+IUiServiceInit uiService = new UiService(new AddressablesUiAssetLoader(), analytics);
 uiService.Init(_uiConfigs);
 
 // Subscribe to UnityEvents

@@ -19,7 +19,7 @@ The UI Service provides a centralized system for managing UI in Unity games. Key
 - **Lifecycle Management** - Load, open, close, and unload UI presenters
 - **Layer Organization** - Depth-sorted UI with configurable layers
 - **UI Sets** - Batch operations on grouped UI elements
-- **Async Loading** - UniTask-powered asynchronous asset loading via Addressables
+- **Async Loading** - Customizable asset loading strategies (Addressables, Resources, Prefab Registry)
 - **Feature Composition** - Extend presenter behavior with modular features
 - **Analytics** - Optional performance tracking and metrics
 
@@ -42,10 +42,10 @@ The UI Service provides a centralized system for managing UI in Unity games. Key
                       │
         ┌─────────────┼─────────────┐
         ▼             ▼             ▼
-┌───────────┐  ┌────────────┐  ┌──────────────┐
-│ UiConfigs │  │ UiPresenter│  │ UiAssetLoader│
-│   (SO)    │  │  (Views)   │  │(Addressables)│
-└───────────┘  └─────┬──────┘  └──────────────┘
+┌───────────┐  ┌────────────┐  ┌─────────────────┐
+│ UiConfigs │  │ UiPresenter│  │ IUiAssetLoader  │
+│   (SO)    │  │  (Views)   │  │ (Abstraction)   │
+└───────────┘  └─────┬──────┘  └─────────────────┘
                      │
                      ▼
               ┌──────────────┐
@@ -73,7 +73,11 @@ Runtime/
 ├── UiService.cs           # Core implementation
 ├── UiPresenter.cs         # Base presenter classes
 ├── UiConfigs.cs           # Configuration ScriptableObject
-├── UiAssetLoader.cs       # Addressables integration
+├── Loaders/
+│   ├── IUiAssetLoader.cs      # Asset loading interface
+│   ├── AddressablesUiAssetLoader.cs # Addressables implementation
+│   ├── PrefabRegistryUiAssetLoader.cs # Direct prefab references
+│   └── ResourcesUiAssetLoader.cs # Resources.Load implementation
 ├── UiInstanceId.cs        # Multi-instance support
 ├── UiAnalytics.cs         # Performance tracking
 ├── Features/              # Composable features
