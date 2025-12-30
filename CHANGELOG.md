@@ -4,6 +4,32 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
+## [1.1.0] - 2025-12-30
+
+**New**:
+- Added `OnOpenTransitionCompleted()` and `OnCloseTransitionCompleted()` lifecycle hooks to `UiPresenter` for reacting after all transition animations/delays complete
+- Added comprehensive test suite:
+  - Unit tests for `UiAnalytics`, `UiConfig`, `UiInstanceId`, `UiServiceCore`, `UiSetConfig`
+  - PlayMode integration tests for multi-instance, loading, open/close, and UI set management
+  - Performance and smoke tests
+  - Feature-specific tests for `AnimationDelayFeature`, `TimeDelayFeature`, and `PresenterFeatureBase`
+- Added `AGENTS.md` documentation for AI coding agents
+- Added structured documentation under `docs/` folder with separate pages for getting started, core concepts, API reference, advanced topics, and troubleshooting
+- Added new samples: `MultiInstance`, `CustomFeatures`, `UiSets`
+
+**Changed**:
+- **BREAKING**: Removed `IPresenterFeature` interface; features now extend `PresenterFeatureBase` directly
+- Refactored `AnimationDelayFeature` and `TimeDelayFeature` to use `Presenter.NotifyOpenTransitionCompleted()` and `Presenter.NotifyCloseTransitionCompleted()` instead of internal events
+- Removed `OnOpenCompletedEvent` and `OnCloseCompletedEvent` internal events from delay features
+- Updated all samples to use UI buttons instead of input system dependencies for better project compatibility
+- Reorganized test fixtures and helpers for better maintainability
+
+**Fixed**:
+- Fixed `AnimationDelayFeature` animation playback logic - was incorrectly checking `!_introAnimationClip` instead of `_introAnimationClip != null`
+- Fixed `UiPresenterEditor` play-mode buttons to properly call `InternalOpen()` and `InternalClose()` instead of just toggling `gameObject.SetActive()`
+- Fixed delay features to work correctly when tests run together (UniTaskCompletionSource lifecycle)
+- Fixed null checks in delay features using explicit null comparisons instead of null-conditional operators for Unity object compatibility
+
 ## [1.0.0] - 2025-11-04
 
 **New**:

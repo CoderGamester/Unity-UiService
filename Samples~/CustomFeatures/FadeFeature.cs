@@ -22,6 +22,9 @@ namespace GameLovers.UiService.Examples
 	[RequireComponent(typeof(CanvasGroup))]
 	public class FadeFeature : PresenterFeatureBase
 	{
+		public event System.Action OnFadeInComplete;
+		public event System.Action OnFadeOutComplete;
+
 		[Header("Fade Settings")]
 		[SerializeField] private float _fadeInDuration = 0.3f;
 		[SerializeField] private float _fadeOutDuration = 0.2f;
@@ -86,10 +89,11 @@ namespace GameLovers.UiService.Examples
 				yield return null;
 			}
 			
-		_canvasGroup.alpha = 1f;
-		
-		// Notify presenter that open transition is complete
-		Presenter.NotifyOpenTransitionCompleted();
+			_canvasGroup.alpha = 1f;
+			
+			// Notify presenter that open transition is complete
+			Presenter.NotifyOpenTransitionCompleted();
+			OnFadeInComplete?.Invoke();
 		}
 
 		private IEnumerator FadeOut()
@@ -106,10 +110,11 @@ namespace GameLovers.UiService.Examples
 				yield return null;
 			}
 			
-		_canvasGroup.alpha = 0f;
-		
-		// Notify presenter that close transition is complete
-		Presenter.NotifyCloseTransitionCompleted();
+			_canvasGroup.alpha = 0f;
+			
+			// Notify presenter that close transition is complete
+			Presenter.NotifyCloseTransitionCompleted();
+			OnFadeOutComplete?.Invoke();
 		}
 
 		private void OnDisable()

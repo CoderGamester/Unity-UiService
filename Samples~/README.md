@@ -4,14 +4,16 @@ This folder contains example implementations demonstrating the **feature composi
 
 ---
 
-## Quick Start
+## Quick Start (Zero Setup!)
 
-1. Open **Window → Package Manager**
+1. Open **Window > Package Manager**
 2. Select **UiService** from the list
 3. Expand the **Samples** section
-4. Click **Import** next to the sample you want
+4. Click **Import** next to any sample
+5. Open the sample scene in `Assets/Samples/UiService/{version}/{SampleName}/`
+6. **Press Play** - it just works!
 
-Samples are imported to `Assets/Samples/UiService/{version}/{SampleName}/`.
+No Addressables setup, no prefab creation, no configuration needed.
 
 ---
 

@@ -2,7 +2,7 @@
   "name": "com.gamelovers.uiservice",
   "displayName": "UiService",
   "author": "Miguel Tomas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "unity": "6000.0",
   "license": "MIT",
   "description": "This package provides a service to help manage an Unity's, game UI.\nIt allows to open, close, load, unload and request any Ui Configured in the game.\nThe package provides a Ui Set that allows to group a set of Ui Presenters to help load, open and close multiple Uis at the same time.\n\nTo help configure the game's UI you need to create a UiConfigs Scriptable object by:\n- Right Click on the Project View > Create > ScriptableObjects > Configs > UiConfigs",

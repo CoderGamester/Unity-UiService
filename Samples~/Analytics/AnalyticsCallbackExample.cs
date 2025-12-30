@@ -84,6 +84,9 @@ namespace GameLovers.UiService.Examples
 	public class AnalyticsExample : MonoBehaviour
 	{
 		[SerializeField] private UiConfigs _uiConfigs;
+
+		[Header("Sample Prefabs")]
+		[SerializeField] private GameObject[] _presenterPrefabs;
 		
 		[Header("UI Buttons")]
 		[SerializeField] private Button _loadButton;
@@ -109,8 +112,14 @@ namespace GameLovers.UiService.Examples
 			SubscribeToAnalyticsEvents();
 			
 			// Initialize UI Service with analytics
-			// Note: Pass analytics to the UiService constructor
-			_uiService = new UiService(new UiAssetLoader(), _analytics);
+			var loader = new SampleUiAssetLoader();
+			foreach (var prefab in _presenterPrefabs)
+			{
+				var presenter = prefab.GetComponent<UiPresenter>();
+				loader.RegisterPrefab(presenter.GetType().Name, prefab);
+			}
+
+			_uiService = new UiService(loader, _analytics);
 			_uiService.Init(_uiConfigs);
 			
 			// Setup button listeners
@@ -151,7 +160,7 @@ namespace GameLovers.UiService.Examples
 		public void LoadUi()
 		{
 			Debug.Log("Loading UI with analytics tracking...");
-			_uiService.LoadUiAsync<BasicUiExamplePresenter>().Forget();
+			_uiService.LoadUiAsync<AnalyticsExamplePresenter>().Forget();
 		}
 
 		/// <summary>
@@ -160,7 +169,7 @@ namespace GameLovers.UiService.Examples
 		public void OpenUi()
 		{
 			Debug.Log("Opening UI with analytics tracking...");
-			_uiService.OpenUiAsync<BasicUiExamplePresenter>().Forget();
+			_uiService.OpenUiAsync<AnalyticsExamplePresenter>().Forget();
 		}
 
 		/// <summary>
@@ -169,7 +178,7 @@ namespace GameLovers.UiService.Examples
 		public void CloseUi()
 		{
 			Debug.Log("Closing UI with analytics tracking...");
-			_uiService.CloseUi<BasicUiExamplePresenter>(destroy: false);
+			_uiService.CloseUi<AnalyticsExamplePresenter>(destroy: false);
 		}
 
 		/// <summary>
@@ -181,8 +190,8 @@ namespace GameLovers.UiService.Examples
 			_analytics.LogPerformanceSummary();
 			
 			// Get specific metrics
-			var metrics = _analytics.GetMetrics(typeof(BasicUiExamplePresenter));
-			Debug.Log($"\nDetailed metrics for BasicUiExamplePresenter:");
+			var metrics = _analytics.GetMetrics(typeof(AnalyticsExamplePresenter));
+			Debug.Log($"\nDetailed metrics for AnalyticsExamplePresenter:");
 			Debug.Log($"  Opens: {metrics.OpenCount}, Closes: {metrics.CloseCount}");
 			Debug.Log($"  Lifetime: {metrics.TotalLifetime:F1}s");
 		}

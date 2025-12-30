@@ -24,6 +24,9 @@ namespace GameLovers.UiService.Examples
 		}
 
 		[SerializeField] private UiConfigs _uiConfigs;
+
+		[Header("Sample Prefabs")]
+		[SerializeField] private GameObject[] _presenterPrefabs;
 		
 		[Header("UI Buttons")]
 		[SerializeField] private Button _loadSetButton;
@@ -38,7 +41,14 @@ namespace GameLovers.UiService.Examples
 		private void Start()
 		{
 			// Initialize UI Service
-			_uiService = new UiService();
+			var loader = new SampleUiAssetLoader();
+			foreach (var prefab in _presenterPrefabs)
+			{
+				var presenter = prefab.GetComponent<UiPresenter>();
+				loader.RegisterPrefab(presenter.GetType().Name, prefab);
+			}
+
+			_uiService = new UiService(loader);
 			_uiService.Init(_uiConfigs);
 			
 			// Setup button listeners
