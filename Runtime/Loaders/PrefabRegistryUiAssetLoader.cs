@@ -42,7 +42,7 @@ namespace GameLovers.UiService
 		{
 			if (asset != null)
 			{
-				Object.Destroy(asset);
+				Object.DestroyImmediate(asset);
 			}
 		}
 	}

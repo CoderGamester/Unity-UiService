@@ -84,7 +84,8 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
 - **Samples**: `Samples~/`
   - Demonstrates basic flows, data presenters, delay features, UI Toolkit integration, analytics.
 - **Tests**: `Tests/`
-  - `Tests/EditMode/*` — unit tests (configs, sets, analytics, core service behavior)
+  - `Tests/EditMode/*` — unit tests (configs, sets, analytics, loaders, core service behavior)
+  - `Tests/EditMode/Loaders/*` — unit tests for asset loader implementations
   - `Tests/PlayMode/*` — integration/performance/smoke tests + fixtures/prefabs
 
 ## 4. Important Behaviors / Gotchas
