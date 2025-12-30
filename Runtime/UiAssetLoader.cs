@@ -14,14 +14,14 @@ namespace GameLovers.UiService
 	/// </summary>
 	public interface IUiAssetLoader
 	{
-	/// <summary>
-	/// Instantiates the prefab asynchronously with the given <paramref name="config"/> and <paramref name="parent"/>.
-	/// </summary>
-	/// <param name="config">The UI configuration to instantiate.</param>
-	/// <param name="parent">The parent transform to instantiate the prefab under.</param>
-	/// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
-	/// <returns>A task that completes with the instantiated prefab game object.</returns>
-	UniTask<GameObject> InstantiatePrefab(UiConfig config, Transform parent, CancellationToken cancellationToken = default);
+		/// <summary>
+		/// Instantiates the prefab asynchronously with the given <paramref name="config"/> and <paramref name="parent"/>.
+		/// </summary>
+		/// <param name="config">The UI configuration to instantiate.</param>
+		/// <param name="parent">The parent transform to instantiate the prefab under.</param>
+		/// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+		/// <returns>A task that completes with the instantiated prefab game object.</returns>
+		UniTask<GameObject> InstantiatePrefab(UiConfig config, Transform parent, CancellationToken cancellationToken = default);
 
 		/// <summary>
 		/// Unloads the given <paramref name="asset"/> from the game memory
