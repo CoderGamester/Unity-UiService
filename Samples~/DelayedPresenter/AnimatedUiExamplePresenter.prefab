@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 100003}
   - component: {fileID: 100004}
   - component: {fileID: 100005}
+  - component: {fileID: 100006}
   m_Layer: 5
   m_Name: AnimatedUiExamplePresenter
   m_TagString: Untagged
@@ -73,4 +74,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 100000}
   m_Enabled: 1
   m_Script: {fileID: 11500000, guid: b7f46103d3ad24c758708ffb0d71fc84, type: 3}
+  _animationFeature: {fileID: 100006}
+--- !u!114 &100006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d794902454b254785899d1bfe209ea82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _openAnimationName: Open
+  _closeAnimationName: Close
 

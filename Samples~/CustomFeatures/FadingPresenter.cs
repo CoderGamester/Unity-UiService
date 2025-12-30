@@ -11,19 +11,12 @@ namespace GameLovers.UiService.Examples
 	[RequireComponent(typeof(FadeFeature))]
 	public class FadingPresenter : UiPresenter
 	{
-		[SerializeField] private FadeFeature _fadeFeature;
 		[SerializeField] private Text _titleText;
 		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
-			
-			// Subscribe to feature events if needed
-			if (_fadeFeature != null)
-			{
-				_fadeFeature.OnFadeInComplete += OnFadeInComplete;
-			}
 			
 			if (_closeButton != null)
 			{
@@ -43,18 +36,11 @@ namespace GameLovers.UiService.Examples
 			}
 		}
 
-		private void OnFadeInComplete()
+		protected override void OnOpenTransitionCompleted()
 		{
+			base.OnOpenTransitionCompleted();
 			Debug.Log("[FadingPresenter] Fade in animation completed!");
 			// You can enable interactions here if needed
-		}
-
-		private void OnDestroy()
-		{
-			if (_fadeFeature != null)
-			{
-				_fadeFeature.OnFadeInComplete -= OnFadeInComplete;
-			}
 		}
 	}
 }

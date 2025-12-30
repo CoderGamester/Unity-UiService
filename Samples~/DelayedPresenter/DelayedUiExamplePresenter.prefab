@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 100003}
   - component: {fileID: 100004}
   - component: {fileID: 100005}
+  - component: {fileID: 100006}
   m_Layer: 5
   m_Name: DelayedUiExamplePresenter
   m_TagString: Untagged
@@ -73,4 +74,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 100000}
   m_Enabled: 1
   m_Script: {fileID: 11500000, guid: 79942a3376ae449dd84ff2c25c300c16, type: 3}
+  _delayFeature: {fileID: 100006}
+--- !u!114 &100006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef77186628bc44ecaefb533d6e2143c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _openDelayInSeconds: 0.5
+  _closeDelayInSeconds: 0.2
 
