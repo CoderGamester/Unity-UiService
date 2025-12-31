@@ -15,17 +15,12 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private AnimationDelayFeature _animationFeature;
 		[SerializeField] private Text _titleText;
 		[SerializeField] private Text _statusText;
-		[SerializeField] private Button _closeButton;
+
 
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
 			Debug.Log("[AnimatedUiExample] UI Initialized");
-			
-			if (_closeButton != null)
-			{
-				_closeButton.onClick.AddListener(() => Close(destroy: false));
-			}
 		}
 
 		protected override void OnOpened()
