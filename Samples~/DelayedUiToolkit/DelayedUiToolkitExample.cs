@@ -1,22 +1,18 @@
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.UIElements;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example demonstrating the delayed UI Toolkit presenter functionality.
-	/// This example shows how to combine UI Toolkit rendering with delay-based transitions.
-	/// Uses UI buttons for input to avoid dependency on any specific input system.
+	/// Example demonstrating delayed UI Toolkit presenters.
+	/// Uses UI Toolkit for both the example controls and the presenters.
 	/// </summary>
 	public class DelayedUiToolkitExample : MonoBehaviour
 	{
 		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
-
-		[Header("UI Buttons")]
-		[SerializeField] private Button _openTimeDelayedButton;
-		[SerializeField] private Button _openAnimationDelayedButton;
-		[SerializeField] private Button _closeAllButton;
+		[SerializeField] private UIDocument _uiDocument;
 
 		private IUiServiceInit _uiService;
 
@@ -28,60 +24,44 @@ namespace GameLovers.UiService.Examples
 			_uiService = new UiService(loader);
 			_uiService.Init(_uiConfigs);
 			
-			// Setup button listeners
-			_openTimeDelayedButton?.onClick.AddListener(OpenTimeDelayedUiToolkit);
-			_openAnimationDelayedButton?.onClick.AddListener(OpenAnimationDelayedUiToolkit);
-			_closeAllButton?.onClick.AddListener(CloseAllUis);
-
-			Debug.Log("=== Delayed UI Toolkit Example ===");
-			Debug.Log("Use the UI buttons to test different delay scenarios:");
-			Debug.Log("  Time Delayed: Opens UI Toolkit with time-based delay");
-			Debug.Log("  Animation Delayed: Opens UI Toolkit with animation-based delay and data");
-			Debug.Log("  Close All: Closes all open UIs");
+			// Setup button listeners from UIDocument
+			var root = _uiDocument.rootVisualElement;
+			
+			root.Q<Button>("open-time-delayed-button")?.RegisterCallback<ClickEvent>(_ => OpenTimeDelayedUi());
+			root.Q<Button>("open-animated-button")?.RegisterCallback<ClickEvent>(_ => OpenAnimatedUi());
+			root.Q<Button>("close-button")?.RegisterCallback<ClickEvent>(_ => CloseActiveUi());
+			
+			Debug.Log("=== Delayed UI Toolkit Example Started ===");
 		}
 
 		private void OnDestroy()
 		{
-			_openTimeDelayedButton?.onClick.RemoveListener(OpenTimeDelayedUiToolkit);
-			_openAnimationDelayedButton?.onClick.RemoveListener(OpenAnimationDelayedUiToolkit);
-			_closeAllButton?.onClick.RemoveListener(CloseAllUis);
+			_uiService?.Dispose();
 		}
 
-		/// <summary>
-		/// Opens a UI Toolkit presenter with time-based delays
-		/// </summary>
-		public async void OpenTimeDelayedUiToolkit()
+		private void OpenTimeDelayedUi()
 		{
-			Debug.Log("Opening Time-Delayed UI Toolkit Presenter...");
-			await _uiService.OpenUiAsync<TimeDelayedUiToolkitPresenter>();
-			Debug.Log("Time-Delayed UI Toolkit Presenter opened!");
+			Debug.Log("Opening Time Delayed UI Toolkit UI...");
+			_uiService.OpenUiAsync<TimeDelayedUiToolkitPresenter>().Forget();
 		}
 
-		/// <summary>
-		/// Opens a UI Toolkit presenter with animation-based delays and data
-		/// </summary>
-		public async void OpenAnimationDelayedUiToolkit()
+		private void OpenAnimatedUi()
 		{
-			var data = new UiToolkitExampleData
+			Debug.Log("Opening Animated UI Toolkit UI...");
+			_uiService.OpenUiAsync<AnimationDelayedUiToolkitPresenter>().Forget();
+		}
+
+		private void CloseActiveUi()
+		{
+			Debug.Log("Closing Active UI Toolkit UI...");
+			if (_uiService.IsVisible<TimeDelayedUiToolkitPresenter>())
 			{
-				Title = "Animated UI Toolkit",
-				Message = "This UI uses animation delays!",
-				Score = Random.Range(100, 999)
-			};
-
-			Debug.Log($"Opening Animation-Delayed UI Toolkit with data: {data.Title}");
-			await _uiService.OpenUiAsync<AnimationDelayedUiToolkitPresenter, UiToolkitExampleData>(data);
-			Debug.Log("Animation-Delayed UI Toolkit Presenter opened!");
-		}
-
-		/// <summary>
-		/// Closes all open UIs
-		/// </summary>
-		public void CloseAllUis()
-		{
-			Debug.Log("Closing all UIs...");
-			_uiService.CloseUi<TimeDelayedUiToolkitPresenter>();
-			_uiService.CloseUi<AnimationDelayedUiToolkitPresenter>();
+				_uiService.CloseUi<TimeDelayedUiToolkitPresenter>(destroy: false);
+			}
+			else if (_uiService.IsVisible<AnimationDelayedUiToolkitPresenter>())
+			{
+				_uiService.CloseUi<AnimationDelayedUiToolkitPresenter>(destroy: false);
+			}
 		}
 	}
 }

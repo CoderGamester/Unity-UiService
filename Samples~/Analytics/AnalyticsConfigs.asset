@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
   m_Name: AnalyticsConfigs
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: GameLovers.UiService::GameLovers.UiService.PrefabRegistryUiConfigs
   _configs:
   - Address: AnalyticsExamplePresenter
     Layer: 10
@@ -19,5 +19,4 @@ MonoBehaviour:
   _sets: []
   _prefabEntries:
   - Address: AnalyticsExamplePresenter
-    Prefab: {fileID: 100100000, guid: dd22334455667788990011223344dd06, type: 3}
-
+    Prefab: {fileID: 100000, guid: dd22334455667788990011223344dd06, type: 3}

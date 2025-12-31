@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
   m_Name: UiSetsConfigs
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: GameLovers.UiService::GameLovers.UiService.PrefabRegistryUiConfigs
   _configs:
   - Address: HudHealthBarPresenter
     Layer: 5
@@ -23,11 +23,11 @@ MonoBehaviour:
   - SetId: 0
     UiEntries:
     - UiTypeName: GameLovers.UiService.Examples.HudHealthBarPresenter, Assembly-CSharp
-      InstanceAddress: HudHealthBarPresenter
+      InstanceAddress: 
     - UiTypeName: GameLovers.UiService.Examples.HudCurrencyPresenter, Assembly-CSharp
-      InstanceAddress: HudCurrencyPresenter
+      InstanceAddress: 
   _prefabEntries:
   - Address: HudHealthBarPresenter
-    Prefab: {fileID: 100100000, guid: ee22334455667788990011223344dd07, type: 3}
+    Prefab: {fileID: 100000, guid: ee22334455667788990011223344dd07, type: 3}
   - Address: HudCurrencyPresenter
-    Prefab: {fileID: 100100000, guid: ee22334455667788990011223344dd08, type: 3}
+    Prefab: {fileID: 100000, guid: ee22334455667788990011223344dd08, type: 3}

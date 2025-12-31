@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); padding-left: 50px; padding-top: 100px;">
+        <ui:Label text="Delayed UI Toolkit Example" style="-unity-font-style: bold; font-size: 36px; color: rgb(255, 255, 255); margin-bottom: 20px;" />
+        <ui:Button text="Open Time Delayed" name="open-time-delayed-button" style="width: 250px; height: 60px; font-size: 24px; margin-bottom: 10px;" />
+        <ui:Button text="Open Animated" name="open-animated-button" style="width: 250px; height: 60px; font-size: 24px; margin-bottom: 10px;" />
+        <ui:Button text="Close" name="close-button" style="width: 250px; height: 60px; font-size: 24px; margin-bottom: 10px;" />
+    </ui:VisualElement>
+</ui:UXML>
+

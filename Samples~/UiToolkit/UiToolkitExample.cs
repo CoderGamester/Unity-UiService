@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.UIElements;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
 
@@ -7,16 +7,13 @@ namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Example demonstrating UI Toolkit integration with UiService.
-	/// Uses UI buttons for input to avoid dependency on any specific input system.
+	/// Uses UI Toolkit for both the example controls and the presenter.
 	/// </summary>
 	public class UiToolkitExample : MonoBehaviour
 	{
 		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
+		[SerializeField] private UIDocument _uiDocument;
 
-		[Header("UI Buttons")]
-		[SerializeField] private Button _openButton;
-		[SerializeField] private Button _closeButton;
-		
 		private IUiServiceInit _uiService;
 
 		private void Start()
@@ -27,20 +24,29 @@ namespace GameLovers.UiService.Examples
 			_uiService = new UiService(loader);
 			_uiService.Init(_uiConfigs);
 			
-			// Setup button listeners
-			_openButton?.onClick.AddListener(OpenUiToolkit);
-			_closeButton?.onClick.AddListener(CloseUiToolkit);
+			// Setup button listeners from UIDocument
+			var root = _uiDocument.rootVisualElement;
+			
+			root.Q<Button>("load-button")?.RegisterCallback<ClickEvent>(_ => LoadUiToolkit());
+			root.Q<Button>("open-button")?.RegisterCallback<ClickEvent>(_ => OpenUiToolkit());
+			root.Q<Button>("close-button")?.RegisterCallback<ClickEvent>(_ => CloseUiToolkit());
+			root.Q<Button>("unload-button")?.RegisterCallback<ClickEvent>(_ => UnloadUiToolkit());
 			
 			Debug.Log("=== UI Toolkit Example Started ===");
-			Debug.Log("Use the UI buttons to open/close the UI Toolkit presenter.");
-			Debug.Log("");
-			Debug.Log("Note: Make sure to create a UXML document and assign it to the UIDocument component");
 		}
 
 		private void OnDestroy()
 		{
-			_openButton?.onClick.RemoveListener(OpenUiToolkit);
-			_closeButton?.onClick.RemoveListener(CloseUiToolkit);
+			_uiService?.Dispose();
+		}
+
+		/// <summary>
+		/// Loads the UI Toolkit presenter
+		/// </summary>
+		public void LoadUiToolkit()
+		{
+			Debug.Log("Loading UI Toolkit UI...");
+			_uiService.LoadUiAsync<UiToolkitExamplePresenter>().Forget();
 		}
 
 		/// <summary>
@@ -59,6 +65,15 @@ namespace GameLovers.UiService.Examples
 		{
 			Debug.Log("Closing UI Toolkit UI...");
 			_uiService.CloseUi<UiToolkitExamplePresenter>(destroy: false);
+		}
+
+		/// <summary>
+		/// Unloads the UI Toolkit presenter
+		/// </summary>
+		public void UnloadUiToolkit()
+		{
+			Debug.Log("Unloading UI Toolkit UI...");
+			_uiService.UnloadUi<UiToolkitExamplePresenter>();
 		}
 	}
 }
