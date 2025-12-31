@@ -74,7 +74,7 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
-		public void InstantiatePrefab_UsesAddressableAddressAsResourcePath()
+		public void InstantiatePrefab_UsesAddressAsResourcePath()
 		{
 			// Arrange
 			const string resourcePath = "UI/TestPresenter";

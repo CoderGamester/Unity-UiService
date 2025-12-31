@@ -143,6 +143,7 @@ Editor/
 | **UiService** | Core implementation managing lifecycle, layers, and state |
 | **UiPresenter** | Base class for all UI views with lifecycle hooks |
 | **UiConfigs** | ScriptableObject storing UI configuration and sets |
+| **PrefabRegistryConfig** | Map address keys to UI Prefabs for direct reference |
 | **IUiAssetLoader** | Interface for custom asset loading strategies |
 | **AddressablesUiAssetLoader** | Handles Addressables integration for async loading |
 | **PrefabRegistryUiAssetLoader** | Simple loader for direct prefab references |

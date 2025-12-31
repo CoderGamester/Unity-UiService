@@ -186,7 +186,7 @@ public class MainMenuPresenter : UiPresenter
 1. Open your `UiConfigs` asset
 2. Add a new entry:
    - **Type**: `MainMenuPresenter`
-   - **Addressable Address**: `UI/MainMenu`
+   - **Address**: `UI/MainMenu`
    - **Layer**: `1` (or your preferred layer)
 
 ---

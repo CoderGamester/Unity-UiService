@@ -15,7 +15,7 @@ namespace GameLovers.UiService
 		/// <inheritdoc />
 		public async UniTask<GameObject> InstantiatePrefab(UiConfig config, Transform parent, CancellationToken cancellationToken = default)
 		{
-			var operation = Addressables.InstantiateAsync(config.AddressableAddress, new InstantiationParameters(parent, false));
+			var operation = Addressables.InstantiateAsync(config.Address, new InstantiationParameters(parent, false));
 
 			if(config.LoadSynchronously)
 			{

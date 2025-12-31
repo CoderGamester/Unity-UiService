@@ -12,14 +12,14 @@ namespace GameLovers.UiService.Tests
             // Arrange & Act
             var config = new UiConfig
             {
-                AddressableAddress = "test_address",
+                Address = "test_address",
                 Layer = 5,
                 UiType = typeof(TestUiPresenter),
                 LoadSynchronously = true
             };
 
             // Assert
-            Assert.AreEqual("test_address", config.AddressableAddress);
+            Assert.AreEqual("test_address", config.Address);
             Assert.AreEqual(5, config.Layer);
             Assert.AreEqual(typeof(TestUiPresenter), config.UiType);
             Assert.IsTrue(config.LoadSynchronously);
@@ -32,7 +32,7 @@ namespace GameLovers.UiService.Tests
             var config = new UiConfig();
 
             // Assert
-            Assert.IsNull(config.AddressableAddress);
+            Assert.IsNull(config.Address);
             Assert.AreEqual(0, config.Layer);
             Assert.IsNull(config.UiType);
             Assert.IsFalse(config.LoadSynchronously);

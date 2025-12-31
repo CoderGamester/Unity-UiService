@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // ReSharper disable CheckNamespace
 
@@ -14,16 +15,22 @@ namespace GameLovers.UiService
 	[Serializable]
 	public struct UiConfig
 	{
-		public string AddressableAddress;
+		[FormerlySerializedAs("AddressableAddress")]
+		public string Address;
 		public int Layer;
 		public Type UiType;
 		public bool LoadSynchronously;
 	}
 
 	/// <summary>
-	/// ScriptableObject tool to import the <seealso cref="UiConfig"/> & <seealso cref="UiSetConfig"/> to be used in the <see cref="IUiService"/>
+	/// ScriptableObject tool to import the <seealso cref="UiConfig"/> & <seealso cref="UiSetConfig"/> to be used in the <see cref="IUiService"/>.
+	/// Use one of the derived types to create a UiConfigs asset:
+	/// <list type="bullet">
+	/// <item><see cref="AddressablesUiConfigs"/> - for Addressables-based loading</item>
+	/// <item><see cref="ResourcesUiConfigs"/> - for Resources folder loading</item>
+	/// <item><see cref="PrefabRegistryUiConfigs"/> - for direct prefab references</item>
+	/// </list>
 	/// </summary>
-	[CreateAssetMenu(fileName = "UiConfigs", menuName = "ScriptableObjects/Configs/UiConfigs")]
 	public class UiConfigs : ScriptableObject//, IConfigsContainer<UiConfig>
 	{
 		[SerializeField]
@@ -88,7 +95,8 @@ namespace GameLovers.UiService
 		[Serializable]
 		public struct UiConfigSerializable
 		{
-			public string AddressableAddress;
+			[FormerlySerializedAs("AddressableAddress")]
+			public string Address;
 			public int Layer;
 			public string UiType;
 
@@ -96,7 +104,7 @@ namespace GameLovers.UiService
 			{
 				return new UiConfig
 				{
-					AddressableAddress = serializable.AddressableAddress,
+					Address = serializable.Address,
 					Layer = serializable.Layer,
 					UiType = Type.GetType(serializable.UiType),
 					LoadSynchronously = false
@@ -107,7 +115,7 @@ namespace GameLovers.UiService
 			{
 				return new UiConfigSerializable
 				{
-					AddressableAddress = config.AddressableAddress,
+					Address = config.Address,
 					Layer = config.Layer,
 					UiType = config.UiType.AssemblyQualifiedName
 				};

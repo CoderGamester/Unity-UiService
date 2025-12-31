@@ -37,7 +37,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			if (ShouldFail)
 			{
-				throw new Exception($"Simulated load failure for {config.AddressableAddress}");
+				throw new Exception($"Simulated load failure for {config.Address}");
 			}
 
 			if (SimulatedDelayMs > 0)
@@ -45,9 +45,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 				await UniTask.Delay(SimulatedDelayMs, cancellationToken: ct);
 			}
 
-			if (!_prefabs.TryGetValue(config.AddressableAddress, out var prefab))
+			if (!_prefabs.TryGetValue(config.Address, out var prefab))
 			{
-				throw new Exception($"Prefab not registered: {config.AddressableAddress}");
+				throw new Exception($"Prefab not registered: {config.Address}");
 			}
 
 			var instance = UnityEngine.Object.Instantiate(prefab, parent);

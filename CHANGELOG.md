@@ -20,10 +20,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `AddressablesUiAssetLoader` (default): Integration with Unity Addressables.
   - `PrefabRegistryUiAssetLoader`: Simple loader for direct prefab references (useful for testing and samples).
   - `ResourcesUiAssetLoader`: Support for loading from Unity's `Resources` folder.
+- Added `ResourcesUiConfigsEditor` and `PrefabRegistryUiConfigsEditor` for managing non-Addressable UI configurations.
+- Added `PrefabRegistryConfig` ScriptableObject to map address keys to UI Prefabs.
 
 **Changed**:
 - **BREAKING**: Removed `IPresenterFeature` interface; features now extend `PresenterFeatureBase` directly
 - **BREAKING**: Renamed `UiAssetLoader` to `AddressablesUiAssetLoader` to reflect its specific loading mechanism.
+- **BREAKING**: Renamed `UiConfig.AddressableAddress` to `UiConfig.Address` for loader-agnosticism
 - Refactored `AnimationDelayFeature` and `TimeDelayFeature` to use `Presenter.NotifyOpenTransitionCompleted()` and `Presenter.NotifyCloseTransitionCompleted()` instead of internal events
 - Removed `OnOpenCompletedEvent` and `OnCloseCompletedEvent` internal events from delay features
 - Updated all samples to use UI buttons instead of input system dependencies for better project compatibility

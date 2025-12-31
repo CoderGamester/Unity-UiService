@@ -13,7 +13,7 @@ namespace GameLovers.UiService.Tests
 		{
 			return new UiConfig
 			{
-				AddressableAddress = address,
+				Address = address,
 				Layer = layer,
 				UiType = type,
 				LoadSynchronously = loadSync

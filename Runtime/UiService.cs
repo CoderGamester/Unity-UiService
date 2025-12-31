@@ -78,13 +78,13 @@ namespace GameLovers.UiService
 
 			foreach (var uiConfig in uiConfigs)
 			{
-				if (string.IsNullOrEmpty(uiConfig.AddressableAddress))
+				if (string.IsNullOrEmpty(uiConfig.Address))
 				{
-					throw new ArgumentException($"UiConfig for type '{uiConfig.UiType.Name}' has empty addressable address. This UI will fail to load.");
+					throw new ArgumentException($"UiConfig for type '{uiConfig.UiType.Name}' has empty address. This UI will fail to load.");
 				}
 				if (uiConfig.UiType == null)
 				{
-					throw new ArgumentException($"UiConfig with addressable '{uiConfig.AddressableAddress}' has null UiType, skipping");
+					throw new ArgumentException($"UiConfig with address '{uiConfig.Address}' has null UiType, skipping");
 				}
 
 				if (uiConfig.Layer < 0)
@@ -166,7 +166,7 @@ namespace GameLovers.UiService
 		{
 			if (!_uiConfigs.TryAdd(config.UiType, config))
 			{
-				Debug.LogWarning($"The UiConfig {config.AddressableAddress} was already added");
+				Debug.LogWarning($"The UiConfig {config.Address} was already added");
 			}
 		}
 

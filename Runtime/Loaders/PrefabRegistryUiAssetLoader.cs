@@ -16,6 +16,26 @@ namespace GameLovers.UiService
 		private readonly Dictionary<string, GameObject> _prefabMap = new();
 
 		/// <summary>
+		/// Default constructor.
+		/// </summary>
+		public PrefabRegistryUiAssetLoader()
+		{
+		}
+
+		/// <summary>
+		/// Initializes the loader with entries from the given <paramref name="config"/>.
+		/// </summary>
+		public PrefabRegistryUiAssetLoader(PrefabRegistryConfig config)
+		{
+			if (config == null) return;
+
+			foreach (var entry in config.Entries)
+			{
+				RegisterPrefab(entry.Address, entry.Prefab);
+			}
+		}
+
+		/// <summary>
 		/// Registers a prefab with a given address.
 		/// </summary>
 		public void RegisterPrefab(string address, GameObject prefab)
@@ -26,9 +46,9 @@ namespace GameLovers.UiService
 		/// <inheritdoc />
 		public UniTask<GameObject> InstantiatePrefab(UiConfig config, Transform parent, CancellationToken cancellationToken = default)
 		{
-			if (!_prefabMap.TryGetValue(config.AddressableAddress, out var prefab))
+			if (!_prefabMap.TryGetValue(config.Address, out var prefab))
 			{
-				throw new KeyNotFoundException($"Prefab not registered for address: {config.AddressableAddress}");
+				throw new KeyNotFoundException($"Prefab not registered for address: {config.Address}");
 			}
 
 			var instance = Object.Instantiate(prefab, parent);

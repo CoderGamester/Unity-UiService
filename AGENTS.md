@@ -25,6 +25,12 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
 - **Configuration**: `Runtime/UiConfigs.cs` (`ScriptableObject`)
   - Stores UI configs as `UiConfigs.UiConfigSerializable` (address + layer + type name).
   - Stores UI sets as `UiSetConfigSerializable` containing `UiSetEntry` items.
+  - **Specialized subclasses** (each with its own `CreateAssetMenu`):
+    - `AddressablesUiConfigs` — for Addressables-based loading (default)
+    - `ResourcesUiConfigs` — for Resources folder loading
+    - `PrefabRegistryUiConfigs` — for direct prefab references
+- **Prefab Registry**: `Runtime/PrefabRegistryConfig.cs` (`ScriptableObject`)
+  - Stores (address, prefab) pairs for `PrefabRegistryUiAssetLoader`.
 - **UI Sets**: `Runtime/UiSetConfig.cs`
   - `UiSetEntry` stores:
     - presenter type as `AssemblyQualifiedName` string
@@ -48,7 +54,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
 - **Asset loading**: `Runtime/Loaders/IUiAssetLoader.cs`
   - `IUiAssetLoader` abstraction with multiple implementations under `Runtime/Loaders/`:
     - `AddressablesUiAssetLoader` (default): uses `Addressables.InstantiateAsync` and `Addressables.ReleaseInstance`.
-    - `PrefabRegistryUiAssetLoader`: uses direct prefab references (useful for samples/testing).
+    - `PrefabRegistryUiAssetLoader`: uses direct prefab references (useful for samples/testing). Can be initialized with a `PrefabRegistryConfig` in its constructor.
     - `ResourcesUiAssetLoader`: uses `Resources.Load`.
   - Supports optional synchronous instantiation via `UiConfig.LoadSynchronously` (in Addressables loader).
 - **Analytics (optional)**: `Runtime/UiAnalytics.cs`
@@ -63,7 +69,11 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `Runtime/IUiService.cs` — public API surface + `IUiServiceInit`
   - `Runtime/UiService.cs` — core implementation (multi-instance, sets, analytics hooks)
   - `Runtime/UiPresenter.cs` — presenter base classes + feature hooks
-  - `Runtime/UiConfigs.cs` — config storage/serialization
+  - `Runtime/UiConfigs.cs` — config storage/serialization (base class)
+  - `Runtime/AddressablesUiConfigs.cs` — UiConfigs for Addressables-based loading
+  - `Runtime/ResourcesUiConfigs.cs` — UiConfigs for Resources folder loading
+  - `Runtime/PrefabRegistryUiConfigs.cs` — UiConfigs for direct prefab references
+  - `Runtime/PrefabRegistryConfig.cs` — prefab registry config for direct references
   - `Runtime/UiSetConfig.cs` — UI set + serialization helpers
   - `Runtime/UiInstanceId.cs` — multi-instance identity (normalizes null/empty to `string.Empty`)
   - `Runtime/Loaders/IUiAssetLoader.cs` — Asset loading abstraction
@@ -75,7 +85,12 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `Runtime/Features/*` — composable presenter features
   - `Runtime/Views/*` — helper view components (safe area, non-drawing, sizing, TMP links)
 - **Editor**: `Editor/` (assembly: `Editor/GameLovers.UiService.Editor.asmdef`)
-  - `Editor/UiConfigsEditor.cs` — UI Toolkit inspector for `UiConfigs` + layer visualizer + menu items
+  - `Editor/UiConfigsEditorBase.cs` — abstract base for UI configs editors
+  - `Editor/AddressablesUiConfigsEditor.cs` — Addressables-specific configs editor
+  - `Editor/ResourcesUiConfigsEditor.cs` — Resources-specific configs editor
+  - `Editor/PrefabRegistryUiConfigsEditor.cs` — Prefab Registry configs editor
+  - `Editor/PrefabRegistryConfigEditor.cs` — inspector for `PrefabRegistryConfig`
+  - `Editor/UiConfigsEditor.cs` — menu items for UI configs
   - `Editor/DefaultUiConfigsEditor.cs` — default out-of-the-box `UiConfigs` editor using `DefaultUiSetId`
   - `Editor/UiAnalyticsWindow.cs` — play-mode analytics viewer
   - `Editor/UiServiceHierarchyWindow.cs` — play-mode hierarchy/debug window

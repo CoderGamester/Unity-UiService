@@ -17,16 +17,16 @@ namespace GameLovers.UiService
 		/// <inheritdoc />
 		public UniTask<GameObject> InstantiatePrefab(UiConfig config, Transform parent, CancellationToken cancellationToken = default)
 		{
-			if (!_cachedPrefabs.TryGetValue(config.AddressableAddress, out var prefab))
+			if (!_cachedPrefabs.TryGetValue(config.Address, out var prefab))
 			{
-				prefab = Resources.Load<GameObject>(config.AddressableAddress);
+				prefab = Resources.Load<GameObject>(config.Address);
 				
 				if (prefab == null)
 				{
-					throw new KeyNotFoundException($"Prefab not found in Resources at path: {config.AddressableAddress}");
+					throw new KeyNotFoundException($"Prefab not found in Resources at path: {config.Address}");
 				}
 				
-				_cachedPrefabs[config.AddressableAddress] = prefab;
+				_cachedPrefabs[config.Address] = prefab;
 			}
 
 			var instance = Object.Instantiate(prefab, parent);

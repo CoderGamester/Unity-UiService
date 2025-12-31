@@ -18,13 +18,45 @@ namespace GameLoversEditor.UiService
 	}
 
 	/// <summary>
-	/// Default implementation of the UiConfigs editor.
+	/// Default implementation of the UiConfigs editor for Addressables-based loading.
 	/// This allows the library to work out-of-the-box without requiring user implementation.
-	/// Users can override by creating their own CustomEditor implementation for UiConfigs.
+	/// Users can override by creating their own CustomEditor implementation for <see cref="AddressablesUiConfigs"/>.
+	/// </summary>
+	[CustomEditor(typeof(AddressablesUiConfigs))]
+	public class DefaultAddressablesUiConfigsEditor : AddressablesUiConfigsEditor<DefaultUiSetId>
+	{
+		// No additional implementation needed - uses Addressables loader functionality by default
+	}
+
+	/// <summary>
+	/// Default implementation of the UiConfigs editor for Resources folder-based loading.
+	/// This allows the library to work out-of-the-box without requiring user implementation.
+	/// Users can override by creating their own CustomEditor implementation for <see cref="ResourcesUiConfigs"/>.
+	/// </summary>
+	[CustomEditor(typeof(ResourcesUiConfigs))]
+	public class DefaultResourcesUiConfigsEditor : ResourcesUiConfigsEditor<DefaultUiSetId>
+	{
+		// No additional implementation needed - uses Resources loader functionality by default
+	}
+
+	/// <summary>
+	/// Default implementation of the UiConfigs editor for PrefabRegistry-based loading.
+	/// This allows the library to work out-of-the-box without requiring user implementation.
+	/// Users can override by creating their own CustomEditor implementation for <see cref="PrefabRegistryUiConfigs"/>.
+	/// </summary>
+	[CustomEditor(typeof(PrefabRegistryUiConfigs))]
+	public class DefaultPrefabRegistryUiConfigsEditor : PrefabRegistryUiConfigsEditor<DefaultUiSetId>
+	{
+		// No additional implementation needed - uses PrefabRegistry loader functionality by default
+	}
+
+	/// <summary>
+	/// Fallback editor for the base <see cref="UiConfigs"/> type.
+	/// This handles legacy assets created before the specific types were introduced.
 	/// </summary>
 	[CustomEditor(typeof(UiConfigs))]
-	public class DefaultUiConfigsEditor : UiConfigsEditor<DefaultUiSetId>
+	public class DefaultUiConfigsEditor : AddressablesUiConfigsEditor<DefaultUiSetId>
 	{
-		// No additional implementation needed - uses base class functionality
+		// Falls back to Addressables behavior for backward compatibility
 	}
 }
