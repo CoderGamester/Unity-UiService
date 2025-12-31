@@ -19,6 +19,13 @@ namespace GameLoversEditor.UiService
 		private Dictionary<string, string> _assetPathLookup;
 		private List<string> _uiConfigsAddress;
 		private Dictionary<string, Type> _uiTypesByAddress;
+		private SerializedProperty _prefabEntriesProperty;
+
+		protected override void OnEnable()
+		{
+			base.OnEnable();
+			_prefabEntriesProperty = serializedObject.FindProperty("_prefabEntries");
+		}
 
 		protected override void SyncConfigs()
 		{
@@ -26,15 +33,11 @@ namespace GameLoversEditor.UiService
 			_uiConfigsAddress = new List<string>();
 			_assetPathLookup = new Dictionary<string, string>();
 			var existingConfigs = ScriptableObjectInstance.Configs;
+			var prefabConfigs = ScriptableObjectInstance as PrefabRegistryUiConfigs;
 
-			// Find PrefabRegistryConfig assets
-			var guids = AssetDatabase.FindAssets($"t:{nameof(PrefabRegistryConfig)}");
-			if (guids.Length == 0) return;
+			if (prefabConfigs == null) return;
 
-			var prefabConfig = AssetDatabase.LoadAssetAtPath<PrefabRegistryConfig>(AssetDatabase.GUIDToAssetPath(guids[0]));
-			if (prefabConfig == null) return;
-
-			foreach (var entry in prefabConfig.Entries)
+			foreach (var entry in prefabConfigs.PrefabEntries)
 			{
 				if (entry.Prefab == null) continue;
 
@@ -71,7 +74,89 @@ namespace GameLoversEditor.UiService
 			}
 
 			EditorUtility.SetDirty(ScriptableObjectInstance);
-			AssetDatabase.SaveAssets();
+		}
+
+		public override VisualElement CreateInspectorGUI()
+		{
+			var root = base.CreateInspectorGUI();
+
+			// Add Prefab Entries section at the top of Section 2 (before the configs list)
+			var prefabSection = new VisualElement { style = { marginBottom = 10 } };
+			var helpBox = new HelpBox(
+				"Map addresses to UI Prefabs directly here. Addresses are auto-populated from prefab names. " +
+				"These entries are used to generate the UI Presenter Configs below.", 
+				HelpBoxMessageType.Info);
+			helpBox.style.marginBottom = 5;
+			prefabSection.Add(helpBox);
+
+			var listView = new ListView
+			{
+				showBorder = true,
+				showAddRemoveFooter = true,
+				reorderable = true,
+				headerTitle = "Embedded Prefab Registry",
+				showFoldoutHeader = true,
+				virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
+				fixedItemHeight = 24
+			};
+
+			listView.BindProperty(_prefabEntriesProperty);
+			listView.makeItem = CreateEntryElement;
+			listView.bindItem = (element, index) => BindEntryElement(element, index, _prefabEntriesProperty);
+			
+			listView.itemsAdded += _ => SyncConfigs();
+			listView.itemsRemoved += _ => SyncConfigs();
+			listView.itemIndexChanged += (_, _) => SyncConfigs();
+
+			// Insert after the visualizer section (index 1 in root)
+			root.Insert(1, prefabSection);
+			root.Insert(2, listView);
+
+			return root;
+		}
+
+		private VisualElement CreateEntryElement()
+		{
+			var container = new VisualElement { style = { flexDirection = FlexDirection.Row, paddingBottom = 2, paddingTop = 2 } };
+			
+			var addressField = new TextField { name = "address-field", style = { flexGrow = 1, marginRight = 5 } };
+			container.Add(addressField);
+			
+			var prefabField = new ObjectField { name = "prefab-field", objectType = typeof(GameObject), style = { flexGrow = 1 } };
+			container.Add(prefabField);
+			
+			return container;
+		}
+
+		private void BindEntryElement(VisualElement element, int index, SerializedProperty entriesProperty)
+		{
+			if (index >= entriesProperty.arraySize) return;
+
+			var itemProperty = entriesProperty.GetArrayElementAtIndex(index);
+			var addressProperty = itemProperty.FindPropertyRelative("Address");
+			var prefabProperty = itemProperty.FindPropertyRelative("Prefab");
+
+			var addressField = element.Q<TextField>("address-field");
+			var prefabField = element.Q<ObjectField>("prefab-field");
+
+			addressField.BindProperty(addressProperty);
+			prefabField.BindProperty(prefabProperty);
+
+			prefabField.RegisterValueChangedCallback(evt =>
+			{
+				if (evt.newValue != null && string.IsNullOrEmpty(addressProperty.stringValue))
+				{
+					addressProperty.stringValue = evt.newValue.name;
+					addressProperty.serializedObject.ApplyModifiedProperties();
+					SyncConfigs();
+				}
+				else
+				{
+					SyncConfigs();
+				}
+			});
+			
+			addressField.RegisterValueChangedCallback(_ => SyncConfigs());
 		}
 
 		protected override IReadOnlyList<string> GetAddressList() => _uiConfigsAddress ?? new List<string>();

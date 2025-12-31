@@ -20,11 +20,8 @@ namespace GameLovers.UiService.Examples
 	/// </summary>
 	public class CustomFeaturesExample : MonoBehaviour
 	{
-		[SerializeField] private UiConfigs _uiConfigs;
+		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
 
-		[Header("Sample Prefabs")]
-		[SerializeField] private GameObject[] _presenterPrefabs;
-		
 		[Header("UI Buttons")]
 		[SerializeField] private Button _openFadeButton;
 		[SerializeField] private Button _openScaleButton;
@@ -36,12 +33,7 @@ namespace GameLovers.UiService.Examples
 		private void Start()
 		{
 			// Initialize UI Service
-			var loader = new PrefabRegistryUiAssetLoader();
-			foreach (var prefab in _presenterPrefabs)
-			{
-				var presenter = prefab.GetComponent<UiPresenter>();
-				loader.RegisterPrefab(presenter.GetType().Name, prefab);
-			}
+			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
 
 			_uiService = new UiService(loader);
 			_uiService.Init(_uiConfigs);

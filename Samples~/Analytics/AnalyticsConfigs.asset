@@ -9,12 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0912607e574b4dacb5cee8cd4d10b13, type: 3}
+  m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
   m_Name: AnalyticsConfigs
   m_EditorClassIdentifier: 
   _configs:
-  - AddressableAddress: AnalyticsExamplePresenter
+  - Address: AnalyticsExamplePresenter
     Layer: 10
     UiType: GameLovers.UiService.Examples.AnalyticsExamplePresenter, Assembly-CSharp
   _sets: []
+  _prefabEntries:
+  - Address: AnalyticsExamplePresenter
+    Prefab: {fileID: 100100000, guid: dd22334455667788990011223344dd06, type: 3}
 

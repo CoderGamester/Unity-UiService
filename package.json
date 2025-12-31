@@ -57,6 +57,11 @@
       "displayName": "Custom Features",
       "description": "Create custom presenter features (fade, scale, sound) by extending PresenterFeatureBase.",
       "path": "Samples~/CustomFeatures"
+    },
+    {
+      "displayName": "Asset Loading Strategies",
+      "description": "Compare PrefabRegistry, Addressables, and Resources loading strategies.",
+      "path": "Samples~/AssetLoadingStrategies"
     }
   ]
 }

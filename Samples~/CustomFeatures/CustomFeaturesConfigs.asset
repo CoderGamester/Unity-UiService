@@ -9,18 +9,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0912607e574b4dacb5cee8cd4d10b13, type: 3}
+  m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
   m_Name: CustomFeaturesConfigs
   m_EditorClassIdentifier: 
   _configs:
-  - AddressableAddress: FadingPresenter
+  - Address: FadingPresenter
     Layer: 10
     UiType: GameLovers.UiService.Examples.FadingPresenter, Assembly-CSharp
-  - AddressableAddress: ScalingPresenter
+  - Address: ScalingPresenter
     Layer: 10
     UiType: GameLovers.UiService.Examples.ScalingPresenter, Assembly-CSharp
-  - AddressableAddress: FullFeaturedPresenter
+  - Address: FullFeaturedPresenter
     Layer: 10
     UiType: GameLovers.UiService.Examples.FullFeaturedPresenter, Assembly-CSharp
   _sets: []
+  _prefabEntries:
+  - Address: FadingPresenter
+    Prefab: {fileID: 100100000, guid: 1122334455667788990011223344dd10, type: 3}
+  - Address: ScalingPresenter
+    Prefab: {fileID: 100100000, guid: 1122334455667788990011223344dd11, type: 3}
+  - Address: FullFeaturedPresenter
+    Prefab: {fileID: 100100000, guid: 1122334455667788990011223344dd12, type: 3}
 

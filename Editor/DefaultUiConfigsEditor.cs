@@ -49,14 +49,4 @@ namespace GameLoversEditor.UiService
 	{
 		// No additional implementation needed - uses PrefabRegistry loader functionality by default
 	}
-
-	/// <summary>
-	/// Fallback editor for the base <see cref="UiConfigs"/> type.
-	/// This handles legacy assets created before the specific types were introduced.
-	/// </summary>
-	[CustomEditor(typeof(UiConfigs))]
-	public class DefaultUiConfigsEditor : AddressablesUiConfigsEditor<DefaultUiSetId>
-	{
-		// Falls back to Addressables behavior for backward compatibility
-	}
 }

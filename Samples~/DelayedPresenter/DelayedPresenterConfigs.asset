@@ -9,10 +9,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0912607e574b4dacb5cee8cd4d10b13, type: 3}
+  m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
   m_Name: DelayedPresenterConfigs
   m_EditorClassIdentifier: 
-  _configs: []
+  _configs:
+  - Address: DelayedUiExamplePresenter
+    Layer: 10
+    UiType: GameLovers.UiService.Examples.DelayedUiExamplePresenter, Assembly-CSharp
+  - Address: AnimatedUiExamplePresenter
+    Layer: 10
+    UiType: GameLovers.UiService.Examples.AnimatedUiExamplePresenter, Assembly-CSharp
   _sets:
   - SetId: 0
     UiEntries: []
@@ -26,3 +32,8 @@ MonoBehaviour:
     UiEntries: []
   - SetId: 5
     UiEntries: []
+  _prefabEntries:
+  - Address: DelayedUiExamplePresenter
+    Prefab: {fileID: 100100000, guid: 8113feac3cdea4f55abc635a277bdb0a, type: 3}
+  - Address: AnimatedUiExamplePresenter
+    Prefab: {fileID: 100100000, guid: 947c73cf48f1c422d9f41e6ca241b755, type: 3}

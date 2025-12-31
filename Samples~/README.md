@@ -80,6 +80,7 @@ void Start()
 | 7 | [UiSets](#7-uisets) | HUD management |
 | 8 | [MultiInstance](#8-multiinstance) | Popup stacking |
 | 9 | [CustomFeatures](#9-customfeatures) | Create your own features |
+| 10 | [AssetLoadingStrategies](#10-assetloadingstrategies) | Compare loading strategies |
 
 ---
 
@@ -552,6 +553,33 @@ public class MyPresenter : UiPresenter { }
 | ✅ Configurable | All settings in Unity inspector |
 | ✅ Clear | One component = one capability |
 | ✅ Scalable | Add new features without modifying existing code |
+
+---
+
+### 10. AssetLoadingStrategies
+
+**Files:**
+- `ExamplePresenter.cs` - Simple presenter for demonstration
+- `AssetLoadingExample.cs` - Strategy switching and UI service usage
+
+**Demonstrates:**
+- Using different asset loading strategies (PrefabRegistry, Addressables, Resources)
+- Switching loaders via the `IUiAssetLoader` abstraction
+- Setup requirements for each strategy
+
+**Pattern:**
+```csharp
+IUiAssetLoader loader = _strategy switch
+{
+    LoadingStrategy.PrefabRegistry => new PrefabRegistryUiAssetLoader(_prefabRegistryConfigs),
+    LoadingStrategy.Addressables => new AddressablesUiAssetLoader(),
+    LoadingStrategy.Resources => new ResourcesUiAssetLoader(),
+    _ => throw new ArgumentOutOfRangeException()
+};
+
+_uiService = new UiService(loader);
+_uiService.Init(configs);
+```
 
 ---
 

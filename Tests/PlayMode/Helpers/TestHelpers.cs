@@ -22,14 +22,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 		
 		public static UiConfigs CreateTestConfigs(params UiConfig[] configs)
 		{
-			var scriptableObject = ScriptableObject.CreateInstance<UiConfigs>();
+			var scriptableObject = ScriptableObject.CreateInstance<PrefabRegistryUiConfigs>();
 			scriptableObject.Configs = new List<UiConfig>(configs);
 			return scriptableObject;
 		}
 		
 		public static UiConfigs CreateTestConfigsWithSets(UiConfig[] configs, UiSetConfig[] sets)
 		{
-			var scriptableObject = ScriptableObject.CreateInstance<UiConfigs>();
+			var scriptableObject = ScriptableObject.CreateInstance<PrefabRegistryUiConfigs>();
 			scriptableObject.Configs = new List<UiConfig>(configs);
 
 			// We use the Serializable versions to set the data

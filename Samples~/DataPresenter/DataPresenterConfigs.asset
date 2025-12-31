@@ -9,12 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0912607e574b4dacb5cee8cd4d10b13, type: 3}
+  m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
   m_Name: DataPresenterConfigs
   m_EditorClassIdentifier: 
   _configs:
-  - AddressableAddress: DataUiExamplePresenter
+  - Address: DataUiExamplePresenter
     Layer: 10
     UiType: GameLovers.UiService.Examples.DataUiExamplePresenter, Assembly-CSharp
   _sets: []
+  _prefabEntries:
+  - Address: DataUiExamplePresenter
+    Prefab: {fileID: 100100000, guid: 3f330e45bc4224627846c133ed3523ae, type: 3}
 

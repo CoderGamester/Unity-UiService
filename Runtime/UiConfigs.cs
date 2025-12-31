@@ -31,7 +31,7 @@ namespace GameLovers.UiService
 	/// <item><see cref="PrefabRegistryUiConfigs"/> - for direct prefab references</item>
 	/// </list>
 	/// </summary>
-	public class UiConfigs : ScriptableObject//, IConfigsContainer<UiConfig>
+	public abstract class UiConfigs : ScriptableObject//, IConfigsContainer<UiConfig>
 	{
 		[SerializeField]
 		private List<UiConfigSerializable> _configs = new List<UiConfigSerializable>();

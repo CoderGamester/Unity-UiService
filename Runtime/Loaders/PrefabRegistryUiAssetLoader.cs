@@ -23,13 +23,13 @@ namespace GameLovers.UiService
 		}
 
 		/// <summary>
-		/// Initializes the loader with entries from the given <paramref name="config"/>.
+		/// Initializes the loader with entries from the given <paramref name="configs"/>.
 		/// </summary>
-		public PrefabRegistryUiAssetLoader(PrefabRegistryConfig config)
+		public PrefabRegistryUiAssetLoader(PrefabRegistryUiConfigs configs)
 		{
-			if (config == null) return;
+			if (configs == null) return;
 
-			foreach (var entry in config.Entries)
+			foreach (var entry in configs.PrefabEntries)
 			{
 				RegisterPrefab(entry.Address, entry.Prefab);
 			}
