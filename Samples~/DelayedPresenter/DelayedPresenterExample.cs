@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using TMPro;
 using GameLovers.UiService;
@@ -24,7 +25,7 @@ namespace GameLovers.UiService.Examples
 		
 		private IUiServiceInit _uiService;
 
-		private void Start()
+		private async void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
@@ -36,9 +37,15 @@ namespace GameLovers.UiService.Examples
 			_openTimeDelayedButton?.onClick.AddListener(OpenTimeDelayedUi);
 			_openAnimatedButton?.onClick.AddListener(OpenAnimatedUi);
 			_closeButton?.onClick.AddListener(CloseActiveUi);
+			
+			// Pre-load presenters (without opening them) and subscribe to close events
+			var delayedPresenter = await _uiService.LoadUiAsync<DelayedUiExamplePresenter>();
+			var animatedPresenter = await _uiService.LoadUiAsync<AnimatedUiExamplePresenter>();
+			delayedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			animatedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
 
 			// Initialize UI visibility state
-			UpdateUiVisibility();
+			UpdateUiVisibility(false);
 		}
 
 		private void OnDestroy()
@@ -51,21 +58,21 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Opens the time-delayed UI presenter
 		/// </summary>
-		public void OpenTimeDelayedUi()
+		public async void OpenTimeDelayedUi()
 		{
 			CloseActiveUi();
-			_uiService.OpenUiAsync<DelayedUiExamplePresenter>().Forget();
-			UpdateUiVisibility();
+			await _uiService.OpenUiAsync<DelayedUiExamplePresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
 		/// Opens the animation-delayed UI presenter
 		/// </summary>
-		public void OpenAnimatedUi()
+		public async void OpenAnimatedUi()
 		{
 			CloseActiveUi();
-			_uiService.OpenUiAsync<AnimatedUiExamplePresenter>().Forget();
-			UpdateUiVisibility();
+			await _uiService.OpenUiAsync<AnimatedUiExamplePresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
@@ -82,20 +89,11 @@ namespace GameLovers.UiService.Examples
 				_uiService.CloseUi<AnimatedUiExamplePresenter>(destroy: false);
 			}
 
-			UpdateUiVisibility();
+			UpdateUiVisibility(false);
 		}
 
-		/// <summary>
-		/// Updates the visibility of UI elements based on presenter state.
-		/// Explanation text is shown when no presenter is active.
-		/// Close button is shown only when a presenter is active.
-		/// </summary>
-		private void UpdateUiVisibility()
+		private void UpdateUiVisibility(bool isPresenterActive)
 		{
-			var isPresenterActive = _uiService.IsVisible<DelayedUiExamplePresenter>() || 
-			                        _uiService.IsVisible<AnimatedUiExamplePresenter>();
-
-			
 			_explanationText.gameObject.SetActive(!isPresenterActive);
 			_closeButton.gameObject.SetActive(isPresenterActive);
 		}

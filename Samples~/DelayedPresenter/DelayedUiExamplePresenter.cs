@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using GameLovers.UiService;
 
@@ -17,6 +18,12 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private TMP_Text _statusText;
 		[SerializeField] private Button _closeButton;
 
+		/// <summary>
+		/// Event invoked when the close button is clicked, before the close transition begins.
+		/// Subscribe to this event to react to the presenter's close request.
+		/// </summary>
+		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
+
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
@@ -24,15 +31,18 @@ namespace GameLovers.UiService.Examples
 			
 			// Wire up the close button
 			_closeButton.onClick.AddListener(OnCloseButtonClicked);
+			_closeButton.gameObject.SetActive(false);
 		}
 
 		private void OnDestroy()
 		{
 			_closeButton.onClick.RemoveListener(OnCloseButtonClicked);
+			OnCloseRequested.RemoveAllListeners();
 		}
 
 		private void OnCloseButtonClicked()
 		{
+			OnCloseRequested.Invoke();
 			Close(destroy: false);
 		}
 
@@ -55,11 +65,18 @@ namespace GameLovers.UiService.Examples
 		protected override void OnClosed()
 		{
 			base.OnClosed();
-			Debug.Log($"[DelayedUiExample] UI Closed after {_delayFeature.CloseDelayInSeconds}s delay");
+			_closeButton.gameObject.SetActive(false);
+			Debug.Log($"[DelayedUiExample] UI Closing with {_delayFeature.CloseDelayInSeconds}s delay...");
+			
+			if (_statusText != null)
+			{
+				_statusText.text = $"Closing with {_delayFeature.CloseDelayInSeconds}s delay...";
+			}
 		}
 
 		protected override void OnOpenTransitionCompleted()
 		{
+			_closeButton.gameObject.SetActive(true);
 			Debug.Log("[DelayedUiExample] Opening delay completed!");
 			
 			if (_statusText != null)
@@ -71,6 +88,11 @@ namespace GameLovers.UiService.Examples
 		protected override void OnCloseTransitionCompleted()
 		{
 			Debug.Log("[DelayedUiExample] Closing delay completed!");
+			
+			if (_statusText != null)
+			{
+				_statusText.text = $"Closed successfully after {_delayFeature.CloseDelayInSeconds}s!";
+			}
 		}
 	}
 }
