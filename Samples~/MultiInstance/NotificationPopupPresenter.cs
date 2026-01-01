@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -10,8 +11,8 @@ namespace GameLovers.UiService.Examples
 	/// </summary>
 	public class NotificationPopupPresenter : UiPresenter
 	{
-		[SerializeField] private Text _titleText;
-		[SerializeField] private Text _messageText;
+		[SerializeField] private TMP_Text _titleText;
+		[SerializeField] private TMP_Text _messageText;
 		[SerializeField] private Button _closeButton;
 		[SerializeField] private Button _backgroundButton;
 

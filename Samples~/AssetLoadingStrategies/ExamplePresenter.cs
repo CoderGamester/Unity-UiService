@@ -1,4 +1,6 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using GameLovers.UiService;
 
 // ReSharper disable CheckNamespace
@@ -10,7 +12,7 @@ namespace GameLovers.UiService.Examples
 	/// </summary>
 	public class ExamplePresenter : UiPresenter
 	{
-		[SerializeField] private Text _titleText;
+		[SerializeField] private TMP_Text _titleText;
 		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()

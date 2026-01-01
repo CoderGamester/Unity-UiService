@@ -140,6 +140,17 @@ _uiService.CloseUi(shopPresenter);
 _uiService.CloseUi(shopPresenter, destroy: true);
 ```
 
+**Transition Behavior:**
+- If the presenter has `ITransitionFeature` components (e.g., `TimeDelayFeature`, `AnimationDelayFeature`), the close will wait for all transitions to complete before hiding the GameObject.
+- Use `presenter.CloseTransitionTask` to await the full close process including transitions.
+
+```csharp
+// Wait for close transition to complete
+_uiService.CloseUi<AnimatedPopup>();
+await presenter.CloseTransitionTask;
+Debug.Log("Popup fully closed with animation");
+```
+
 ### CloseAllUi
 
 Close multiple presenters at once.

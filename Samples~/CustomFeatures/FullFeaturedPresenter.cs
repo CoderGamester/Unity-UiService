@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -26,8 +27,8 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private SoundFeature _soundFeature;
 		
 		[Header("UI Elements")]
-		[SerializeField] private Text _titleText;
-		[SerializeField] private Text _descriptionText;
+		[SerializeField] private TMP_Text _titleText;
+		[SerializeField] private TMP_Text _descriptionText;
 		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()

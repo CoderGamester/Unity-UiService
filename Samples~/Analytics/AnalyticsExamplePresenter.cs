@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -9,7 +10,7 @@ namespace GameLovers.UiService.Examples
 	/// </summary>
 	public class AnalyticsExamplePresenter : UiPresenter
 	{
-		[SerializeField] private Text _titleText;
+		[SerializeField] private TMP_Text _titleText;
 		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()

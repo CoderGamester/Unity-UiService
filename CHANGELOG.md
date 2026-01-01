@@ -13,9 +13,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - PlayMode integration tests for multi-instance, loading, open/close, and UI set management
   - Performance and smoke tests
   - Feature-specific tests for `AnimationDelayFeature`, `TimeDelayFeature`, and `PresenterFeatureBase`
+- Added `ITransitionFeature` interface for features that provide open/close transition delays
+- Added `OpenTransitionTask` and `CloseTransitionTask` public properties on `UiPresenter` for awaiting transition completion externally
 - Added `AGENTS.md` documentation for AI coding agents
 - Added structured documentation under `docs/` folder with separate pages for getting started, core concepts, API reference, advanced topics, and troubleshooting
-- Added new samples: `MultiInstance`, `CustomFeatures`, `UiSets`
+- Added multiple new samples to the package library
 - Added multiple `IUiAssetLoader` implementations to support different asset loading scenarios:
   - `AddressablesUiAssetLoader` (default): Integration with Unity Addressables.
   - `PrefabRegistryUiAssetLoader`: Simple loader for direct prefab references (useful for testing and samples).
@@ -27,6 +29,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - **BREAKING**: Removed `IPresenterFeature` interface; features now extend `PresenterFeatureBase` directly
 - **BREAKING**: Renamed `UiAssetLoader` to `AddressablesUiAssetLoader` to reflect its specific loading mechanism.
 - **BREAKING**: Renamed `UiConfig.AddressableAddress` to `UiConfig.Address` for loader-agnosticism
+- **BREAKING**: `TimeDelayFeature` and `AnimationDelayFeature` no longer call `gameObject.SetActive(false)` directly; visibility is now controlled solely by `UiPresenter`
+- Refactored `UiPresenter.InternalOpen()` and `InternalClose()` to use internal async processes that await `ITransitionFeature` tasks
 - Refactored `AnimationDelayFeature` and `TimeDelayFeature` to use `Presenter.NotifyOpenTransitionCompleted()` and `Presenter.NotifyCloseTransitionCompleted()` instead of internal events
 - Removed `OnOpenCompletedEvent` and `OnCloseCompletedEvent` internal events from delay features
 - Updated all samples to use UI buttons instead of input system dependencies for better project compatibility
@@ -36,6 +40,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed `UiPresenterEditor` play-mode buttons to properly call `InternalOpen()` and `InternalClose()` instead of just toggling `gameObject.SetActive()`
 - Fixed delay features to work correctly when tests run together (UniTaskCompletionSource lifecycle)
 - Fixed null checks in delay features using explicit null comparisons instead of null-conditional operators for Unity object compatibility
+- Fixed inconsistent lifecycle where `OnOpenTransitionCompleted`/`OnCloseTransitionCompleted` were only called when features existed
+- Fixed split responsibility for visibility control where both `UiPresenter` and features could call `SetActive(false)`, allowing now to properly close the presenters in all scenarios
 
 ## [1.0.0] - 2025-11-04
 

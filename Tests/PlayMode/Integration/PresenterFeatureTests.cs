@@ -20,11 +20,13 @@ namespace GameLovers.UiService.Tests.PlayMode
 		{
 			_mockLoader = new MockAssetLoader();
 			_mockLoader.RegisterPrefab<TestPresenterWithFeature>("feature_presenter");
+			_mockLoader.RegisterPrefab<TestPresenterWithTransitionFeature>("transition_feature_presenter");
 			
 			_service = new UiService(_mockLoader);
 			
 			var configs = TestHelpers.CreateTestConfigs(
-				TestHelpers.CreateTestConfig(typeof(TestPresenterWithFeature), "feature_presenter", 0)
+				TestHelpers.CreateTestConfig(typeof(TestPresenterWithFeature), "feature_presenter", 0),
+				TestHelpers.CreateTestConfig(typeof(TestPresenterWithTransitionFeature), "transition_feature_presenter", 0)
 			);
 			_service.Init(configs);
 		}
@@ -105,58 +107,121 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator NotifyOpenTransitionCompleted_TriggersPresenterHook()
+		public IEnumerator OnOpenTransitionCompleted_AlwaysCalledForPresentersWithoutFeatures()
 		{
-			// Arrange
+			// Arrange - Using presenter with non-transition feature (no ITransitionFeature)
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestPresenterWithFeature;
 
-			// Act - Feature calls NotifyOpenTransitionCompleted
-			presenter.Feature.SimulateOpenTransitionComplete();
+			// Wait a frame for async process to complete
+			yield return null;
 
-			// Assert
+			// Assert - OnOpenTransitionCompleted should always be called
 			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
 			Assert.AreEqual(1, presenter.OpenTransitionCompletedCount);
 		}
 
 		[UnityTest]
-		public IEnumerator NotifyCloseTransitionCompleted_TriggersPresenterHook()
+		public IEnumerator OnCloseTransitionCompleted_AlwaysCalledForPresentersWithoutFeatures()
 		{
 			// Arrange
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestPresenterWithFeature;
+
+			// Wait for open transition to complete
+			yield return null;
+
+			// Act
 			_service.CloseUi(typeof(TestPresenterWithFeature));
+			
+			// Wait for close transition to complete
+			yield return null;
 
-			// Act - Feature calls NotifyCloseTransitionCompleted
-			presenter.Feature.SimulateCloseTransitionComplete();
-
-			// Assert
+			// Assert - OnCloseTransitionCompleted should always be called
 			Assert.IsTrue(presenter.WasCloseTransitionCompleted);
 			Assert.AreEqual(1, presenter.CloseTransitionCompletedCount);
 		}
 
 		[UnityTest]
-		public IEnumerator MultipleTransitionNotifications_IncrementCount()
+		public IEnumerator TransitionFeature_PresenterAwaitsOpenTransition()
 		{
 			// Arrange
-			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
+			var task = _service.OpenUiAsync(typeof(TestPresenterWithTransitionFeature));
 			yield return task.ToCoroutine();
-			var presenter = task.GetAwaiter().GetResult() as TestPresenterWithFeature;
+			var presenter = task.GetAwaiter().GetResult() as TestPresenterWithTransitionFeature;
 
-			// Act
-			presenter.Feature.SimulateOpenTransitionComplete();
-			presenter.Feature.SimulateOpenTransitionComplete();
-			presenter.Feature.SimulateOpenTransitionComplete();
+			// Transition not yet complete
+			Assert.IsFalse(presenter.WasOpenTransitionCompleted);
+
+			// Act - Complete the transition
+			presenter.TransitionFeature.CompleteOpenTransition();
+			
+			// Wait for presenter to process
+			yield return null;
 
 			// Assert
-			Assert.AreEqual(3, presenter.OpenTransitionCompletedCount);
+			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
+		}
+
+		[UnityTest]
+		public IEnumerator TransitionFeature_PresenterAwaitsCloseTransition()
+		{
+			// Arrange
+			var task = _service.OpenUiAsync(typeof(TestPresenterWithTransitionFeature));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestPresenterWithTransitionFeature;
+			
+			// Complete open transition first
+			presenter.TransitionFeature.CompleteOpenTransition();
+			yield return null;
+
+			// Act - Close and verify transition is awaited
+			_service.CloseUi(typeof(TestPresenterWithTransitionFeature));
+			yield return null;
+
+			// Close transition not yet complete
+			Assert.IsFalse(presenter.WasCloseTransitionCompleted);
+			Assert.IsTrue(presenter.gameObject.activeSelf); // Still visible during transition
+
+			// Complete the transition
+			presenter.TransitionFeature.CompleteCloseTransition();
+			yield return null;
+
+			// Assert
+			Assert.IsTrue(presenter.WasCloseTransitionCompleted);
+			Assert.IsFalse(presenter.gameObject.activeSelf); // Hidden after transition
+		}
+
+		[UnityTest]
+		public IEnumerator TransitionFeature_GameObjectHiddenOnlyAfterTransitionCompletes()
+		{
+			// Arrange
+			var task = _service.OpenUiAsync(typeof(TestPresenterWithTransitionFeature));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestPresenterWithTransitionFeature;
+			presenter.TransitionFeature.CompleteOpenTransition();
+			yield return null;
+
+			// Act - Start close
+			_service.CloseUi(typeof(TestPresenterWithTransitionFeature));
+			yield return null;
+
+			// Assert - Still visible during transition
+			Assert.IsTrue(presenter.gameObject.activeSelf);
+
+			// Complete transition
+			presenter.TransitionFeature.CompleteCloseTransition();
+			yield return null;
+
+			// Assert - Now hidden
+			Assert.IsFalse(presenter.gameObject.activeSelf);
 		}
 	}
 
 	/// <summary>
-	/// Test presenter with a mock feature for testing feature lifecycle
+	/// Test presenter with a mock feature (non-transition) for testing basic feature lifecycle
 	/// </summary>
 	[RequireComponent(typeof(MockPresenterFeature))]
 	public class TestPresenterWithFeature : UiPresenter
@@ -190,7 +255,37 @@ namespace GameLovers.UiService.Tests.PlayMode
 	}
 
 	/// <summary>
-	/// Mock feature for testing feature lifecycle
+	/// Test presenter with a mock transition feature for testing ITransitionFeature
+	/// </summary>
+	[RequireComponent(typeof(MockTransitionFeature))]
+	public class TestPresenterWithTransitionFeature : UiPresenter
+	{
+		public MockTransitionFeature TransitionFeature { get; private set; }
+		public bool WasOpenTransitionCompleted { get; private set; }
+		public bool WasCloseTransitionCompleted { get; private set; }
+
+		private void Awake()
+		{
+			TransitionFeature = GetComponent<MockTransitionFeature>();
+			if (TransitionFeature == null)
+			{
+				TransitionFeature = gameObject.AddComponent<MockTransitionFeature>();
+			}
+		}
+
+		protected override void OnOpenTransitionCompleted()
+		{
+			WasOpenTransitionCompleted = true;
+		}
+
+		protected override void OnCloseTransitionCompleted()
+		{
+			WasCloseTransitionCompleted = true;
+		}
+	}
+
+	/// <summary>
+	/// Mock feature for testing basic feature lifecycle (does not implement ITransitionFeature)
 	/// </summary>
 	public class MockPresenterFeature : PresenterFeatureBase
 	{
@@ -227,22 +322,37 @@ namespace GameLovers.UiService.Tests.PlayMode
 		{
 			WasClosed = true;
 		}
+	}
 
-		/// <summary>
-		/// Simulates a feature completing its open transition
-		/// </summary>
-		public void SimulateOpenTransitionComplete()
+	/// <summary>
+	/// Mock feature that implements ITransitionFeature for testing transition awaiting
+	/// </summary>
+	public class MockTransitionFeature : PresenterFeatureBase, ITransitionFeature
+	{
+		private UniTaskCompletionSource _openTransitionCompletion;
+		private UniTaskCompletionSource _closeTransitionCompletion;
+
+		public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
+		public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
+
+		public override void OnPresenterOpened()
 		{
-			Presenter.NotifyOpenTransitionCompleted();
+			_openTransitionCompletion = new UniTaskCompletionSource();
 		}
 
-		/// <summary>
-		/// Simulates a feature completing its close transition
-		/// </summary>
-		public void SimulateCloseTransitionComplete()
+		public override void OnPresenterClosing()
 		{
-			Presenter.NotifyCloseTransitionCompleted();
+			_closeTransitionCompletion = new UniTaskCompletionSource();
+		}
+
+		public void CompleteOpenTransition()
+		{
+			_openTransitionCompletion?.TrySetResult();
+		}
+
+		public void CompleteCloseTransition()
+		{
+			_closeTransitionCompletion?.TrySetResult();
 		}
 	}
 }
-

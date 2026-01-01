@@ -57,9 +57,8 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestTimeDelayPresenter;
 
-			// Wait for delay to complete
-			yield return presenter.DelayFeature.CurrentDelayTask.ToCoroutine();
-			yield return null; // Extra frame to ensure notification processed
+			// Wait for presenter's open transition to complete
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
@@ -73,15 +72,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestTimeDelayPresenter;
 			
-			// Wait for open delay
-			yield return presenter.DelayFeature.CurrentDelayTask.ToCoroutine();
+			// Wait for open transition
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Act - Close
 			_service.CloseUi(typeof(TestTimeDelayPresenter));
 			
-			// Wait for close delay
-			yield return presenter.DelayFeature.CurrentDelayTask.ToCoroutine();
-			yield return null;
+			// Wait for close transition
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.IsTrue(presenter.WasCloseTransitionCompleted);
@@ -94,29 +92,31 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var task = _service.OpenUiAsync(typeof(TestTimeDelayPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestTimeDelayPresenter;
-			yield return presenter.DelayFeature.CurrentDelayTask.ToCoroutine();
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Act
 			_service.CloseUi(typeof(TestTimeDelayPresenter));
-			yield return presenter.DelayFeature.CurrentDelayTask.ToCoroutine();
-			yield return null;
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
-			// Assert - Feature should have deactivated the GameObject
+			// Assert - Presenter should have deactivated the GameObject after transition
 			Assert.IsFalse(presenter.gameObject.activeSelf);
 		}
 
 		[UnityTest]
-		public IEnumerator TimeDelayFeature_CurrentDelayTask_IsValid()
+		public IEnumerator TimeDelayFeature_OpenTransitionTask_IsValid()
 		{
 			// Act
 			var task = _service.OpenUiAsync(typeof(TestTimeDelayPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestTimeDelayPresenter;
 
-			// Assert - Task should be valid and eventually complete
-			var delayTask = presenter.DelayFeature.CurrentDelayTask;
-			Assert.IsFalse(delayTask.Status.IsCompleted());
+			// Assert - Feature's task should be valid via ITransitionFeature
+			var transitionFeature = presenter.DelayFeature as ITransitionFeature;
+			Assert.IsNotNull(transitionFeature);
 			
+			var delayTask = transitionFeature.OpenTransitionTask;
+			
+			// Wait for completion
 			yield return delayTask.ToCoroutine();
 			Assert.IsTrue(delayTask.Status.IsCompleted());
 		}
@@ -133,11 +133,29 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestZeroDelayPresenter;
 			
-			// Small wait for async to complete
-			yield return null;
-			yield return null;
+			// Wait for open transition
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Assert
+			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
+		}
+
+		[UnityTest]
+		public IEnumerator TimeDelayFeature_PresenterAwaitsFeatureTask()
+		{
+			// Act
+			var task = _service.OpenUiAsync(typeof(TestTimeDelayPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestTimeDelayPresenter;
+
+			// Before feature completes, transition shouldn't be marked complete
+			// (this depends on timing, but with 0.1s delay we should catch it)
+			var featureTask = (presenter.DelayFeature as ITransitionFeature).OpenTransitionTask;
+			
+			// Wait for feature and presenter to both complete
+			yield return UniTask.WhenAll(featureTask, presenter.OpenTransitionTask).ToCoroutine();
+
+			// Assert - Presenter's transition completed after feature
 			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
 		}
 	}

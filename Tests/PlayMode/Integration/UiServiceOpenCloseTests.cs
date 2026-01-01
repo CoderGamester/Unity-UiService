@@ -92,9 +92,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult();
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Act
 			_service.CloseUi(typeof(TestUiPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.That(presenter.gameObject.activeSelf, Is.False);
@@ -107,9 +109,12 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Arrange
 			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Act
 			_service.CloseUi(typeof(TestUiPresenter), destroy: true);
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.AreEqual(1, _mockLoader.UnloadCallCount);
@@ -121,11 +126,18 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Arrange
 			var task1 = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task1.ToCoroutine();
+			var presenter1 = task1.GetAwaiter().GetResult();
+			
 			var task2 = _service.OpenUiAsync(typeof(TestDataUiPresenter));
 			yield return task2.ToCoroutine();
+			var presenter2 = task2.GetAwaiter().GetResult();
 
 			// Act
 			_service.CloseAllUi();
+			
+			// Wait for both to finish closing
+			yield return presenter1.CloseTransitionTask.ToCoroutine();
+			yield return presenter2.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.AreEqual(0, _service.VisiblePresenters.Count);
@@ -137,11 +149,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Arrange
 			var task1 = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task1.ToCoroutine();
+			var presenter1 = task1.GetAwaiter().GetResult();
+			
 			var task2 = _service.OpenUiAsync(typeof(TestDataUiPresenter));
 			yield return task2.ToCoroutine();
 
 			// Act - Close layer 0 only
 			_service.CloseAllUi(0);
+			yield return presenter1.CloseTransitionTask.ToCoroutine();
 
 			// Assert - TestUiPresenter (layer 0) closed, TestDataUiPresenter (layer 1) still visible
 			Assert.AreEqual(1, _service.VisiblePresenters.Count);
@@ -153,12 +168,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Act 1 - Open
 			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
 
 			// Assert 1
 			Assert.AreEqual(1, _service.VisiblePresenters.Count);
 
 			// Act 2 - Close
 			_service.CloseUi(typeof(TestUiPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert 2
 			Assert.AreEqual(0, _service.VisiblePresenters.Count);
@@ -170,7 +187,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Act
 			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+			
 			_service.CloseUi(typeof(TestUiPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert - Check events were tracked via MockAnalytics verification
 			_mockAnalytics.VerifyLoadStartCalled(typeof(TestUiPresenter), times: 1);
@@ -218,6 +239,38 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Assert
 			Assert.AreEqual(0, _service.VisiblePresenters.Count);
 			yield return null;
+		}
+
+		[UnityTest]
+		public IEnumerator OpenTransitionCompleted_AlwaysCalled()
+		{
+			// Act
+			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestUiPresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+
+			// Assert - OnOpenTransitionCompleted should be called even without transition features
+			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
+			Assert.AreEqual(1, presenter.OpenTransitionCompletedCount);
+		}
+
+		[UnityTest]
+		public IEnumerator CloseTransitionCompleted_AlwaysCalled()
+		{
+			// Arrange
+			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestUiPresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+
+			// Act
+			_service.CloseUi(typeof(TestUiPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
+
+			// Assert - OnCloseTransitionCompleted should be called even without transition features
+			Assert.IsTrue(presenter.WasCloseTransitionCompleted);
+			Assert.AreEqual(1, presenter.CloseTransitionCompletedCount);
 		}
 	}
 }

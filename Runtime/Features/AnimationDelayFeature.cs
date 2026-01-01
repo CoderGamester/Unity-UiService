@@ -7,15 +7,17 @@ namespace GameLovers.UiService
 	/// <summary>
 	/// Feature that adds animation-based delayed opening and closing to a <see cref="UiPresenter"/>.
 	/// Plays intro/outro animations and waits for them to complete.
+	/// Implements <see cref="ITransitionFeature"/> to allow the presenter to await transitions.
 	/// </summary>
 	[RequireComponent(typeof(Animation))]
-	public class AnimationDelayFeature : PresenterFeatureBase
+	public class AnimationDelayFeature : PresenterFeatureBase, ITransitionFeature
 	{
 		[SerializeField] private Animation _animation;
 		[SerializeField] private AnimationClip _introAnimationClip;
 		[SerializeField] private AnimationClip _outroAnimationClip;
 
-		private UniTaskCompletionSource _currentDelayCompletion;
+		private UniTaskCompletionSource _openTransitionCompletion;
+		private UniTaskCompletionSource _closeTransitionCompletion;
 
 		/// <summary>
 		/// Gets the Animation component
@@ -42,11 +44,11 @@ namespace GameLovers.UiService
 		/// </summary>
 		public float CloseDelayInSeconds => _outroAnimationClip == null ? 0f : _outroAnimationClip.length;
 
-		/// <summary>
-		/// Gets the UniTask of the current delay process.
-		/// This task can be awaited to wait for the current transition to complete.
-		/// </summary>
-		public UniTask CurrentDelayTask => _currentDelayCompletion?.Task ?? UniTask.CompletedTask;
+		/// <inheritdoc />
+		public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
+
+		/// <inheritdoc />
+		public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
 
 		private void OnValidate()
 		{
@@ -56,13 +58,16 @@ namespace GameLovers.UiService
 		/// <inheritdoc />
 		public override void OnPresenterOpened()
 		{
-			OpenWithAnimationAsync().Forget();
+			if (_introAnimationClip != null)
+			{
+				OpenWithAnimationAsync().Forget();
+			}
 		}
 
 		/// <inheritdoc />
 		public override void OnPresenterClosing()
 		{
-			if (Presenter && Presenter.gameObject)
+			if (_outroAnimationClip != null && Presenter && Presenter.gameObject)
 			{
 				CloseWithAnimationAsync().Forget();
 			}
@@ -85,10 +90,7 @@ namespace GameLovers.UiService
 		/// Called when the presenter's opening animation is completed.
 		/// Override this in derived classes to add custom behavior.
 		/// </summary>
-		protected virtual void OnOpenedCompleted()
-		{
-			Presenter.NotifyOpenTransitionCompleted();
-		}
+		protected virtual void OnOpenedCompleted() { }
 
 		/// <summary>
 		/// Called when the presenter's closing animation starts.
@@ -107,14 +109,11 @@ namespace GameLovers.UiService
 		/// Called when the presenter's closing animation is completed.
 		/// Override this in derived classes to add custom behavior.
 		/// </summary>
-		protected virtual void OnClosedCompleted()
-		{
-			Presenter.NotifyCloseTransitionCompleted();
-		}
+		protected virtual void OnClosedCompleted() { }
 
 		private async UniTask OpenWithAnimationAsync()
 		{
-			_currentDelayCompletion = new UniTaskCompletionSource();
+			_openTransitionCompletion = new UniTaskCompletionSource();
 			
 			OnOpenStarted();
 
@@ -125,12 +124,12 @@ namespace GameLovers.UiService
 				OnOpenedCompleted();
 			}
 			
-			_currentDelayCompletion?.TrySetResult();
+			_openTransitionCompletion?.TrySetResult();
 		}
 
 		private async UniTask CloseWithAnimationAsync()
 		{
-			_currentDelayCompletion = new UniTaskCompletionSource();
+			_closeTransitionCompletion = new UniTaskCompletionSource();
 			
 			OnCloseStarted();
 
@@ -138,11 +137,11 @@ namespace GameLovers.UiService
 
 			if (this && gameObject)
 			{
-				gameObject.SetActive(false);
+				// Note: Visibility (SetActive) is now handled by UiPresenter after all transitions complete
 				OnClosedCompleted();
 			}
 			
-			_currentDelayCompletion?.TrySetResult();
+			_closeTransitionCompletion?.TrySetResult();
 		}
 	}
 }

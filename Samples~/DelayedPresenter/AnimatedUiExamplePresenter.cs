@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -13,14 +14,27 @@ namespace GameLovers.UiService.Examples
 	public class AnimatedUiExamplePresenter : UiPresenter
 	{
 		[SerializeField] private AnimationDelayFeature _animationFeature;
-		[SerializeField] private Text _titleText;
-		[SerializeField] private Text _statusText;
-
+		[SerializeField] private TMP_Text _titleText;
+		[SerializeField] private TMP_Text _statusText;
+		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
 			Debug.Log("[AnimatedUiExample] UI Initialized");
+			
+			// Wire up the close button
+			_closeButton.onClick.AddListener(OnCloseButtonClicked);
+		}
+
+		private void OnDestroy()
+		{
+			_closeButton.onClick.RemoveListener(OnCloseButtonClicked);
+		}
+
+		private void OnCloseButtonClicked()
+		{
+			Close(destroy: false);
 		}
 
 		protected override void OnOpened()

@@ -56,9 +56,8 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestAnimationDelayPresenter;
 
-			// Wait for animation to complete (or immediate if no clip)
-			yield return presenter.AnimationFeature.CurrentDelayTask.ToCoroutine();
-			yield return null;
+			// Wait for presenter's open transition to complete
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
@@ -71,12 +70,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var task = _service.OpenUiAsync(typeof(TestAnimationDelayPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestAnimationDelayPresenter;
-			yield return presenter.AnimationFeature.CurrentDelayTask.ToCoroutine();
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Act
 			_service.CloseUi(typeof(TestAnimationDelayPresenter));
-			yield return presenter.AnimationFeature.CurrentDelayTask.ToCoroutine();
-			yield return null;
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.IsTrue(presenter.WasCloseTransitionCompleted);
@@ -89,12 +87,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var task = _service.OpenUiAsync(typeof(TestAnimationDelayPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestAnimationDelayPresenter;
-			yield return presenter.AnimationFeature.CurrentDelayTask.ToCoroutine();
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Act
 			_service.CloseUi(typeof(TestAnimationDelayPresenter));
-			yield return presenter.AnimationFeature.CurrentDelayTask.ToCoroutine();
-			yield return null;
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.IsFalse(presenter.gameObject.activeSelf);
@@ -126,6 +123,22 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			// Assert - Should use clip length
 			Assert.AreEqual(0.1f, presenter.AnimationFeature.OpenDelayInSeconds, 0.001f);
+		}
+
+		[UnityTest]
+		public IEnumerator AnimationDelayFeature_ImplementsITransitionFeature()
+		{
+			// Act
+			var task = _service.LoadUiAsync(typeof(TestAnimationDelayPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestAnimationDelayPresenter;
+
+			// Assert
+			Assert.IsTrue(presenter.AnimationFeature is ITransitionFeature);
+			
+			var transitionFeature = presenter.AnimationFeature as ITransitionFeature;
+			Assert.IsNotNull(transitionFeature.OpenTransitionTask);
+			Assert.IsNotNull(transitionFeature.CloseTransitionTask);
 		}
 	}
 }

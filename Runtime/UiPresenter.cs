@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 // ReSharper disable CheckNamespace
@@ -21,11 +22,25 @@ namespace GameLovers.UiService
 	{
 		protected IUiService _uiService;
 		private List<PresenterFeatureBase> _features;
+		private UniTaskCompletionSource _openTransitionCompletion;
+		private UniTaskCompletionSource _closeTransitionCompletion;
 
 		/// <summary>
 		/// Requests the open status of the <see cref="UiPresenter"/>
 		/// </summary>
 		public bool IsOpen => gameObject.activeSelf;
+
+		/// <summary>
+		/// Task that completes when the open transition finishes.
+		/// Useful for external code that needs to await until the UI is fully ready.
+		/// </summary>
+		public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
+
+		/// <summary>
+		/// Task that completes when the close transition finishes.
+		/// Useful for external code that needs to await until the UI has fully closed.
+		/// </summary>
+		public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
 
 		/// <summary>
 		/// Allows the ui presenter implementation to directly close the ui presenter without needing to call the service directly
@@ -53,12 +68,14 @@ namespace GameLovers.UiService
 		/// <summary>
 		/// Called after all open transitions (animations, delays) have completed.
 		/// Override this to react when the UI is fully visible and ready for interaction.
+		/// This is always called, even for presenters without transition features.
 		/// </summary>
 		protected virtual void OnOpenTransitionCompleted() {}
 
 		/// <summary>
 		/// Called after all close transitions (animations, delays) have completed.
 		/// Override this to react when the UI has finished its closing transition.
+		/// This is always called, even for presenters without transition features.
 		/// </summary>
 		protected virtual void OnCloseTransitionCompleted() {}
 
@@ -71,34 +88,129 @@ namespace GameLovers.UiService
 
 		internal void InternalOpen()
 		{
-			NotifyFeaturesOpening();
-			
-			gameObject.SetActive(true);
-
-			OnOpened();
-			NotifyFeaturesOpened();
+			InternalOpenProcessAsync().Forget();
 		}
 
-		internal virtual void InternalClose(bool destroy)
+		internal void InternalClose(bool destroy)
 		{
+			InternalCloseProcessAsync(destroy).Forget();
+		}
+
+		private async UniTask InternalOpenProcessAsync()
+		{
+			_openTransitionCompletion = new UniTaskCompletionSource();
+
+			NotifyFeaturesOpening();
+			gameObject.SetActive(true);
+			OnOpened();
+			NotifyFeaturesOpened();
+
+			// Await all feature open transitions
+			await WaitForOpenTransitionsAsync();
+
+			// Check if this MonoBehaviour was destroyed during the wait (e.g., during Dispose)
+			if (!this)
+			{
+				_openTransitionCompletion?.TrySetResult();
+				return;
+			}
+
+			// Always notify - consistent lifecycle for all presenters
+			OnOpenTransitionCompleted();
+
+			_openTransitionCompletion.TrySetResult();
+		}
+
+		private async UniTask InternalCloseProcessAsync(bool destroy)
+		{
+			_closeTransitionCompletion = new UniTaskCompletionSource();
+
 			NotifyFeaturesClosing();
 			OnClosed();
 			NotifyFeaturesClosed();
 
-			if (gameObject == null)
+			// Check if this MonoBehaviour was destroyed (e.g., during Dispose)
+			// Using implicit bool conversion which is safe even for destroyed objects
+			if (!this)
 			{
+				_closeTransitionCompletion.TrySetResult();
 				return;
 			}
+
+			// Await all feature close transitions
+			await WaitForCloseTransitionsAsync();
+
+			// Check again after await - object may have been destroyed during the wait
+			if (!this)
+			{
+				_closeTransitionCompletion?.TrySetResult();
+				return;
+			}
+
+			// Always hide here - single point of responsibility
+			gameObject.SetActive(false);
+
+			// Always notify - consistent lifecycle for all presenters
+			OnCloseTransitionCompleted();
+
+			_closeTransitionCompletion.TrySetResult();
 
 			if (destroy)
 			{
 				// UI Service calls the Addressables.UnloadAsset that unloads the asset from the memory and destroys the game object
 				_uiService.UnloadUi(GetType());
 			}
-			else
+		}
+
+		private UniTask WaitForOpenTransitionsAsync()
+		{
+			if (_features == null || _features.Count == 0)
 			{
-				gameObject.SetActive(false);
+				return UniTask.CompletedTask;
 			}
+
+			// Collect all open transition tasks from features that implement ITransitionFeature
+			List<UniTask> tasks = null;
+			foreach (var feature in _features)
+			{
+				if (feature is ITransitionFeature transitionFeature)
+				{
+					var task = transitionFeature.OpenTransitionTask;
+					if (task.Status != UniTaskStatus.Succeeded)
+					{
+						tasks ??= new List<UniTask>();
+						tasks.Add(task);
+					}
+				}
+			}
+
+			return tasks != null && tasks.Count > 0 ? UniTask.WhenAll(tasks) : UniTask.CompletedTask;
+		}
+
+		private UniTask WaitForCloseTransitionsAsync()
+		{
+			if (_features == null || _features.Count == 0)
+			{
+				return UniTask.CompletedTask;
+			}
+
+			// Collect all close transition tasks from features that implement ITransitionFeature
+			List<UniTask> tasks = null;
+			foreach (var feature in _features)
+			{
+				if (feature is ITransitionFeature transitionFeature)
+				{
+					var task = transitionFeature.CloseTransitionTask;
+					if (task.Status != UniTaskStatus.Succeeded)
+					{
+						tasks ??= new List<UniTask>();
+						tasks.Add(task);
+					}
+				}
+
+			}
+
+			return tasks != null && tasks.Count > 0 ? UniTask.WhenAll(tasks) : UniTask.CompletedTask;
 		}
 
 		private void InitializeFeatures()
@@ -151,24 +263,6 @@ namespace GameLovers.UiService
 				feature.OnPresenterClosed();
 			}
 		}
-
-		/// <summary>
-		/// Called by features to notify that their open transition has completed.
-		/// This triggers <see cref="OnOpenTransitionCompleted"/>.
-		/// </summary>
-		internal void NotifyOpenTransitionCompleted()
-		{
-			OnOpenTransitionCompleted();
-		}
-
-		/// <summary>
-		/// Called by features to notify that their close transition has completed.
-		/// This triggers <see cref="OnCloseTransitionCompleted"/>.
-		/// </summary>
-		internal void NotifyCloseTransitionCompleted()
-		{
-			OnCloseTransitionCompleted();
-		}
 	}
 
 	/// <inheritdoc cref="UiPresenter"/>
@@ -195,3 +289,4 @@ namespace GameLovers.UiService
 		}
 	}
 }
+

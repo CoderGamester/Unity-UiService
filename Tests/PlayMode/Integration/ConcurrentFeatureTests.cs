@@ -7,7 +7,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 {
 	/// <summary>
 	/// Tests for concurrent/multiple features on a single presenter.
-	/// Verifies that multiple features can notify transitions without conflicts.
+	/// Verifies that multiple ITransitionFeature implementations are properly awaited.
 	/// </summary>
 	[TestFixture]
 	public class ConcurrentFeatureTests
@@ -52,19 +52,57 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator DualFeatures_BothCanNotifyTransitionComplete()
+		public IEnumerator DualFeatures_OnOpenTransitionCompleted_CalledOnce()
 		{
 			// Arrange
 			var task = _service.OpenUiAsync(typeof(TestDualFeaturePresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestDualFeaturePresenter;
 
-			// Act - Both features notify transition complete
-			presenter.FeatureA.SimulateOpenTransitionComplete();
-			presenter.FeatureB.SimulateOpenTransitionComplete();
+			// Wait for presenter transition to complete
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
-			// Assert - Presenter received both notifications
-			Assert.AreEqual(2, presenter.OpenTransitionCount);
+			// Assert - Presenter received exactly one notification
+			Assert.AreEqual(1, presenter.OpenTransitionCount);
+		}
+
+		[UnityTest]
+		public IEnumerator DualFeatures_WithDelays_PresenterAwaitsAll()
+		{
+			// Arrange - First open without delays to get presenter reference
+			var task = _service.OpenUiAsync(typeof(TestDualFeaturePresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestDualFeaturePresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+			
+			// Close without delays first
+			_service.CloseUi(typeof(TestDualFeaturePresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
+			
+			// Now enable delayed transitions for the second open
+			presenter.FeatureA.SimulateDelayedTransitions = true;
+			presenter.FeatureB.SimulateDelayedTransitions = true;
+			
+			// Second open - this time with delayed transitions
+			task = _service.OpenUiAsync(typeof(TestDualFeaturePresenter));
+			yield return task.ToCoroutine();
+
+			// Transition should not be complete yet (features are waiting)
+			yield return null;
+			
+			// Complete feature A only
+			presenter.FeatureA.SimulateOpenTransitionComplete();
+			yield return null;
+			
+			// Still waiting for B, transition count should still be 1 from first open
+			Assert.AreEqual(1, presenter.OpenTransitionCount);
+			
+			// Complete feature B
+			presenter.FeatureB.SimulateOpenTransitionComplete();
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+			
+			// Now transition should be complete
+			Assert.AreEqual(2, presenter.OpenTransitionCount); // 1 from first open + 1 from second
 		}
 
 		[UnityTest]
@@ -86,20 +124,18 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator ConcurrentNotifications_DoNotInterfere()
+		public IEnumerator TripleFeatures_OnOpenTransitionCompleted_CalledOnce()
 		{
 			// Arrange
 			var task = _service.OpenUiAsync(typeof(TestTripleFeaturePresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestTripleFeaturePresenter;
 
-			// Act - All features notify concurrently
-			presenter.FeatureA.SimulateOpenTransitionComplete();
-			presenter.FeatureB.SimulateOpenTransitionComplete();
-			presenter.FeatureC.SimulateOpenTransitionComplete();
+			// Wait for transition
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
-			// Assert - All notifications counted
-			Assert.AreEqual(3, presenter.OpenTransitionCount);
+			// Assert - Only one notification (not three)
+			Assert.AreEqual(1, presenter.OpenTransitionCount);
 		}
 
 		[UnityTest]
@@ -109,9 +145,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var task = _service.OpenUiAsync(typeof(TestDualFeaturePresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestDualFeaturePresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Act
 			_service.CloseUi(typeof(TestDualFeaturePresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert - Both features received closing callbacks
 			Assert.IsTrue(presenter.FeatureA.WasClosing);
@@ -126,7 +164,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			{
 				var openTask = _service.OpenUiAsync(typeof(TestDualFeaturePresenter));
 				yield return openTask.ToCoroutine();
+				var presenter = openTask.GetAwaiter().GetResult() as TestDualFeaturePresenter;
+				yield return presenter.OpenTransitionTask.ToCoroutine();
+				
 				_service.CloseUi(typeof(TestDualFeaturePresenter));
+				yield return presenter.CloseTransitionTask.ToCoroutine();
 			}
 
 			// Assert - Should not throw, all cycles completed
@@ -144,10 +186,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var task1 = _service.OpenUiAsync(typeof(TestTripleFeaturePresenter));
 			yield return task1.ToCoroutine();
 			var presenter1 = task1.GetAwaiter().GetResult() as TestTripleFeaturePresenter;
+			yield return presenter1.OpenTransitionTask.ToCoroutine();
+			
 			firstRunOrder[0] = presenter1.FeatureA.OpenOrder;
 			firstRunOrder[1] = presenter1.FeatureB.OpenOrder;
 			firstRunOrder[2] = presenter1.FeatureC.OpenOrder;
+			
 			_service.CloseUi(typeof(TestTripleFeaturePresenter));
+			yield return presenter1.CloseTransitionTask.ToCoroutine();
 
 			// Unload and reload
 			_service.UnloadUi(typeof(TestTripleFeaturePresenter));
@@ -156,6 +202,8 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var task2 = _service.OpenUiAsync(typeof(TestTripleFeaturePresenter));
 			yield return task2.ToCoroutine();
 			var presenter2 = task2.GetAwaiter().GetResult() as TestTripleFeaturePresenter;
+			yield return presenter2.OpenTransitionTask.ToCoroutine();
+			
 			secondRunOrder[0] = presenter2.FeatureA.OpenOrder;
 			secondRunOrder[1] = presenter2.FeatureB.OpenOrder;
 			secondRunOrder[2] = presenter2.FeatureC.OpenOrder;
@@ -163,6 +211,35 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Assert - Order should be consistent (relative ordering, not absolute values)
 			Assert.IsTrue(secondRunOrder[0] < secondRunOrder[1]);
 			Assert.IsTrue(secondRunOrder[1] < secondRunOrder[2]);
+		}
+
+		[UnityTest]
+		public IEnumerator MultipleFeatures_CloseTransition_PresenterAwaitsAll()
+		{
+			// Arrange
+			var task = _service.OpenUiAsync(typeof(TestDualFeaturePresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestDualFeaturePresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+			
+			// Enable delayed transitions for close
+			presenter.FeatureA.SimulateDelayedTransitions = true;
+			presenter.FeatureB.SimulateDelayedTransitions = true;
+
+			// Act - Close
+			_service.CloseUi(typeof(TestDualFeaturePresenter));
+			yield return null;
+
+			// GameObject should still be active (waiting for transitions)
+			Assert.IsTrue(presenter.gameObject.activeSelf);
+			
+			// Complete both transitions
+			presenter.FeatureA.SimulateCloseTransitionComplete();
+			presenter.FeatureB.SimulateCloseTransitionComplete();
+			yield return presenter.CloseTransitionTask.ToCoroutine();
+
+			// Now GameObject should be hidden
+			Assert.IsFalse(presenter.gameObject.activeSelf);
 		}
 	}
 }

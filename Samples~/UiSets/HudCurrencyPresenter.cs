@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -10,8 +11,8 @@ namespace GameLovers.UiService.Examples
 	/// </summary>
 	public class HudCurrencyPresenter : UiPresenter
 	{
-		[SerializeField] private Text _goldText;
-		[SerializeField] private Text _gemsText;
+		[SerializeField] private TMP_Text _goldText;
+		[SerializeField] private TMP_Text _gemsText;
 
 		private int _gold = 1000;
 		private int _gems = 50;

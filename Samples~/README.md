@@ -420,17 +420,24 @@ _uiService.UnloadUi(typeof(MyPopup), instanceAddress);
 - Implementing lifecycle hooks
 - Feature composition (multiple features on one presenter)
 
-**Pattern (Custom Feature):**
+**Pattern (Custom Transition Feature using ITransitionFeature):**
 ```csharp
 using UnityEngine;
-using System.Collections;
+using Cysharp.Threading.Tasks;
 using GameLovers.UiService;
 
 [RequireComponent(typeof(CanvasGroup))]
-public class FadeFeature : PresenterFeatureBase
+public class FadeFeature : PresenterFeatureBase, ITransitionFeature
 {
     [SerializeField] private float _fadeInDuration = 0.3f;
     [SerializeField] private CanvasGroup _canvasGroup;
+
+    private UniTaskCompletionSource _openTransitionCompletion;
+    private UniTaskCompletionSource _closeTransitionCompletion;
+
+    // ITransitionFeature implementation - presenter awaits these
+    public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
+    public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
 
     private void OnValidate()
     {
@@ -444,22 +451,24 @@ public class FadeFeature : PresenterFeatureBase
 
     public override void OnPresenterOpened()
     {
-        StartCoroutine(FadeIn());
+        FadeInAsync().Forget();
     }
 
-    private IEnumerator FadeIn()
+    private async UniTask FadeInAsync()
     {
+        _openTransitionCompletion = new UniTaskCompletionSource();
+        
         float elapsed = 0f;
         while (elapsed < _fadeInDuration)
         {
             _canvasGroup.alpha = elapsed / _fadeInDuration;
             elapsed += Time.deltaTime;
-            yield return null;
+            await UniTask.Yield();
         }
         _canvasGroup.alpha = 1f;
         
-        // Notify presenter that transition is complete
-        Presenter.NotifyOpenTransitionCompleted();
+        // Signal that transition is complete - presenter will await this
+        _openTransitionCompletion.TrySetResult();
     }
 }
 ```
@@ -473,7 +482,7 @@ public class FullFeaturedPresenter : UiPresenter
 {
     protected override void OnOpenTransitionCompleted()
     {
-        // Called when feature notifies transition completion
+        // Called after ALL ITransitionFeature tasks complete
         Debug.Log("All animations complete - UI is ready!");
     }
 }

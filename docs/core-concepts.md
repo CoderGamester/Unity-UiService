@@ -128,8 +128,22 @@ The `UiPresenter` is the base class for all UI elements in the system. It provid
 | `OnInitialized()` | Once, when first loaded | Setup, event subscriptions |
 | `OnOpened()` | Every time UI is shown | Animations, data refresh |
 | `OnClosed()` | When UI is hidden | Cleanup, save state |
-| `OnOpenTransitionCompleted()` | After delay/animation features finish opening | Post-transition logic |
-| `OnCloseTransitionCompleted()` | After delay/animation features finish closing | Post-transition cleanup |
+| `OnOpenTransitionCompleted()` | After all transition features finish opening | Post-transition logic, enable interactions |
+| `OnCloseTransitionCompleted()` | After all transition features finish closing | Post-transition cleanup |
+
+> **Note**: `OnOpenTransitionCompleted()` and `OnCloseTransitionCompleted()` are **always called**, even for presenters without transition features. This provides a consistent lifecycle for all presenters.
+
+### Transition Tasks
+
+Presenters expose public `UniTask` properties for external awaiting:
+
+```csharp
+// Wait for a presenter to fully open (including transitions)
+await presenter.OpenTransitionTask;
+
+// Wait for a presenter to fully close (including transitions)
+await presenter.CloseTransitionTask;
+```
 
 ### Basic Presenter
 
@@ -213,11 +227,19 @@ public class ConfirmPopup : UiPresenter
 
 The UI Service uses a **feature-based composition system** to extend presenter behavior without inheritance complexity.
 
+### Transition Features
+
+Features that implement `ITransitionFeature` provide open/close transition delays. The presenter automatically awaits all transition features before:
+- Calling `OnOpenTransitionCompleted()` (after open)
+- Hiding the GameObject and calling `OnCloseTransitionCompleted()` (after close)
+
+This ensures visibility is controlled in a single place (`UiPresenter`) and transitions are properly coordinated.
+
 ### Built-in Features
 
 #### TimeDelayFeature
 
-Adds time-based delays to UI opening and closing:
+Adds time-based delays to UI opening and closing. Implements `ITransitionFeature`:
 
 ```csharp
 [RequireComponent(typeof(TimeDelayFeature))]
@@ -249,7 +271,7 @@ public class DelayedPopup : UiPresenter
 
 #### AnimationDelayFeature
 
-Synchronizes UI lifecycle with animation clips:
+Synchronizes UI lifecycle with animation clips. Implements `ITransitionFeature`:
 
 ```csharp
 [RequireComponent(typeof(AnimationDelayFeature))]
@@ -322,14 +344,24 @@ public class DelayedUiToolkitPresenter : UiPresenter
 
 ### Creating Custom Features
 
-Extend `PresenterFeatureBase`:
+Extend `PresenterFeatureBase` for basic lifecycle hooks. For transition features, also implement `ITransitionFeature`:
 
 ```csharp
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+
 [RequireComponent(typeof(CanvasGroup))]
-public class FadeFeature : PresenterFeatureBase
+public class FadeFeature : PresenterFeatureBase, ITransitionFeature
 {
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private float _fadeDuration = 0.3f;
+    
+    private UniTaskCompletionSource _openTransitionCompletion;
+    private UniTaskCompletionSource _closeTransitionCompletion;
+    
+    // ITransitionFeature implementation
+    public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
+    public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
     
     public override void OnPresenterOpening()
     {
@@ -338,22 +370,44 @@ public class FadeFeature : PresenterFeatureBase
     
     public override void OnPresenterOpened()
     {
-        StartCoroutine(FadeIn());
+        FadeInAsync().Forget();
     }
     
-    private IEnumerator FadeIn()
+    public override void OnPresenterClosing()
     {
+        FadeOutAsync().Forget();
+    }
+    
+    private async UniTask FadeInAsync()
+    {
+        _openTransitionCompletion = new UniTaskCompletionSource();
+        
         float elapsed = 0f;
         while (elapsed < _fadeDuration)
         {
             _canvasGroup.alpha = elapsed / _fadeDuration;
             elapsed += Time.deltaTime;
-            yield return null;
+            await UniTask.Yield();
         }
         _canvasGroup.alpha = 1f;
         
-        // Notify presenter that transition is complete
-        Presenter.NotifyOpenTransitionCompleted();
+        _openTransitionCompletion.TrySetResult();
+    }
+    
+    private async UniTask FadeOutAsync()
+    {
+        _closeTransitionCompletion = new UniTaskCompletionSource();
+        
+        float elapsed = 0f;
+        while (elapsed < _fadeDuration)
+        {
+            _canvasGroup.alpha = 1f - (elapsed / _fadeDuration);
+            elapsed += Time.deltaTime;
+            await UniTask.Yield();
+        }
+        _canvasGroup.alpha = 0f;
+        
+        _closeTransitionCompletion.TrySetResult();
     }
 }
 ```
@@ -365,10 +419,11 @@ public class FadeFeature : PresenterFeatureBase
 - `OnPresenterClosing()`
 - `OnPresenterClosed()`
 
-**Notifying Transition Completion:**
-- Call `Presenter.NotifyOpenTransitionCompleted()` when your feature's open transition finishes
-- Call `Presenter.NotifyCloseTransitionCompleted()` when your feature's close transition finishes
-- This triggers the presenter's `OnOpenTransitionCompleted()` / `OnCloseTransitionCompleted()` hooks
+**Creating Transition Features:**
+- Implement `ITransitionFeature` for features that need the presenter to wait
+- Expose `OpenTransitionTask` and `CloseTransitionTask` as `UniTask` properties
+- Use `UniTaskCompletionSource` to signal when your transition completes
+- The presenter will await all `ITransitionFeature` tasks before completing its lifecycle
 
 ---
 

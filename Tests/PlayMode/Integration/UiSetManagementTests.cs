@@ -87,11 +87,18 @@ namespace GameLovers.UiService.Tests.PlayMode
 			
 			var openTask1 = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return openTask1.ToCoroutine();
+			var presenter1 = openTask1.GetAwaiter().GetResult();
+			
 			var openTask2 = _service.OpenUiAsync(typeof(TestDataUiPresenter));
 			yield return openTask2.ToCoroutine();
+			var presenter2 = openTask2.GetAwaiter().GetResult();
 
 			// Act
 			_service.CloseAllUiSet(1);
+			
+			// Wait for close transitions to complete
+			yield return presenter1.CloseTransitionTask.ToCoroutine();
+			yield return presenter2.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.AreEqual(0, _service.VisiblePresenters.Count);

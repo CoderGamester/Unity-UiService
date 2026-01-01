@@ -5,6 +5,7 @@ namespace GameLovers.UiService
 	/// <summary>
 	/// Base class for presenter features that can be attached to a <see cref="UiPresenter"/> to extend its functionality.
 	/// Inherit from this class to create custom features that hook into the presenter lifecycle.
+	/// For features that provide open/close transition delays, implement <see cref="ITransitionFeature"/>.
 	/// </summary>
 	public abstract class PresenterFeatureBase : MonoBehaviour
 	{

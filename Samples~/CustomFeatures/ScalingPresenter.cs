@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -12,7 +13,7 @@ namespace GameLovers.UiService.Examples
 	public class ScalingPresenter : UiPresenter
 	{
 		[SerializeField] private ScaleFeature _scaleFeature;
-		[SerializeField] private Text _titleText;
+		[SerializeField] private TMP_Text _titleText;
 		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()

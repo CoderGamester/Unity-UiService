@@ -90,9 +90,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			));
 			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
 		
 			// Act
 			_service.CloseUi(typeof(TestUiPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.AreEqual(0, _service.VisiblePresenters.Count);
@@ -146,9 +148,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			));
 			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
 
 			// Act
 			_service.CloseUi(typeof(TestUiPresenter), destroy: true);
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.AreEqual(0, _service.GetLoadedPresenters().Count);
@@ -165,11 +169,16 @@ namespace GameLovers.UiService.Tests.PlayMode
 			));
 			var task1 = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task1.ToCoroutine();
+			var presenter1 = task1.GetAwaiter().GetResult();
+			
 			var task2 = _service.OpenUiAsync(typeof(TestDataUiPresenter));
 			yield return task2.ToCoroutine();
+			var presenter2 = task2.GetAwaiter().GetResult();
 
 			// Act
 			_service.CloseAllUi();
+			yield return presenter1.CloseTransitionTask.ToCoroutine();
+			yield return presenter2.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.AreEqual(0, _service.VisiblePresenters.Count);
@@ -207,7 +216,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Act
 			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
+			
 			_service.CloseUi(typeof(TestUiPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
 		
 			// Assert
 			// Verification via Substitute is done in integration tests, here we just check it doesn't crash

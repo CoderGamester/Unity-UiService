@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -11,7 +12,7 @@ namespace GameLovers.UiService.Examples
 	[RequireComponent(typeof(FadeFeature))]
 	public class FadingPresenter : UiPresenter
 	{
-		[SerializeField] private Text _titleText;
+		[SerializeField] private TMP_Text _titleText;
 		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()

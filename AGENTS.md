@@ -36,14 +36,18 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
     - optional `InstanceAddress` (empty string means default instance)
   - `UiSetConfig` is the runtime shape: `SetId` + `UiInstanceId[]`.
 - **Presenter pattern**: `Runtime/UiPresenter.cs`
-  - Lifecycle hooks: `OnInitialized`, `OnOpened`, `OnClosed`.
+  - Lifecycle hooks: `OnInitialized`, `OnOpened`, `OnClosed`, `OnOpenTransitionCompleted`, `OnCloseTransitionCompleted`.
   - Typed presenters: `UiPresenter<T>` (data assigned during open via `OpenUiAsync(type, initialData, ...)`).
   - Presenter features are discovered via `GetComponents(_features)` at init time and are notified in the open/close lifecycle.
+  - **Transition tasks**: `OpenTransitionTask` and `CloseTransitionTask` are public `UniTask` properties that complete when all transition features finish.
+  - **Visibility control**: `UiPresenter` is the single point of responsibility for `SetActive(false)` on close; it waits for all `ITransitionFeature` tasks before hiding.
 - **Composable features**: `Runtime/Features/*`
   - `PresenterFeatureBase` allows attaching components to a presenter prefab to hook lifecycle.
-  - Built-in features:
-    - `TimeDelayFeature`
-    - `AnimationDelayFeature`
+  - `ITransitionFeature` interface for features that provide open/close transition delays (presenter awaits these).
+  - Built-in transition features:
+    - `TimeDelayFeature` (implements `ITransitionFeature`)
+    - `AnimationDelayFeature` (implements `ITransitionFeature`)
+  - Other built-in features:
     - `UiToolkitPresenterFeature` (UI Toolkit support via `UIDocument`)
 - **Helper views**: `Runtime/Views/*` (`GameLovers.UiService.Views`)
   - `SafeAreaHelperView`: adjusts anchors/size based on safe area (notches).
@@ -80,7 +84,11 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `Runtime/Loaders/ResourcesUiAssetLoader.cs` — Resources.Load implementation
   - `Runtime/UiAnalytics.cs` — analytics + metrics
   - `Runtime/UiServiceMonoComponent.cs` — emits resolution/orientation change events
-  - `Runtime/Features/*` — composable presenter features
+  - `Runtime/Features/PresenterFeatureBase.cs` — base class for presenter features
+  - `Runtime/Features/ITransitionFeature.cs` — interface for features providing transition delays
+  - `Runtime/Features/TimeDelayFeature.cs` — time-based transition delays
+  - `Runtime/Features/AnimationDelayFeature.cs` — animation-based transition delays
+  - `Runtime/Features/UiToolkitPresenterFeature.cs` — UI Toolkit integration
   - `Runtime/Views/*` — helper view components (safe area, non-drawing, sizing, TMP links)
 - **Editor**: `Editor/` (assembly: `Editor/GameLovers.UiService.Editor.asmdef`)
   - `Editor/UiConfigsEditorBase.cs` — abstract base for UI configs editors
@@ -155,6 +163,7 @@ When you need third-party source/docs, prefer the locally-cached UPM packages:
 - **Add a presenter feature**
   - Extend `PresenterFeatureBase` and attach it to the presenter prefab.
   - Features are discovered via `GetComponents` at init time and notified during open/close.
+  - For features with transitions (animations, delays): implement `ITransitionFeature` so the presenter can await your `OpenTransitionTask` / `CloseTransitionTask`.
 - **Change loading strategy**
   - Prefer using one of the built-in loaders (`AddressablesUiAssetLoader`, `PrefabRegistryUiAssetLoader`, `ResourcesUiAssetLoader`) or extending `IUiAssetLoader` for custom needs.
 - **Update docs/samples**

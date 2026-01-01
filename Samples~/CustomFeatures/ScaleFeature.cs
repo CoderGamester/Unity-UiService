@@ -1,4 +1,4 @@
-using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using GameLovers.UiService;
 
@@ -6,7 +6,7 @@ namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Custom feature that adds scale in/out effects with easing.
-	/// Demonstrates a custom feature with configurable animation curves.
+	/// Demonstrates a custom transition feature with configurable animation curves.
 	/// 
 	/// Usage:
 	/// 1. Add this component to your presenter prefab
@@ -16,9 +16,9 @@ namespace GameLovers.UiService.Examples
 	/// - Start at minimum scale when opening
 	/// - Scale up with the configured curve
 	/// - Scale down when closing
-	/// - Notify the presenter when transitions complete via OnOpenTransitionCompleted/OnCloseTransitionCompleted
+	/// - The presenter waits for transitions via ITransitionFeature before completing lifecycle
 	/// </summary>
-	public class ScaleFeature : PresenterFeatureBase
+	public class ScaleFeature : PresenterFeatureBase, ITransitionFeature
 	{
 		[Header("Scale Settings")]
 		[SerializeField] private float _scaleInDuration = 0.25f;
@@ -33,7 +33,14 @@ namespace GameLovers.UiService.Examples
 		[Header("Target (optional)")]
 		[SerializeField] private Transform _targetTransform;
 
-		private Coroutine _scaleCoroutine;
+		private UniTaskCompletionSource _openTransitionCompletion;
+		private UniTaskCompletionSource _closeTransitionCompletion;
+
+		/// <inheritdoc />
+		public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
+
+		/// <inheritdoc />
+		public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
 
 		private void OnValidate()
 		{
@@ -62,75 +69,72 @@ namespace GameLovers.UiService.Examples
 
 		public override void OnPresenterOpened()
 		{
-			// Start scale in coroutine
-			if (_scaleCoroutine != null)
+			if (_scaleInDuration > 0)
 			{
-				StopCoroutine(_scaleCoroutine);
+				ScaleInAsync().Forget();
 			}
-			_scaleCoroutine = StartCoroutine(ScaleIn());
 		}
 
 		public override void OnPresenterClosing()
 		{
-			// Start scale out coroutine
-			if (_scaleCoroutine != null)
+			if (_scaleOutDuration > 0 && Presenter && Presenter.gameObject)
 			{
-				StopCoroutine(_scaleCoroutine);
+				ScaleOutAsync().Forget();
 			}
-			_scaleCoroutine = StartCoroutine(ScaleOut());
 		}
 
-		private IEnumerator ScaleIn()
+		private async UniTask ScaleInAsync()
 		{
-			if (_targetTransform == null) yield break;
+			if (_targetTransform == null) return;
+			
+			_openTransitionCompletion = new UniTaskCompletionSource();
 			
 			float elapsed = 0f;
 			Vector3 startScale = _targetTransform.localScale;
 			
 			while (elapsed < _scaleInDuration)
 			{
+				if (!this || !gameObject) break;
+				
 				elapsed += Time.deltaTime;
 				float t = _scaleInCurve.Evaluate(elapsed / _scaleInDuration);
 				_targetTransform.localScale = Vector3.LerpUnclamped(startScale, _endScale, t);
-				yield return null;
+				await UniTask.Yield();
 			}
 			
-			_targetTransform.localScale = _endScale;
+			if (this && gameObject && _targetTransform != null)
+			{
+				_targetTransform.localScale = _endScale;
+			}
 			
-			// Notify presenter that open transition is complete
-			Presenter.NotifyOpenTransitionCompleted();
+			_openTransitionCompletion?.TrySetResult();
 		}
 
-		private IEnumerator ScaleOut()
+		private async UniTask ScaleOutAsync()
 		{
-			if (_targetTransform == null) yield break;
+			if (_targetTransform == null) return;
+			
+			_closeTransitionCompletion = new UniTaskCompletionSource();
 			
 			float elapsed = 0f;
 			Vector3 startScale = _targetTransform.localScale;
 			
 			while (elapsed < _scaleOutDuration)
 			{
+				if (!this || !gameObject) break;
+				
 				elapsed += Time.deltaTime;
 				float t = _scaleOutCurve.Evaluate(elapsed / _scaleOutDuration);
 				_targetTransform.localScale = Vector3.LerpUnclamped(startScale, _startScale, t);
-				yield return null;
+				await UniTask.Yield();
 			}
 			
-			_targetTransform.localScale = _startScale;
-			
-			// Notify presenter that close transition is complete
-			Presenter.NotifyCloseTransitionCompleted();
-		}
-
-		private void OnDisable()
-		{
-			// Clean up coroutines
-			if (_scaleCoroutine != null)
+			if (this && gameObject && _targetTransform != null)
 			{
-				StopCoroutine(_scaleCoroutine);
-				_scaleCoroutine = null;
+				_targetTransform.localScale = _startScale;
 			}
+			
+			_closeTransitionCompletion?.TrySetResult();
 		}
 	}
 }
-

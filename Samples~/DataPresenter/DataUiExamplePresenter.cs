@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -20,9 +21,9 @@ namespace GameLovers.UiService.Examples
 	/// </summary>
 	public class DataUiExamplePresenter : UiPresenter<PlayerData>
 	{
-		[SerializeField] private Text _playerNameText;
-		[SerializeField] private Text _levelText;
-		[SerializeField] private Text _scoreText;
+		[SerializeField] private TMP_Text _playerNameText;
+		[SerializeField] private TMP_Text _levelText;
+		[SerializeField] private TMP_Text _scoreText;
 		[SerializeField] private Slider _healthSlider;
 		[SerializeField] private Button _closeButton;
 

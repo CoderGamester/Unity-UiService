@@ -86,11 +86,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Arrange
 			var task1 = _service.OpenUiAsync(typeof(TestUiPresenter), "instance_1");
 			yield return task1.ToCoroutine();
+			var presenter1 = task1.GetAwaiter().GetResult();
+			
 			var task2 = _service.OpenUiAsync(typeof(TestUiPresenter), "instance_2");
 			yield return task2.ToCoroutine();
 
 			// Act
 			_service.CloseUi(typeof(TestUiPresenter), "instance_1");
+			yield return presenter1.CloseTransitionTask.ToCoroutine();
 
 			// Assert
 			Assert.That(_service.IsVisible<TestUiPresenter>("instance_1"), Is.False);

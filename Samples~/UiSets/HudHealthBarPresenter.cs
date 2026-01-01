@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
@@ -11,7 +12,7 @@ namespace GameLovers.UiService.Examples
 	public class HudHealthBarPresenter : UiPresenter
 	{
 		[SerializeField] private Slider _healthSlider;
-		[SerializeField] private Text _healthText;
+		[SerializeField] private TMP_Text _healthText;
 
 		private float _currentHealth = 100f;
 		private float _maxHealth = 100f;

@@ -11,6 +11,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("GameLovers.UiService.Editor")]
 
 // Makes internal members visible to the PlayMode test assembly.
-// This allows tests to access internal APIs such as NotifyOpenTransitionCompleted() and NotifyCloseTransitionCompleted()
-// for testing feature transition behavior.
+// This allows tests to access internal APIs such as InternalOpen(), InternalClose(),
+// and internal async process methods for testing presenter lifecycle behavior.
 [assembly: InternalsVisibleTo("GameLovers.UiService.Tests.PlayMode")]

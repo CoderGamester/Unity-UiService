@@ -1,4 +1,4 @@
-using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using GameLovers.UiService;
 
@@ -6,7 +6,7 @@ namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Custom feature that adds fade in/out effects using CanvasGroup.
-	/// Demonstrates a basic custom feature with coroutine-based animation.
+	/// Demonstrates a custom transition feature using UniTask.
 	/// 
 	/// Usage:
 	/// 1. Add this component to your presenter prefab
@@ -17,17 +17,24 @@ namespace GameLovers.UiService.Examples
 	/// - Start with alpha 0 when opening
 	/// - Fade in over the configured duration
 	/// - Fade out when closing
-	/// - Notify the presenter when transitions complete via OnOpenTransitionCompleted/OnCloseTransitionCompleted
+	/// - The presenter waits for transitions via ITransitionFeature before completing lifecycle
 	/// </summary>
 	[RequireComponent(typeof(CanvasGroup))]
-	public class FadeFeature : PresenterFeatureBase
+	public class FadeFeature : PresenterFeatureBase, ITransitionFeature
 	{
 		[Header("Fade Settings")]
 		[SerializeField] private float _fadeInDuration = 0.3f;
 		[SerializeField] private float _fadeOutDuration = 0.2f;
 		[SerializeField] private CanvasGroup _canvasGroup;
 
-		private Coroutine _fadeCoroutine;
+		private UniTaskCompletionSource _openTransitionCompletion;
+		private UniTaskCompletionSource _closeTransitionCompletion;
+
+		/// <inheritdoc />
+		public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
+
+		/// <inheritdoc />
+		public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
 
 		private void OnValidate()
 		{
@@ -54,73 +61,70 @@ namespace GameLovers.UiService.Examples
 
 		public override void OnPresenterOpened()
 		{
-			// Start fade in coroutine
-			if (_fadeCoroutine != null)
+			if (_fadeInDuration > 0)
 			{
-				StopCoroutine(_fadeCoroutine);
+				FadeInAsync().Forget();
 			}
-			_fadeCoroutine = StartCoroutine(FadeIn());
 		}
 
 		public override void OnPresenterClosing()
 		{
-			// Start fade out coroutine
-			if (_fadeCoroutine != null)
+			if (_fadeOutDuration > 0 && Presenter && Presenter.gameObject)
 			{
-				StopCoroutine(_fadeCoroutine);
+				FadeOutAsync().Forget();
 			}
-			_fadeCoroutine = StartCoroutine(FadeOut());
 		}
 
-		private IEnumerator FadeIn()
+		private async UniTask FadeInAsync()
 		{
-			if (_canvasGroup == null) yield break;
+			if (_canvasGroup == null) return;
+			
+			_openTransitionCompletion = new UniTaskCompletionSource();
 			
 			float elapsed = 0f;
 			float startAlpha = _canvasGroup.alpha;
 			
 			while (elapsed < _fadeInDuration)
 			{
+				if (!this || !gameObject) break;
+				
 				elapsed += Time.deltaTime;
 				_canvasGroup.alpha = Mathf.Lerp(startAlpha, 1f, elapsed / _fadeInDuration);
-				yield return null;
+				await UniTask.Yield();
 			}
 			
-			_canvasGroup.alpha = 1f;
+			if (this && gameObject && _canvasGroup != null)
+			{
+				_canvasGroup.alpha = 1f;
+			}
 			
-			// Notify presenter that open transition is complete
-			Presenter.NotifyOpenTransitionCompleted();
+			_openTransitionCompletion?.TrySetResult();
 		}
 
-		private IEnumerator FadeOut()
+		private async UniTask FadeOutAsync()
 		{
-			if (_canvasGroup == null) yield break;
+			if (_canvasGroup == null) return;
+			
+			_closeTransitionCompletion = new UniTaskCompletionSource();
 			
 			float elapsed = 0f;
 			float startAlpha = _canvasGroup.alpha;
 			
 			while (elapsed < _fadeOutDuration)
 			{
+				if (!this || !gameObject) break;
+				
 				elapsed += Time.deltaTime;
 				_canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, elapsed / _fadeOutDuration);
-				yield return null;
+				await UniTask.Yield();
 			}
 			
-			_canvasGroup.alpha = 0f;
-			
-			// Notify presenter that close transition is complete
-			Presenter.NotifyCloseTransitionCompleted();
-		}
-
-		private void OnDisable()
-		{
-			// Clean up coroutines
-			if (_fadeCoroutine != null)
+			if (this && gameObject && _canvasGroup != null)
 			{
-				StopCoroutine(_fadeCoroutine);
-				_fadeCoroutine = null;
+				_canvasGroup.alpha = 0f;
 			}
+			
+			_closeTransitionCompletion?.TrySetResult();
 		}
 	}
 }
-
