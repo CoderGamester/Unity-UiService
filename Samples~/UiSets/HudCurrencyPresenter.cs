@@ -38,7 +38,10 @@ namespace GameLovers.UiService.Examples
 		protected override void OnOpened()
 		{
 			base.OnOpened();
-			UpdateCurrencyDisplay();
+			
+			var gold = Random.Range(0, 1000000);
+			var gems = Random.Range(0, 1000);
+			SetCurrency(gold, gems);
 			Debug.Log("[Currency] Opened");
 		}
 
@@ -62,12 +65,12 @@ namespace GameLovers.UiService.Examples
 		{
 			if (_goldText != null)
 			{
-				_goldText.text = FormatNumber(_gold);
+				_goldText.text = "Gold: " + FormatNumber(_gold);
 			}
 
 			if (_gemsText != null)
 			{
-				_gemsText.text = FormatNumber(_gems);
+				_gemsText.text = "Gems: " + FormatNumber(_gems);
 			}
 		}
 

@@ -9,23 +9,31 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
+  m_Script: {fileID: 11500000, guid: f902b40ecc34f4a09863f02fa7729865, type: 3}
   m_Name: UiSetsConfigs
-  m_EditorClassIdentifier: GameLovers.UiService::GameLovers.UiService.PrefabRegistryUiConfigs
+  m_EditorClassIdentifier: GameLovers.UiService.Examples::GameLovers.UiService.Examples.UiSetsSampleConfigs
   _configs:
   - Address: HudHealthBarPresenter
-    Layer: 5
-    UiType: GameLovers.UiService.Examples.HudHealthBarPresenter, Assembly-CSharp
+    Layer: 0
+    UiType: GameLovers.UiService.Examples.HudHealthBarPresenter, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - Address: HudCurrencyPresenter
-    Layer: 5
-    UiType: GameLovers.UiService.Examples.HudCurrencyPresenter, Assembly-CSharp
+    Layer: 0
+    UiType: GameLovers.UiService.Examples.HudCurrencyPresenter, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   _sets:
   - SetId: 0
     UiEntries:
-    - UiTypeName: GameLovers.UiService.Examples.HudHealthBarPresenter, Assembly-CSharp
-      InstanceAddress: 
-    - UiTypeName: GameLovers.UiService.Examples.HudCurrencyPresenter, Assembly-CSharp
-      InstanceAddress: 
+    - UiTypeName: GameLovers.UiService.Examples.HudHealthBarPresenter, Assembly-CSharp,
+        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      InstanceAddress: HudHealthBarPresenter
+    - UiTypeName: GameLovers.UiService.Examples.HudCurrencyPresenter, Assembly-CSharp,
+        Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+      InstanceAddress: HudCurrencyPresenter
+  - SetId: 1
+    UiEntries: []
+  - SetId: 2
+    UiEntries: []
   _prefabEntries:
   - Address: HudHealthBarPresenter
     Prefab: {fileID: 100000, guid: ee22334455667788990011223344dd07, type: 3}

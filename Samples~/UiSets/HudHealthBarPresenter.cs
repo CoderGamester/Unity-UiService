@@ -38,7 +38,9 @@ namespace GameLovers.UiService.Examples
 		protected override void OnOpened()
 		{
 			base.OnOpened();
-			UpdateHealthDisplay();
+
+			var health = Random.Range(0f, 100f);
+			SetHealth(health, 100f);
 			Debug.Log("[HealthBar] Opened");
 		}
 

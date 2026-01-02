@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
@@ -11,36 +13,27 @@ namespace GameLovers.UiService.Examples
 	/// Example demonstrating UI Sets - grouping multiple UIs that are loaded/opened/closed together.
 	/// Common use case: Game HUD with multiple elements (health bar, currency, minimap, etc.)
 	/// Uses UI buttons for input to avoid dependency on any specific input system.
+	/// 
+	/// Note: The <see cref="UiSetId"/> enum is defined in a separate file (UiSetId.cs) so it can be
+	/// referenced by both runtime code and editor scripts (for the custom UiConfigs editor).
 	/// </summary>
 	public class UiSetsExample : MonoBehaviour
 	{
-		/// <summary>
-		/// Define your UI Set IDs as an enum for type safety
-		/// </summary>
-		public enum UiSetId
-		{
-			GameHud = 0,
-			PauseMenu = 1,
-			SettingsPanel = 2
-		}
-
-		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
+		[SerializeField] private UiSetsSampleConfigs _uiConfigs;
 
 		[Header("UI Buttons")]
 		[SerializeField] private Button _loadSetButton;
 		[SerializeField] private Button _openSetButton;
 		[SerializeField] private Button _closeSetButton;
 		[SerializeField] private Button _unloadSetButton;
-		[SerializeField] private Button _loadAndOpenButton;
 		[SerializeField] private Button _listSetsButton;
 
 		[Header("UI Elements")]
-		[SerializeField] private TMP_Text _explanationText;
 		[SerializeField] private TMP_Text _statusText;
 		
 		private IUiServiceInit _uiService;
 
-		private async void Start()
+		private void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
@@ -53,18 +46,8 @@ namespace GameLovers.UiService.Examples
 			_openSetButton?.onClick.AddListener(OpenUiSetWrapper);
 			_closeSetButton?.onClick.AddListener(CloseUiSetExample);
 			_unloadSetButton?.onClick.AddListener(UnloadUiSetExample);
-			_loadAndOpenButton?.onClick.AddListener(LoadAndOpenUiSetWrapper);
 			_listSetsButton?.onClick.AddListener(ListUiSets);
-			
-			// Pre-load the set and subscribe to close events for each presenter in it
-			var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
-			foreach (var task in loadTasks)
-			{
-				var presenter = await task;
-				presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
-			}
 
-			UpdateUiVisibility(false);
 			UpdateStatus("Ready");
 		}
 
@@ -74,15 +57,10 @@ namespace GameLovers.UiService.Examples
 			_openSetButton?.onClick.RemoveListener(OpenUiSetWrapper);
 			_closeSetButton?.onClick.RemoveListener(CloseUiSetExample);
 			_unloadSetButton?.onClick.RemoveListener(UnloadUiSetExample);
-			_loadAndOpenButton?.onClick.RemoveListener(LoadAndOpenUiSetWrapper);
 			_listSetsButton?.onClick.RemoveListener(ListUiSets);
 			
 			_uiService?.Dispose();
 		}
-
-		private void LoadUiSetWrapper() => LoadUiSetExample().Forget();
-		private void OpenUiSetWrapper() => OpenUiSetExample().Forget();
-		private void LoadAndOpenUiSetWrapper() => LoadAndOpenUiSetExample().Forget();
 
 		/// <summary>
 		/// Load all UIs in a set (but don't show them yet)
@@ -90,43 +68,39 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public async UniTaskVoid LoadUiSetExample()
 		{
-			UpdateStatus($"Loading UI Set: GameHud...");
-			
 			// LoadUiSetAsync returns a list of tasks, one per UI
 			var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
 			
 			UpdateStatus($"  Started loading {loadTasks.Count} UIs...");
 			
 			// Wait for all UIs to load
-			foreach (var task in loadTasks)
-			{
-				var presenter = await task;
-				UpdateStatus($"  Loaded: {presenter.GetType().Name}");
-			}
+			var presenters = await UniTask.WhenAll(loadTasks);
 			
-			UpdateStatus("UI Set loaded! UIs are in memory but not visible.");
+			var names = string.Join(", ", presenters.Select(p => p.GetType().Name));
+			UpdateStatus($"UI Set loaded ({names})! UIs are in memory but not visible.");
 		}
 
 		/// <summary>
-		/// Open all UIs in a set (loads them first if needed)
+		/// Open all UIs in a set (loads them if not already loaded)
 		/// </summary>
 		public async UniTaskVoid OpenUiSetExample()
 		{
-			UpdateStatus($"Opening UI Set: GameHud...");
-			
-			// First ensure all UIs are loaded
-			var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
-			
-			// Wait for all to load, then open each one
-			foreach (var task in loadTasks)
+			UpdateStatus($"Opening UI Set: {UiSetId.GameHud}...");
+
+			try
 			{
-				var presenter = await task;
-				await _uiService.OpenUiAsync(presenter.GetType());
-				UpdateStatus($"  Opened: {presenter.GetType().Name}");
+				// OpenUiSetAsync handles loading (if needed) and opening all UIs in the set
+				// with proper address handling, ensuring CloseAllUiSet and UnloadUiSet work correctly
+				// Returns all opened presenters in parallel
+				var presenters = await _uiService.OpenUiSetAsync((int)UiSetId.GameHud);
+				
+				var names = string.Join(", ", presenters.Select(p => p.GetType().Name));
+				UpdateStatus($"UI Set opened ({names})! All UIs are now visible.");
 			}
-			
-			UpdateUiVisibility(true);
-			UpdateStatus("UI Set opened! All UIs are now visible.");
+			catch (KeyNotFoundException)
+			{
+				UpdateStatus("UI Set not configured!");
+			}
 		}
 
 		/// <summary>
@@ -134,13 +108,17 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void CloseUiSetExample()
 		{
-			UpdateStatus($"Closing UI Set: GameHud...");
-			
 			// CloseAllUiSet hides all UIs in the set but keeps them loaded
 			_uiService.CloseAllUiSet((int)UiSetId.GameHud);
 			
-			UpdateUiVisibility(false);
-			UpdateStatus("UI Set closed! UIs are hidden but still in memory.");
+			if (_uiService.VisiblePresenters.Count > 0)
+			{
+				UpdateStatus("<color=red>UI Set not closed! UIs are still visible.</color>");
+			}
+			else
+			{
+				UpdateStatus("UI Set closed! UIs are hidden but still in memory.");
+			}
 		}
 
 		/// <summary>
@@ -148,13 +126,10 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void UnloadUiSetExample()
 		{
-			UpdateStatus($"Unloading UI Set: GameHud...");
-			
 			try
 			{
 				// UnloadUiSet destroys all UIs in the set
 				_uiService.UnloadUiSet((int)UiSetId.GameHud);
-				UpdateUiVisibility(false);
 				UpdateStatus("UI Set unloaded! All UIs have been destroyed.");
 			}
 			catch (KeyNotFoundException)
@@ -164,66 +139,32 @@ namespace GameLovers.UiService.Examples
 		}
 
 		/// <summary>
-		/// Combined load and open for convenience
-		/// </summary>
-		public async UniTaskVoid LoadAndOpenUiSetExample()
-		{
-			UpdateStatus("Loading and opening UI Set: GameHud...");
-			
-			var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
-			
-			// Load and immediately open each UI
-			var openTasks = new List<UniTask>();
-			foreach (var loadTask in loadTasks)
-			{
-				openTasks.Add(LoadAndOpenSingle(loadTask));
-			}
-			
-			await UniTask.WhenAll(openTasks);
-			
-			UpdateUiVisibility(true);
-			UpdateStatus("UI Set loaded and opened!");
-		}
-
-		private async UniTask LoadAndOpenSingle(UniTask<UiPresenter> loadTask)
-		{
-			var presenter = await loadTask;
-			await _uiService.OpenUiAsync(presenter.GetType());
-		}
-
-		/// <summary>
 		/// List all configured UI Sets
 		/// </summary>
 		public void ListUiSets()
 		{
 			UpdateStatus("Check console for configured UI Sets list.");
-			Debug.Log("=== Configured UI Sets ===");
+
+			var sb = new StringBuilder();
+			sb.AppendLine("=== Configured UI Sets ===");
 			
 			foreach (var kvp in _uiService.UiSets)
 			{
 				var setId = kvp.Key;
 				var setConfig = kvp.Value;
 				
-				Debug.Log($"Set {setId}:");
+				sb.AppendLine($"Set {setId}:");
 				foreach (var instanceId in setConfig.UiInstanceIds)
 				{
-					Debug.Log($"  - {instanceId}");
+					sb.AppendLine($"  - {instanceId}");
 				}
 			}
 			
-			if (_uiService.UiSets.Count == 0)
-			{
-				Debug.Log("No UI Sets configured. Add sets in your UiConfigs asset.");
-			}
+			Debug.Log(sb.ToString());
 		}
 
-		private void UpdateUiVisibility(bool isPresenterActive)
-		{
-			if (_explanationText != null)
-			{
-				_explanationText.gameObject.SetActive(!isPresenterActive);
-			}
-		}
+		private void LoadUiSetWrapper() => LoadUiSetExample().Forget();
+		private void OpenUiSetWrapper() => OpenUiSetExample().Forget();
 
 		private void UpdateStatus(string message)
 		{
@@ -231,7 +172,6 @@ namespace GameLovers.UiService.Examples
 			{
 				_statusText.text = message;
 			}
-			Debug.Log(message);
 		}
 	}
 }

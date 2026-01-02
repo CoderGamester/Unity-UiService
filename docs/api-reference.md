@@ -189,6 +189,26 @@ foreach (var task in loadTasks)
 }
 ```
 
+### OpenUiSetAsync
+
+Open all presenters in a set, loading them if necessary.
+
+```csharp
+// Opens all UIs in parallel, returns when all are open
+UiPresenter[] presenters = await _uiService.OpenUiSetAsync(setId: 1);
+
+// With cancellation
+var cts = new CancellationTokenSource();
+var presenters = await _uiService.OpenUiSetAsync(setId: 1, cts.Token);
+```
+
+**Signature:**
+```csharp
+UniTask<UiPresenter[]> OpenUiSetAsync(int setId, CancellationToken cancellationToken = default);
+```
+
+**Note:** This method ensures proper address handling so that `CloseAllUiSet` and `UnloadUiSet` work correctly afterwards.
+
 ### CloseAllUiSet
 
 Close all presenters in a set.

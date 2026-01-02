@@ -540,6 +540,24 @@ namespace GameLovers.UiService
 			}
 		}
 
+		/// <inheritdoc />
+		public async UniTask<UiPresenter[]> OpenUiSetAsync(int setId, CancellationToken cancellationToken = default)
+		{
+			if (!_uiSets.TryGetValue(setId, out var set))
+			{
+				throw new KeyNotFoundException($"UI Set with id {setId} not found.");
+			}
+
+			var openTasks = new List<UniTask<UiPresenter>>(set.UiInstanceIds.Length);
+			
+			foreach (var instanceId in set.UiInstanceIds)
+			{
+				openTasks.Add(OpenUiAsync(instanceId.PresenterType, instanceId.InstanceAddress, cancellationToken));
+			}
+
+			return await UniTask.WhenAll(openTasks);
+		}
+
 		/// <summary>
 		/// Disposes of the UI service, cleaning up all resources and unsubscribing from events.
 		/// </summary>
@@ -670,9 +688,14 @@ namespace GameLovers.UiService
 
 		/// <summary>
 		/// Resolves the instance address for a given type when no specific instance is requested.
-		/// If only one instance of the type exists, returns that instance's address.
-		/// If multiple instances exist, returns the first one found and logs a warning.
-		/// If no instances exist, returns string.Empty (default).
+		/// Priority:
+		/// 1. If exactly one instance exists, return that instance's address
+		/// 2. If multiple instances exist, return the first one found (with warning)
+		/// 3. If no instances exist, return the UiConfig.Address as the canonical address
+		/// 4. If no config exists, return string.Empty (fallback)
+		/// 
+		/// This ensures that operations using Type-only methods (OpenUiAsync, CloseUi, etc.)
+		/// align with UI Set operations that use addresses from configuration.
 		/// </summary>
 		/// <param name="type">The type of UI presenter to resolve</param>
 		/// <returns>The resolved instance address</returns>
@@ -680,7 +703,14 @@ namespace GameLovers.UiService
 		{
 			if (!_uiPresenters.TryGetValue(type, out var instances))
 			{
-				// No instances found, return default (string.Empty)
+				// No instances loaded - use the config address as the canonical address
+				// This ensures consistency with UI Set operations
+				if (_uiConfigs.TryGetValue(type, out var config))
+				{
+					return config.Address;
+				}
+				
+				// No config found - fallback to empty (will likely fail later with KeyNotFoundException)
 				return string.Empty;
 			}
 			

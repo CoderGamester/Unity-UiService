@@ -21,7 +21,7 @@ namespace GameLovers.UiService.Examples
 		
 		private IUiServiceInit _uiService;
 
-		private async void Start()
+		private void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);

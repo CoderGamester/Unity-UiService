@@ -231,6 +231,18 @@ namespace GameLovers.UiService
 		UniTask<UiPresenter> OpenUiAsync<TData>(Type type, TData initialData, CancellationToken cancellationToken = default) where TData : struct;
 
 		/// <summary>
+		/// Opens all UI presenters in the specified UI set, loading them if necessary.
+		/// This method ensures proper address handling for UI sets, making it safe to use
+		/// in combination with <see cref="CloseAllUiSet"/> and <see cref="UnloadUiSet"/>.
+		/// All UIs in the set are opened in parallel using UniTask.WhenAll.
+		/// </summary>
+		/// <param name="setId">The ID of the UI set to open.</param>
+		/// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+		/// <returns>A task that completes with an array of all opened UI presenters when all UIs in the set are opened.</returns>
+		/// <exception cref="KeyNotFoundException">Thrown if the service does not contain a UI set with the specified ID.</exception>
+		UniTask<UiPresenter[]> OpenUiSetAsync(int setId, CancellationToken cancellationToken = default);
+
+		/// <summary>
 		/// Closes a UI presenter and optionally destroys its assets.
 		/// </summary>
 		/// <typeparam name="T">The type of UI presenter to close.</typeparam>
@@ -271,7 +283,7 @@ namespace GameLovers.UiService
 		void CloseAllUiSet(int setId);
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IUiService" />
 	/// <remarks>
 	/// This interface provides a way to initialize the UI service with the game's UI configurations.
 	/// </remarks>

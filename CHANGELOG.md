@@ -4,9 +4,10 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
-## [1.1.0] - 2025-12-31
+## [1.1.0] - 2026-01-02
 
 **New**:
+- Added `OpenUiSetAsync(int setId, CancellationToken)` method to `IUiService` for opening all UI presenters in a set with proper address handling, ensuring compatibility with `CloseAllUiSet` and `UnloadUiSet`
 - Added `OnOpenTransitionCompleted()` and `OnCloseTransitionCompleted()` lifecycle hooks to `UiPresenter` for reacting after all transition animations/delays complete
 - Added comprehensive test suite:
   - Unit tests for `UiAnalytics`, `UiConfig`, `UiInstanceId`, `UiServiceCore`, `UiSetConfig`
