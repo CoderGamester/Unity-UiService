@@ -97,9 +97,12 @@ Open a presenter, loading it first if necessary.
 // Basic open
 var shop = await _uiService.OpenUiAsync<ShopPresenter>();
 
-// Open with data
+// Open with initial data - automatically triggers OnSetData()
 var questData = new QuestData { QuestId = 101, Title = "Dragon Slayer" };
 var quest = await _uiService.OpenUiAsync<QuestPresenter, QuestData>(questData);
+
+// Update data at any time - also triggers OnSetData()
+quest.Data = new QuestData { QuestId = 102, Title = "Updated Quest" };
 
 // With cancellation
 var cts = new CancellationTokenSource();

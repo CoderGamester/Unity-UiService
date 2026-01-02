@@ -29,7 +29,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - **BREAKING**: Removed `IPresenterFeature` interface; features now extend `PresenterFeatureBase` directly
 - **BREAKING**: Renamed `UiAssetLoader` to `AddressablesUiAssetLoader` to reflect its specific loading mechanism.
 - **BREAKING**: Renamed `UiConfig.AddressableAddress` to `UiConfig.Address` for loader-agnosticism
-- **BREAKING**: `TimeDelayFeature` and `AnimationDelayFeature` no longer call `gameObject.SetActive(false)` directly; visibility is now controlled solely by `UiPresenter`
+- Changed `UiPresenter<T>.Data` property to have a public setter that automatically triggers `OnSetData()` when assigned
+- Refactored `TimeDelayFeature` and `AnimationDelayFeature` to no longer call `gameObject.SetActive(false)` directly; visibility is now controlled solely by `UiPresenter`
 - Refactored `UiPresenter.InternalOpen()` and `InternalClose()` to use internal async processes that await `ITransitionFeature` tasks
 - Refactored `AnimationDelayFeature` and `TimeDelayFeature` to use `Presenter.NotifyOpenTransitionCompleted()` and `Presenter.NotifyCloseTransitionCompleted()` instead of internal events
 - Removed `OnOpenCompletedEvent` and `OnCloseCompletedEvent` internal events from delay features

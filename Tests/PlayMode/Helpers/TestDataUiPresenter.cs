@@ -16,11 +16,13 @@ namespace GameLovers.UiService.Tests.PlayMode
 	public class TestDataUiPresenter : UiPresenter<TestPresenterData>
 	{
 		public bool WasDataSet { get; private set; }
+		public int OnSetDataCallCount { get; private set; }
 		public TestPresenterData ReceivedData { get; private set; }
 
 		protected override void OnSetData()
 		{
 			WasDataSet = true;
+			OnSetDataCallCount++;
 			ReceivedData = Data;
 		}
 	}

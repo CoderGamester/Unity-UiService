@@ -189,16 +189,35 @@ public class QuestPresenter : UiPresenter<QuestData>
     
     protected override void OnSetData()
     {
-        // Access data via the Data property
+        // Called automatically whenever Data is assigned
         _titleText.text = Data.Title;
         _descriptionText.text = Data.Description;
     }
 }
 
-// Usage
+// Usage - initial data on open
 var questData = new QuestData { QuestId = 1, Title = "Dragon Slayer", Description = "..." };
 await _uiService.OpenUiAsync<QuestPresenter, QuestData>(questData);
 ```
+
+### Updating Data Dynamically
+
+The `Data` property on `UiPresenter<T>` has a **public setter** that automatically triggers `OnSetData()` whenever assigned. This enables updating UI data at any time without closing and reopening:
+
+```csharp
+// Get the presenter and update its data directly
+var questPresenter = _uiService.GetUi<QuestPresenter>();
+
+// This will automatically call OnSetData()
+questPresenter.Data = new QuestData 
+{ 
+    QuestId = 2, 
+    Title = "Updated Quest", 
+    Description = "New description" 
+};
+```
+
+> **Note**: Setting `Data` always calls `OnSetData()`, whether called during initial open via `OpenUiAsync` or when updating data afterwards. This provides a consistent lifecycle for data-driven presenters.
 
 ### Closing from Within
 

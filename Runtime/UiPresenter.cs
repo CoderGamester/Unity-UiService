@@ -271,22 +271,25 @@ namespace GameLovers.UiService
 	/// </remarks>
 	public abstract class UiPresenter<T> : UiPresenter, IUiPresenterData where T : struct
 	{
+		private T _data;
+
 		/// <summary>
 		/// The Ui data defined when opened via the <see cref="UiService"/>
 		/// </summary>
-		public T Data { get; protected set; }
+		public T Data
+		{
+			get => _data;
+			set
+			{
+				_data = value;
+				OnSetData();
+			}
+		}
 
 		/// <summary>
 		/// Allows the ui presenter implementation to have extra behaviour when the data defined for the presenter is set
 		/// </summary>
 		protected virtual void OnSetData() {}
-
-		internal void InternalSetData(T data)
-		{
-			Data = data;
-
-			OnSetData();
-		}
 	}
 }
 

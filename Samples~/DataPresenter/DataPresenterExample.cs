@@ -7,7 +7,12 @@ using TMPro;
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example demonstrating data-driven UI presenters.
+	/// Example demonstrating data-driven UI presenters using <see cref="UiPresenter{T}"/>.
+	/// Shows two patterns for passing data:
+	/// <list type="bullet">
+	/// <item>Initial data via <c>OpenUiAsync&lt;T, TData&gt;(data)</c> when opening the UI</item>
+	/// <item>Dynamic updates via the public <c>Data</c> property setter (triggers <c>OnSetData()</c> automatically)</item>
+	/// </list>
 	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// </summary>
 	public class DataPresenterExample : MonoBehaviour
@@ -21,7 +26,6 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _updateLowHealthButton;
 
 		[Header("UI Elements")]
-		[SerializeField] private TMP_Text _explanationText;
 		[SerializeField] private TMP_Text _statusText;
 		
 		private IUiServiceInit _uiService;
@@ -39,12 +43,12 @@ namespace GameLovers.UiService.Examples
 			_showMageButton?.onClick.AddListener(ShowMageData);
 			_showRogueButton?.onClick.AddListener(ShowRogueData);
 			_updateLowHealthButton?.onClick.AddListener(UpdateToLowHealth);
+			_updateLowHealthButton?.gameObject.SetActive(false);
 			
 			// Pre-load presenter and subscribe to close events
 			var presenter = await _uiService.LoadUiAsync<DataUiExamplePresenter>();
-			presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			presenter.OnCloseRequested.AddListener(UpdateCloseButtonStatus);
 
-			UpdateUiVisibility(false);
 			UpdateStatus("Ready");
 		}
 
@@ -70,8 +74,7 @@ namespace GameLovers.UiService.Examples
 			};
 			
 			UpdateStatus("Opening UI with Warrior data...");
-			await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
-			UpdateUiVisibility(true);
+			await OpenOrUpdateUi(data);
 		}
 
 		/// <summary>
@@ -88,8 +91,7 @@ namespace GameLovers.UiService.Examples
 			};
 			
 			UpdateStatus("Opening UI with Mage data...");
-			await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
-			UpdateUiVisibility(true);
+			await OpenOrUpdateUi(data);
 		}
 
 		/// <summary>
@@ -106,33 +108,44 @@ namespace GameLovers.UiService.Examples
 			};
 			
 			UpdateStatus("Opening UI with Rogue data...");
-			await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
-			UpdateUiVisibility(true);
+			await OpenOrUpdateUi(data);
 		}
 
 		/// <summary>
-		/// Updates the UI to show low health state
+		/// Updates the UI to show low health state.
+		/// Demonstrates direct Data property assignment which triggers OnSetData() automatically.
 		/// </summary>
-		public async void UpdateToLowHealth()
+		public void UpdateToLowHealth()
 		{
-			var data = new PlayerData
-			{
-				PlayerName = "Wounded Hero",
-				Level = 15,
-				Score = 3500,
-				HealthPercentage = 0.15f
-			};
+			UpdateStatus("Updating data directly...");
 			
-			UpdateStatus("Updating to low health data...");
-			await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
-			UpdateUiVisibility(true);
+			// Get the presenter and update its Data property directly.
+			// Setting Data automatically triggers OnSetData() to refresh the UI.
+			var presenter = _uiService.GetUi<DataUiExamplePresenter>();
+			var data = presenter.Data;
+
+			data.HealthPercentage = 0.15f;
+			presenter.Data = data;
 		}
 
-		private void UpdateUiVisibility(bool isPresenterActive)
+		private void UpdateCloseButtonStatus()
 		{
-			if (_explanationText != null)
+			_updateLowHealthButton.gameObject.SetActive(false);
+			UpdateStatus("UI Closed but still in memory");
+		}
+
+		private async UniTask OpenOrUpdateUi(PlayerData data)
+		{
+			if(_uiService.IsVisible<DataUiExamplePresenter>())
 			{
-				_explanationText.gameObject.SetActive(!isPresenterActive);
+				var presenter = _uiService.GetUi<DataUiExamplePresenter>();
+				presenter.Data = data;
+			}
+			else
+			{
+				await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
+
+				_updateLowHealthButton.gameObject.SetActive(true);
 			}
 		}
 
@@ -142,7 +155,6 @@ namespace GameLovers.UiService.Examples
 			{
 				_statusText.text = message;
 			}
-			Debug.Log(message);
 		}
 	}
 }

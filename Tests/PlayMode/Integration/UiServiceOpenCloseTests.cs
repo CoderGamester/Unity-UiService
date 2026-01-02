@@ -272,5 +272,102 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.IsTrue(presenter.WasCloseTransitionCompleted);
 			Assert.AreEqual(1, presenter.CloseTransitionCompletedCount);
 		}
+
+		#region Data Setter Tests
+
+		[UnityTest]
+		public IEnumerator SetData_DirectAssignment_CallsOnSetData()
+		{
+			// Arrange - Open without initial data
+			var task = _service.OpenUiAsync(typeof(TestDataUiPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestDataUiPresenter;
+
+			// Act - Set data directly via property setter
+			presenter.Data = new TestPresenterData { Id = 99, Name = "Direct" };
+
+			// Assert
+			Assert.That(presenter.WasDataSet, Is.True);
+			Assert.AreEqual(99, presenter.ReceivedData.Id);
+			Assert.AreEqual("Direct", presenter.ReceivedData.Name);
+		}
+
+		[UnityTest]
+		public IEnumerator SetData_DirectAssignment_DataPropertyReturnsValue()
+		{
+			// Arrange
+			var task = _service.OpenUiAsync(typeof(TestDataUiPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestDataUiPresenter;
+			var data = new TestPresenterData { Id = 123, Name = "Readable" };
+
+			// Act
+			presenter.Data = data;
+
+			// Assert - Data property getter returns the assigned value
+			Assert.AreEqual(123, presenter.Data.Id);
+			Assert.AreEqual("Readable", presenter.Data.Name);
+		}
+
+		[UnityTest]
+		public IEnumerator SetData_MultipleUpdates_CallsOnSetDataEachTime()
+		{
+			// Arrange
+			var task = _service.OpenUiAsync(typeof(TestDataUiPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestDataUiPresenter;
+
+			// Act - Set data multiple times
+			presenter.Data = new TestPresenterData { Id = 1, Name = "First" };
+			presenter.Data = new TestPresenterData { Id = 2, Name = "Second" };
+			presenter.Data = new TestPresenterData { Id = 3, Name = "Third" };
+
+			// Assert - OnSetData should be called 3 times
+			Assert.AreEqual(3, presenter.OnSetDataCallCount);
+			Assert.AreEqual(3, presenter.Data.Id);
+			Assert.AreEqual("Third", presenter.Data.Name);
+		}
+
+		[UnityTest]
+		public IEnumerator SetData_OnAlreadyOpenPresenter_UpdatesDynamically()
+		{
+			// Arrange - Open with initial data
+			var initialData = new TestPresenterData { Id = 1, Name = "Initial" };
+			var task = _service.OpenUiAsync(typeof(TestDataUiPresenter), initialData);
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestDataUiPresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+
+			// Act - Update data while presenter is already open
+			var updatedData = new TestPresenterData { Id = 2, Name = "Updated" };
+			presenter.Data = updatedData;
+
+			// Assert - OnSetData should be called twice (once on open, once on update)
+			Assert.AreEqual(2, presenter.OnSetDataCallCount);
+			Assert.AreEqual(2, presenter.Data.Id);
+			Assert.AreEqual("Updated", presenter.Data.Name);
+		}
+
+		[UnityTest]
+		public IEnumerator SetData_ConsecutiveUpdates_PreservesLatestValue()
+		{
+			// Arrange
+			var task = _service.OpenUiAsync(typeof(TestDataUiPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestDataUiPresenter;
+
+			// Act - Rapid consecutive updates
+			for (var i = 0; i < 10; i++)
+			{
+				presenter.Data = new TestPresenterData { Id = i, Name = $"Update{i}" };
+			}
+
+			// Assert - Only latest value should be retained, OnSetData called 10 times
+			Assert.AreEqual(9, presenter.Data.Id);
+			Assert.AreEqual("Update9", presenter.Data.Name);
+			Assert.AreEqual(10, presenter.OnSetDataCallCount);
+		}
+
+		#endregion
 	}
 }

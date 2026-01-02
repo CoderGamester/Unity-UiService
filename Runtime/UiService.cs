@@ -448,7 +448,7 @@ namespace GameLovers.UiService
 
 			if (ui is UiPresenter<TData> uiPresenter)
 			{
-				uiPresenter.InternalSetData(initialData);
+				uiPresenter.Data = initialData;
 			}
 			else
 			{

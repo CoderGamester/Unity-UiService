@@ -20,7 +20,7 @@
     },
     {
       "displayName": "Data Presenter",
-      "description": "Data-driven UI with UiPresenter<T> and the OnSetData lifecycle hook.",
+      "description": "Data-driven UI with UiPresenter<T>. Demonstrates initial data via OpenUiAsync and dynamic updates via the public Data property setter.",
       "path": "Samples~/DataPresenter"
     },
     {

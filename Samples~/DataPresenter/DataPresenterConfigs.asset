@@ -14,9 +14,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: GameLovers.UiService::GameLovers.UiService.PrefabRegistryUiConfigs
   _configs:
   - Address: DataUiExamplePresenter
-    Layer: 10
-    UiType: GameLovers.UiService.Examples.DataUiExamplePresenter, Assembly-CSharp
-  _sets: []
+    Layer: 0
+    UiType: GameLovers.UiService.Examples.DataUiExamplePresenter, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  _sets:
+  - SetId: 0
+    UiEntries: []
+  - SetId: 1
+    UiEntries: []
+  - SetId: 2
+    UiEntries: []
+  - SetId: 3
+    UiEntries: []
+  - SetId: 4
+    UiEntries: []
+  - SetId: 5
+    UiEntries: []
   _prefabEntries:
   - Address: DataUiExamplePresenter
-    Prefab: {fileID: 100000, guid: 3f330e45bc4224627846c133ed3523ae, type: 3}
+    Prefab: {fileID: 1000000, guid: 3f330e45bc4224627846c133ed3523ae, type: 3}

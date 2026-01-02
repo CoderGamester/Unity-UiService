@@ -37,7 +37,8 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `UiSetConfig` is the runtime shape: `SetId` + `UiInstanceId[]`.
 - **Presenter pattern**: `Runtime/UiPresenter.cs`
   - Lifecycle hooks: `OnInitialized`, `OnOpened`, `OnClosed`, `OnOpenTransitionCompleted`, `OnCloseTransitionCompleted`.
-  - Typed presenters: `UiPresenter<T>` (data assigned during open via `OpenUiAsync(type, initialData, ...)`).
+  - Typed presenters: `UiPresenter<T>` with public `Data` property that triggers `OnSetData()` on assignment.
+  - **Data assignment**: The `Data` property has a public setter. When set (either during `OpenUiAsync(type, initialData, ...)` or at any time after), it automatically calls `OnSetData()`. This enables dynamic data updates without reopening the UI.
   - Presenter features are discovered via `GetComponents(_features)` at init time and are notified in the open/close lifecycle.
   - **Transition tasks**: `OpenTransitionTask` and `CloseTransitionTask` are public `UniTask` properties that complete when all transition features finish.
   - **Visibility control**: `UiPresenter` is the single point of responsibility for `SetActive(false)` on close; it waits for all `ITransitionFeature` tasks before hiding.
