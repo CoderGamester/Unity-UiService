@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
@@ -19,10 +20,13 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _closeButton;
 		[SerializeField] private Button _unloadButton;
 		[SerializeField] private Button _loadAndOpenButton;
+
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _statusText;
 		
 		private IUiServiceInit _uiService;
 
-		private void Start()
+		private async void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
@@ -37,13 +41,11 @@ namespace GameLovers.UiService.Examples
 			_unloadButton?.onClick.AddListener(UnloadUi);
 			_loadAndOpenButton?.onClick.AddListener(LoadAndOpenUi);
 			
-			Debug.Log("=== Basic UI Flow Example Started ===");
-			Debug.Log("Use the UI buttons to interact with the example:");
-			Debug.Log("  Load: Load UI into memory (not visible)");
-			Debug.Log("  Open: Make UI visible");
-			Debug.Log("  Close: Hide UI (keep in memory)");
-			Debug.Log("  Unload: Destroy UI from memory");
-			Debug.Log("  Load & Open: Combined operation");
+			// Pre-load the presenter and subscribe to close events
+			var presenter = await _uiService.LoadUiAsync<BasicUiExamplePresenter>();
+			presenter.OnCloseRequested.AddListener(() => UpdateStatus("UI Closed but still in memory"));
+
+			UpdateStatus("Ready");
 		}
 
 		private void OnDestroy()
@@ -60,19 +62,17 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void LoadUi()
 		{
-			Debug.Log("Loading BasicUiExamplePresenter...");
 			_uiService.LoadUiAsync<BasicUiExamplePresenter>().Forget();
-			Debug.Log("UI Loaded (but not visible yet)");
+			UpdateStatus("UI Loaded (but not visible yet)");
 		}
 
 		/// <summary>
 		/// Opens (shows) the UI
 		/// </summary>
-		public void OpenUi()
+		public async void OpenUi()
 		{
-			Debug.Log("Opening BasicUiExamplePresenter...");
-			_uiService.OpenUiAsync<BasicUiExamplePresenter>().Forget();
-			Debug.Log("UI Opened and visible");
+			await _uiService.OpenUiAsync<BasicUiExamplePresenter>();
+			UpdateStatus("Ui Opened");
 		}
 
 		/// <summary>
@@ -80,9 +80,8 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void CloseUi()
 		{
-			Debug.Log("Closing BasicUiExamplePresenter (destroy: false)...");
 			_uiService.CloseUi<BasicUiExamplePresenter>(destroy: false);
-			Debug.Log("UI Closed but still in memory");
+			UpdateStatus("UI Closed but still in memory");
 		}
 
 		/// <summary>
@@ -90,19 +89,26 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void UnloadUi()
 		{
-			Debug.Log("Unloading BasicUiExamplePresenter...");
 			_uiService.UnloadUi<BasicUiExamplePresenter>();
-			Debug.Log("UI Destroyed and removed from memory");
+			UpdateStatus("UI Destroyed and removed from memory");
 		}
 
 		/// <summary>
 		/// Loads and opens the UI in one call
 		/// </summary>
-		public void LoadAndOpenUi()
+		public async void LoadAndOpenUi()
 		{
-			Debug.Log("Loading and Opening BasicUiExamplePresenter (combined)...");
-			_uiService.LoadUiAsync<BasicUiExamplePresenter>(openAfter: true).Forget();
-			Debug.Log("UI Loaded and Opened in one call");
+			await _uiService.LoadUiAsync<BasicUiExamplePresenter>(openAfter: true);
+			UpdateStatus("Ui Loaded and Opened");
+		}
+
+		private void UpdateStatus(string message)
+		{
+			if (_statusText != null)
+			{
+				_statusText.text = message;
+			}
 		}
 	}
 }
+

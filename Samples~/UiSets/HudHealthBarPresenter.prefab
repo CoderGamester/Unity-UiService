@@ -104,7 +104,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5180a936afd34d779b4a92cb0bc9e91, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &100006
+  _healthSlider: {fileID: 0}
+  _healthText: {fileID: 100011}--- !u!1 &100006
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

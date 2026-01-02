@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
@@ -27,10 +28,13 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _openScaleButton;
 		[SerializeField] private Button _openAllFeaturesButton;
 		[SerializeField] private Button _closeAllButton;
+
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _explanationText;
 		
 		private IUiServiceInit _uiService;
 
-		private void Start()
+		private async void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
@@ -44,17 +48,16 @@ namespace GameLovers.UiService.Examples
 			_openAllFeaturesButton?.onClick.AddListener(OpenAllFeaturesUi);
 			_closeAllButton?.onClick.AddListener(CloseAllUi);
 			
-			Debug.Log("=== Custom Features Example Started ===");
-			Debug.Log("This example demonstrates creating custom presenter features.");
-			Debug.Log("");
-			Debug.Log("Features are components that hook into the presenter lifecycle:");
-			Debug.Log("  - OnPresenterInitialized: Called once when presenter is created");
-			Debug.Log("  - OnPresenterOpening: Called before presenter becomes visible");
-			Debug.Log("  - OnPresenterOpened: Called after presenter is visible");
-			Debug.Log("  - OnPresenterClosing: Called before presenter is hidden");
-			Debug.Log("  - OnPresenterClosed: Called after presenter is hidden");
-			Debug.Log("");
-			Debug.Log("Use the UI buttons to test different feature combinations.");
+			// Pre-load presenters and subscribe to close events
+			var fadingPresenter = await _uiService.LoadUiAsync<FadingPresenter>();
+			var scalingPresenter = await _uiService.LoadUiAsync<ScalingPresenter>();
+			var fullFeaturedPresenter = await _uiService.LoadUiAsync<FullFeaturedPresenter>();
+			
+			fadingPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			scalingPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			fullFeaturedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+
+			UpdateUiVisibility(false);
 		}
 
 		private void OnDestroy()
@@ -70,28 +73,28 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Opens UI with FadeFeature (fades in/out)
 		/// </summary>
-		public void OpenFadeUi()
+		public async void OpenFadeUi()
 		{
-			Debug.Log("Opening UI with FadeFeature...");
-			_uiService.OpenUiAsync<FadingPresenter>().Forget();
+			await _uiService.OpenUiAsync<FadingPresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
 		/// Opens UI with ScaleFeature (scales in/out)
 		/// </summary>
-		public void OpenScaleUi()
+		public async void OpenScaleUi()
 		{
-			Debug.Log("Opening UI with ScaleFeature...");
-			_uiService.OpenUiAsync<ScalingPresenter>().Forget();
+			await _uiService.OpenUiAsync<ScalingPresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
 		/// Opens UI with all features combined
 		/// </summary>
-		public void OpenAllFeaturesUi()
+		public async void OpenAllFeaturesUi()
 		{
-			Debug.Log("Opening UI with all features...");
-			_uiService.OpenUiAsync<FullFeaturedPresenter>().Forget();
+			await _uiService.OpenUiAsync<FullFeaturedPresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
@@ -99,8 +102,17 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void CloseAllUi()
 		{
-			Debug.Log("Closing all UIs...");
 			_uiService.CloseAllUi();
+			UpdateUiVisibility(false);
+		}
+
+		private void UpdateUiVisibility(bool isPresenterActive)
+		{
+			if (_explanationText != null)
+			{
+				_explanationText.gameObject.SetActive(!isPresenterActive);
+			}
 		}
 	}
 }
+

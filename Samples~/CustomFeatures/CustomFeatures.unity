@@ -430,6 +430,7 @@ MonoBehaviour:
   _openScaleButton: {fileID: 420002}
   _openAllFeaturesButton: {fileID: 440002}
   _closeAllButton: {fileID: 450002}
+  _explanationText: {fileID: 430004}
 --- !u!1 &410000
 GameObject:
   m_ObjectHideFlags: 0
@@ -877,7 +878,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<b>Custom Features Example</b>\n\nUse the buttons to test custom presenter features."
+  m_text: "<b>Custom Features Example</b>\n\nFeatures are components that hook into the presenter lifecycle:\n\u2022 <b>Fade</b>: Alpha transition using CanvasGroup\n\u2022 <b>Scale</b>: Animation-based scale transition\n\u2022 <b>All</b>: Test different feature combinations"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSize: 36

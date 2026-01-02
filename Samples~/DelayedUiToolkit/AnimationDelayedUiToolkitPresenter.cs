@@ -1,5 +1,6 @@
 using GameLovers.UiService;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UIElements;
 
 namespace GameLovers.UiServiceExamples
@@ -38,6 +39,12 @@ namespace GameLovers.UiServiceExamples
 		private Label _scoreLabel;
 		private Label _statusLabel;
 		private Button _closeButton;
+
+		/// <summary>
+		/// Event invoked when the close button is clicked, before the close transition begins.
+		/// Subscribe to this event to react to the presenter's close request.
+		/// </summary>
+		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
 
 		/// <inheritdoc />
 		protected override void OnInitialized()
@@ -113,6 +120,7 @@ namespace GameLovers.UiServiceExamples
 		private void OnCloseButtonClicked()
 		{
 			Debug.Log("Close button clicked, closing UI with animation...");
+			OnCloseRequested.Invoke();
 			Close(false);
 		}
 
@@ -122,6 +130,7 @@ namespace GameLovers.UiServiceExamples
 			{
 				_closeButton.clicked -= OnCloseButtonClicked;
 			}
+			OnCloseRequested.RemoveAllListeners();
 		}
 	}
 }

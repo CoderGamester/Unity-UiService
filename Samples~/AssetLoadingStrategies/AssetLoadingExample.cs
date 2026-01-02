@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
+using TMPro;
 
 // ReSharper disable CheckNamespace
 
@@ -33,9 +34,12 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _closeButton;
 		[SerializeField] private Button _unloadButton;
 
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _explanationText;
+
 		private IUiServiceInit _uiService;
 
-		private void Start()
+		private async void Start()
 		{
 			IUiAssetLoader loader = _strategy switch
 			{
@@ -62,8 +66,12 @@ namespace GameLovers.UiService.Examples
 			_openButton?.onClick.AddListener(OpenUi);
 			_closeButton?.onClick.AddListener(CloseUi);
 			_unloadButton?.onClick.AddListener(UnloadUi);
+			
+			// Pre-load presenter and subscribe to close events
+			var presenter = await _uiService.LoadUiAsync<ExamplePresenter>();
+			presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
 
-			Debug.Log($"=== Asset Loading Example Started ({_strategy}) ===");
+			UpdateUiVisibility(false);
 		}
 
 		private void OnDestroy()
@@ -78,27 +86,35 @@ namespace GameLovers.UiService.Examples
 
 		private void LoadUi()
 		{
-			Debug.Log("Loading ExamplePresenter...");
 			_uiService.LoadUiAsync<ExamplePresenter>().Forget();
 		}
 
-		private void OpenUi()
+		private async void OpenUi()
 		{
-			Debug.Log("Opening ExamplePresenter...");
-			_uiService.OpenUiAsync<ExamplePresenter>().Forget();
+			await _uiService.OpenUiAsync<ExamplePresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		private void CloseUi()
 		{
-			Debug.Log("Closing ExamplePresenter...");
 			_uiService.CloseUi<ExamplePresenter>(destroy: false);
+			UpdateUiVisibility(false);
 		}
 
 		private void UnloadUi()
 		{
-			Debug.Log("Unloading ExamplePresenter...");
 			_uiService.UnloadUi<ExamplePresenter>();
+			UpdateUiVisibility(false);
+		}
+
+		private void UpdateUiVisibility(bool isPresenterActive)
+		{
+			if (_explanationText != null)
+			{
+				_explanationText.gameObject.SetActive(!isPresenterActive);
+			}
 		}
 	}
 }
+
 

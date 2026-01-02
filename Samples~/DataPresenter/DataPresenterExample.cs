@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
@@ -18,10 +19,14 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _showMageButton;
 		[SerializeField] private Button _showRogueButton;
 		[SerializeField] private Button _updateLowHealthButton;
+
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _explanationText;
+		[SerializeField] private TMP_Text _statusText;
 		
 		private IUiServiceInit _uiService;
 
-		private void Start()
+		private async void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
@@ -35,12 +40,12 @@ namespace GameLovers.UiService.Examples
 			_showRogueButton?.onClick.AddListener(ShowRogueData);
 			_updateLowHealthButton?.onClick.AddListener(UpdateToLowHealth);
 			
-			Debug.Log("=== Data Presenter Example Started ===");
-			Debug.Log("Use the UI buttons to show different character data:");
-			Debug.Log("  Warrior: High health warrior character");
-			Debug.Log("  Mage: High level mage character");
-			Debug.Log("  Rogue: Full health rogue character");
-			Debug.Log("  Low Health: Update to wounded state");
+			// Pre-load presenter and subscribe to close events
+			var presenter = await _uiService.LoadUiAsync<DataUiExamplePresenter>();
+			presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+
+			UpdateUiVisibility(false);
+			UpdateStatus("Ready");
 		}
 
 		private void OnDestroy()
@@ -54,7 +59,7 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Shows the warrior character data
 		/// </summary>
-		public void ShowWarriorData()
+		public async void ShowWarriorData()
 		{
 			var data = new PlayerData
 			{
@@ -64,14 +69,15 @@ namespace GameLovers.UiService.Examples
 				HealthPercentage = 0.85f
 			};
 			
-			Debug.Log("Opening UI with Warrior data...");
-			_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data).Forget();
+			UpdateStatus("Opening UI with Warrior data...");
+			await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
 		/// Shows the mage character data
 		/// </summary>
-		public void ShowMageData()
+		public async void ShowMageData()
 		{
 			var data = new PlayerData
 			{
@@ -81,14 +87,15 @@ namespace GameLovers.UiService.Examples
 				HealthPercentage = 0.60f
 			};
 			
-			Debug.Log("Opening UI with Mage data...");
-			_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data).Forget();
+			UpdateStatus("Opening UI with Mage data...");
+			await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
 		/// Shows the rogue character data
 		/// </summary>
-		public void ShowRogueData()
+		public async void ShowRogueData()
 		{
 			var data = new PlayerData
 			{
@@ -98,14 +105,15 @@ namespace GameLovers.UiService.Examples
 				HealthPercentage = 1.0f
 			};
 			
-			Debug.Log("Opening UI with Rogue data...");
-			_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data).Forget();
+			UpdateStatus("Opening UI with Rogue data...");
+			await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
 		/// Updates the UI to show low health state
 		/// </summary>
-		public void UpdateToLowHealth()
+		public async void UpdateToLowHealth()
 		{
 			var data = new PlayerData
 			{
@@ -115,8 +123,27 @@ namespace GameLovers.UiService.Examples
 				HealthPercentage = 0.15f
 			};
 			
-			Debug.Log("Updating to low health data...");
-			_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data).Forget();
+			UpdateStatus("Updating to low health data...");
+			await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
+			UpdateUiVisibility(true);
+		}
+
+		private void UpdateUiVisibility(bool isPresenterActive)
+		{
+			if (_explanationText != null)
+			{
+				_explanationText.gameObject.SetActive(!isPresenterActive);
+			}
+		}
+
+		private void UpdateStatus(string message)
+		{
+			if (_statusText != null)
+			{
+				_statusText.text = message;
+			}
+			Debug.Log(message);
 		}
 	}
 }
+

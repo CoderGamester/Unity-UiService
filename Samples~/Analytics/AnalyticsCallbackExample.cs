@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
@@ -91,12 +92,15 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _closeButton;
 		[SerializeField] private Button _viewSummaryButton;
 		[SerializeField] private Button _clearDataButton;
+
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _explanationText;
 		
 		private IUiServiceInit _uiService;
 		private UiAnalytics _analytics;
 		private CustomAnalyticsCallback _analyticsCallback;
 
-		private void Start()
+		private async void Start()
 		{
 			// Create analytics instance
 			_analytics = new UiAnalytics();
@@ -121,13 +125,11 @@ namespace GameLovers.UiService.Examples
 			_viewSummaryButton?.onClick.AddListener(ViewPerformanceSummary);
 			_clearDataButton?.onClick.AddListener(ClearAnalyticsData);
 			
-			Debug.Log("=== Analytics Example Started ===");
-			Debug.Log("Use the UI buttons to test analytics tracking:");
-			Debug.Log("  Load: Load UI and track load time");
-			Debug.Log("  Open: Open UI and track open time");
-			Debug.Log("  Close: Close UI and track close time");
-			Debug.Log("  View Summary: Display performance metrics");
-			Debug.Log("  Clear Data: Reset all analytics data");
+			// Pre-load presenter and subscribe to close events
+			var presenter = await _uiService.LoadUiAsync<AnalyticsExamplePresenter>();
+			presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+
+			UpdateUiVisibility(false);
 		}
 
 		private void OnDestroy()
@@ -158,10 +160,11 @@ namespace GameLovers.UiService.Examples
 		/// <summary>
 		/// Opens the UI with analytics tracking
 		/// </summary>
-		public void OpenUi()
+		public async void OpenUi()
 		{
 			Debug.Log("Opening UI with analytics tracking...");
-			_uiService.OpenUiAsync<AnalyticsExamplePresenter>().Forget();
+			await _uiService.OpenUiAsync<AnalyticsExamplePresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
@@ -171,6 +174,7 @@ namespace GameLovers.UiService.Examples
 		{
 			Debug.Log("Closing UI with analytics tracking...");
 			_uiService.CloseUi<AnalyticsExamplePresenter>(destroy: false);
+			UpdateUiVisibility(false);
 		}
 
 		/// <summary>
@@ -243,5 +247,14 @@ namespace GameLovers.UiService.Examples
 			// This fires frequently, so we don't log every update
 			// Debug.Log($"[Event] Performance Updated: {metrics.UiName}");
 		}
+
+		private void UpdateUiVisibility(bool isPresenterActive)
+		{
+			if (_explanationText != null)
+			{
+				_explanationText.gameObject.SetActive(!isPresenterActive);
+			}
+		}
 	}
 }
+

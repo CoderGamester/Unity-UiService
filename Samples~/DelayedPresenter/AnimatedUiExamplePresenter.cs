@@ -19,12 +19,6 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private TMP_Text _statusText;
 		[SerializeField] private Button _closeButton;
 
-		/// <summary>
-		/// Event invoked when the close button is clicked, before the close transition begins.
-		/// Subscribe to this event to react to the presenter's close request.
-		/// </summary>
-		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
-
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
@@ -38,12 +32,10 @@ namespace GameLovers.UiService.Examples
 		private void OnDestroy()
 		{
 			_closeButton.onClick.RemoveListener(OnCloseButtonClicked);
-			OnCloseRequested.RemoveAllListeners();
 		}
 
 		private void OnCloseButtonClicked()
 		{
-			OnCloseRequested.Invoke();
 			Close(destroy: false);
 		}
 

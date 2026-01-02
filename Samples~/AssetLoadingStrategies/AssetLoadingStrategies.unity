@@ -431,6 +431,7 @@ MonoBehaviour:
   _openButton: {fileID: 420002}
   _closeButton: {fileID: 440002}
   _unloadButton: {fileID: 450002}
+  _explanationText: {fileID: 430004}
 --- !u!1 &410000
 GameObject:
   m_ObjectHideFlags: 0
@@ -878,7 +879,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<b>Asset Loading Strategies Example</b>\n\nUse the buttons to test different loading strategies."
+  m_text: "<b>Asset Loading Strategies Example</b>\n\nDemonstrates different ways to load UI assets:\n\u2022 <b>PrefabRegistry</b>: Direct references (works immediately)\n\u2022 <b>Addressables</b>: Async loading (requires setup)\n\u2022 <b>Resources</b>: Legacy loading from Resources folder\n\nChange strategy in the Example object inspector."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSize: 36

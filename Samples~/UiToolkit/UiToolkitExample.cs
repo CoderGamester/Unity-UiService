@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
@@ -14,9 +15,12 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
 		[SerializeField] private UIDocument _uiDocument;
 
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _explanationText;
+
 		private IUiServiceInit _uiService;
 
-		private void Start()
+		private async void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
@@ -32,7 +36,11 @@ namespace GameLovers.UiService.Examples
 			root.Q<Button>("close-button")?.RegisterCallback<ClickEvent>(_ => CloseUiToolkit());
 			root.Q<Button>("unload-button")?.RegisterCallback<ClickEvent>(_ => UnloadUiToolkit());
 			
-			Debug.Log("=== UI Toolkit Example Started ===");
+			// Pre-load presenter and subscribe to close events
+			var presenter = await _uiService.LoadUiAsync<UiToolkitExamplePresenter>();
+			presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+
+			UpdateUiVisibility(false);
 		}
 
 		private void OnDestroy()
@@ -45,17 +53,16 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void LoadUiToolkit()
 		{
-			Debug.Log("Loading UI Toolkit UI...");
 			_uiService.LoadUiAsync<UiToolkitExamplePresenter>().Forget();
 		}
 
 		/// <summary>
 		/// Opens the UI Toolkit presenter
 		/// </summary>
-		public void OpenUiToolkit()
+		public async void OpenUiToolkit()
 		{
-			Debug.Log("Opening UI Toolkit UI...");
-			_uiService.OpenUiAsync<UiToolkitExamplePresenter>().Forget();
+			await _uiService.OpenUiAsync<UiToolkitExamplePresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
@@ -63,8 +70,8 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void CloseUiToolkit()
 		{
-			Debug.Log("Closing UI Toolkit UI...");
 			_uiService.CloseUi<UiToolkitExamplePresenter>(destroy: false);
+			UpdateUiVisibility(false);
 		}
 
 		/// <summary>
@@ -72,8 +79,17 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void UnloadUiToolkit()
 		{
-			Debug.Log("Unloading UI Toolkit UI...");
 			_uiService.UnloadUi<UiToolkitExamplePresenter>();
+			UpdateUiVisibility(false);
+		}
+
+		private void UpdateUiVisibility(bool isPresenterActive)
+		{
+			if (_explanationText != null)
+			{
+				_explanationText.gameObject.SetActive(!isPresenterActive);
+			}
 		}
 	}
 }
+

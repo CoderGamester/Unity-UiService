@@ -18,10 +18,6 @@ namespace GameLovers.UiService.Examples
 		[Header("UI Buttons")]
 		[SerializeField] private Button _openTimeDelayedButton;
 		[SerializeField] private Button _openAnimatedButton;
-		[SerializeField] private Button _closeButton;
-
-		[Header("UI Elements")]
-		[SerializeField] private TMP_Text _explanationText;
 		
 		private IUiServiceInit _uiService;
 
@@ -36,23 +32,12 @@ namespace GameLovers.UiService.Examples
 			// Setup button listeners
 			_openTimeDelayedButton?.onClick.AddListener(OpenTimeDelayedUi);
 			_openAnimatedButton?.onClick.AddListener(OpenAnimatedUi);
-			_closeButton?.onClick.AddListener(CloseActiveUi);
-			
-			// Pre-load presenters (without opening them) and subscribe to close events
-			var delayedPresenter = await _uiService.LoadUiAsync<DelayedUiExamplePresenter>();
-			var animatedPresenter = await _uiService.LoadUiAsync<AnimatedUiExamplePresenter>();
-			delayedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
-			animatedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
-
-			// Initialize UI visibility state
-			UpdateUiVisibility(false);
 		}
 
 		private void OnDestroy()
 		{
 			_openTimeDelayedButton?.onClick.RemoveListener(OpenTimeDelayedUi);
 			_openAnimatedButton?.onClick.RemoveListener(OpenAnimatedUi);
-			_closeButton?.onClick.RemoveListener(CloseActiveUi);
 		}
 
 		/// <summary>
@@ -62,7 +47,6 @@ namespace GameLovers.UiService.Examples
 		{
 			CloseActiveUi();
 			await _uiService.OpenUiAsync<DelayedUiExamplePresenter>();
-			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
@@ -72,7 +56,6 @@ namespace GameLovers.UiService.Examples
 		{
 			CloseActiveUi();
 			await _uiService.OpenUiAsync<AnimatedUiExamplePresenter>();
-			UpdateUiVisibility(true);
 		}
 
 		/// <summary>
@@ -88,14 +71,6 @@ namespace GameLovers.UiService.Examples
 			{
 				_uiService.CloseUi<AnimatedUiExamplePresenter>(destroy: false);
 			}
-
-			UpdateUiVisibility(false);
-		}
-
-		private void UpdateUiVisibility(bool isPresenterActive)
-		{
-			_explanationText.gameObject.SetActive(!isPresenterActive);
-			_closeButton.gameObject.SetActive(isPresenterActive);
 		}
 	}
 }

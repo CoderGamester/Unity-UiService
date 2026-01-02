@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
 using GameLovers.UiService;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
@@ -32,10 +33,14 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _unloadSetButton;
 		[SerializeField] private Button _loadAndOpenButton;
 		[SerializeField] private Button _listSetsButton;
+
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _explanationText;
+		[SerializeField] private TMP_Text _statusText;
 		
 		private IUiServiceInit _uiService;
 
-		private void Start()
+		private async void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
@@ -51,16 +56,16 @@ namespace GameLovers.UiService.Examples
 			_loadAndOpenButton?.onClick.AddListener(LoadAndOpenUiSetWrapper);
 			_listSetsButton?.onClick.AddListener(ListUiSets);
 			
-			Debug.Log("=== UI Sets Example Started ===");
-			Debug.Log("UI Sets allow you to group multiple UIs and manage them together.");
-			Debug.Log("");
-			Debug.Log("Use the UI buttons to manage UI Sets:");
-			Debug.Log("  Load: Load all HUD elements into memory");
-			Debug.Log("  Open: Show all HUD elements");
-			Debug.Log("  Close: Hide all HUD elements (keep in memory)");
-			Debug.Log("  Unload: Destroy all HUD elements");
-			Debug.Log("  Load & Open: Combined operation");
-			Debug.Log("  List Sets: Show all configured UI Sets");
+			// Pre-load the set and subscribe to close events for each presenter in it
+			var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
+			foreach (var task in loadTasks)
+			{
+				var presenter = await task;
+				presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			}
+
+			UpdateUiVisibility(false);
+			UpdateStatus("Ready");
 		}
 
 		private void OnDestroy()
@@ -85,21 +90,21 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public async UniTaskVoid LoadUiSetExample()
 		{
-			Debug.Log($"Loading UI Set: GameHud...");
+			UpdateStatus($"Loading UI Set: GameHud...");
 			
 			// LoadUiSetAsync returns a list of tasks, one per UI
 			var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
 			
-			Debug.Log($"  Started loading {loadTasks.Count} UIs...");
+			UpdateStatus($"  Started loading {loadTasks.Count} UIs...");
 			
 			// Wait for all UIs to load
 			foreach (var task in loadTasks)
 			{
 				var presenter = await task;
-				Debug.Log($"  Loaded: {presenter.GetType().Name}");
+				UpdateStatus($"  Loaded: {presenter.GetType().Name}");
 			}
 			
-			Debug.Log("UI Set loaded! UIs are in memory but not visible.");
+			UpdateStatus("UI Set loaded! UIs are in memory but not visible.");
 		}
 
 		/// <summary>
@@ -107,7 +112,7 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public async UniTaskVoid OpenUiSetExample()
 		{
-			Debug.Log($"Opening UI Set: GameHud...");
+			UpdateStatus($"Opening UI Set: GameHud...");
 			
 			// First ensure all UIs are loaded
 			var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
@@ -117,10 +122,11 @@ namespace GameLovers.UiService.Examples
 			{
 				var presenter = await task;
 				await _uiService.OpenUiAsync(presenter.GetType());
-				Debug.Log($"  Opened: {presenter.GetType().Name}");
+				UpdateStatus($"  Opened: {presenter.GetType().Name}");
 			}
 			
-			Debug.Log("UI Set opened! All UIs are now visible.");
+			UpdateUiVisibility(true);
+			UpdateStatus("UI Set opened! All UIs are now visible.");
 		}
 
 		/// <summary>
@@ -128,12 +134,13 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void CloseUiSetExample()
 		{
-			Debug.Log($"Closing UI Set: GameHud...");
+			UpdateStatus($"Closing UI Set: GameHud...");
 			
 			// CloseAllUiSet hides all UIs in the set but keeps them loaded
 			_uiService.CloseAllUiSet((int)UiSetId.GameHud);
 			
-			Debug.Log("UI Set closed! UIs are hidden but still in memory.");
+			UpdateUiVisibility(false);
+			UpdateStatus("UI Set closed! UIs are hidden but still in memory.");
 		}
 
 		/// <summary>
@@ -141,17 +148,18 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void UnloadUiSetExample()
 		{
-			Debug.Log($"Unloading UI Set: GameHud...");
+			UpdateStatus($"Unloading UI Set: GameHud...");
 			
 			try
 			{
 				// UnloadUiSet destroys all UIs in the set
 				_uiService.UnloadUiSet((int)UiSetId.GameHud);
-				Debug.Log("UI Set unloaded! All UIs have been destroyed.");
+				UpdateUiVisibility(false);
+				UpdateStatus("UI Set unloaded! All UIs have been destroyed.");
 			}
 			catch (KeyNotFoundException)
 			{
-				Debug.Log("UI Set not loaded. Load it first!");
+				UpdateStatus("UI Set not loaded. Load it first!");
 			}
 		}
 
@@ -160,7 +168,7 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public async UniTaskVoid LoadAndOpenUiSetExample()
 		{
-			Debug.Log("Loading and opening UI Set: GameHud...");
+			UpdateStatus("Loading and opening UI Set: GameHud...");
 			
 			var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
 			
@@ -173,7 +181,8 @@ namespace GameLovers.UiService.Examples
 			
 			await UniTask.WhenAll(openTasks);
 			
-			Debug.Log("UI Set loaded and opened!");
+			UpdateUiVisibility(true);
+			UpdateStatus("UI Set loaded and opened!");
 		}
 
 		private async UniTask LoadAndOpenSingle(UniTask<UiPresenter> loadTask)
@@ -187,6 +196,7 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void ListUiSets()
 		{
+			UpdateStatus("Check console for configured UI Sets list.");
 			Debug.Log("=== Configured UI Sets ===");
 			
 			foreach (var kvp in _uiService.UiSets)
@@ -206,5 +216,23 @@ namespace GameLovers.UiService.Examples
 				Debug.Log("No UI Sets configured. Add sets in your UiConfigs asset.");
 			}
 		}
+
+		private void UpdateUiVisibility(bool isPresenterActive)
+		{
+			if (_explanationText != null)
+			{
+				_explanationText.gameObject.SetActive(!isPresenterActive);
+			}
+		}
+
+		private void UpdateStatus(string message)
+		{
+			if (_statusText != null)
+			{
+				_statusText.text = message;
+			}
+			Debug.Log(message);
+		}
 	}
 }
+

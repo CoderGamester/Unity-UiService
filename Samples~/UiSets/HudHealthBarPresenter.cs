@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using GameLovers.UiService;
 
@@ -14,6 +15,12 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Slider _healthSlider;
 		[SerializeField] private TMP_Text _healthText;
 
+		/// <summary>
+		/// Event invoked when the close button is clicked, before the close transition begins.
+		/// Subscribe to this event to react to the presenter's close request.
+		/// </summary>
+		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
+
 		private float _currentHealth = 100f;
 		private float _maxHealth = 100f;
 
@@ -21,6 +28,11 @@ namespace GameLovers.UiService.Examples
 		{
 			base.OnInitialized();
 			Debug.Log("[HealthBar] Initialized");
+		}
+
+		private void OnDestroy()
+		{
+			OnCloseRequested.RemoveAllListeners();
 		}
 
 		protected override void OnOpened()

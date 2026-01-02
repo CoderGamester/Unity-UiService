@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
@@ -14,9 +15,12 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
 		[SerializeField] private UIDocument _uiDocument;
 
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _explanationText;
+
 		private IUiServiceInit _uiService;
 
-		private void Start()
+		private async void Start()
 		{
 			// Initialize UI Service
 			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
@@ -31,7 +35,14 @@ namespace GameLovers.UiService.Examples
 			root.Q<Button>("open-animated-button")?.RegisterCallback<ClickEvent>(_ => OpenAnimatedUi());
 			root.Q<Button>("close-button")?.RegisterCallback<ClickEvent>(_ => CloseActiveUi());
 			
-			Debug.Log("=== Delayed UI Toolkit Example Started ===");
+			// Pre-load presenters and subscribe to close events
+			var timeDelayedPresenter = await _uiService.LoadUiAsync<TimeDelayedUiToolkitPresenter>();
+			var animatedPresenter = await _uiService.LoadUiAsync<AnimationDelayedUiToolkitPresenter>();
+			
+			timeDelayedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			animatedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+
+			UpdateUiVisibility(false);
 		}
 
 		private void OnDestroy()
@@ -39,21 +50,20 @@ namespace GameLovers.UiService.Examples
 			_uiService?.Dispose();
 		}
 
-		private void OpenTimeDelayedUi()
+		private async void OpenTimeDelayedUi()
 		{
-			Debug.Log("Opening Time Delayed UI Toolkit UI...");
-			_uiService.OpenUiAsync<TimeDelayedUiToolkitPresenter>().Forget();
+			await _uiService.OpenUiAsync<TimeDelayedUiToolkitPresenter>();
+			UpdateUiVisibility(true);
 		}
 
-		private void OpenAnimatedUi()
+		private async void OpenAnimatedUi()
 		{
-			Debug.Log("Opening Animated UI Toolkit UI...");
-			_uiService.OpenUiAsync<AnimationDelayedUiToolkitPresenter>().Forget();
+			await _uiService.OpenUiAsync<AnimationDelayedUiToolkitPresenter>();
+			UpdateUiVisibility(true);
 		}
 
 		private void CloseActiveUi()
 		{
-			Debug.Log("Closing Active UI Toolkit UI...");
 			if (_uiService.IsVisible<TimeDelayedUiToolkitPresenter>())
 			{
 				_uiService.CloseUi<TimeDelayedUiToolkitPresenter>(destroy: false);
@@ -62,6 +72,16 @@ namespace GameLovers.UiService.Examples
 			{
 				_uiService.CloseUi<AnimationDelayedUiToolkitPresenter>(destroy: false);
 			}
+			UpdateUiVisibility(false);
+		}
+
+		private void UpdateUiVisibility(bool isPresenterActive)
+		{
+			if (_explanationText != null)
+			{
+				_explanationText.gameObject.SetActive(!isPresenterActive);
+			}
 		}
 	}
 }
+

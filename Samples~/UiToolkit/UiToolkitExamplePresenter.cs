@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UIElements;
 using GameLovers.UiService;
 
@@ -21,6 +22,12 @@ namespace GameLovers.UiService.Examples
 		
 		private int _counter = 0;
 
+		/// <summary>
+		/// Event invoked when the close button is clicked, before the close transition begins.
+		/// Subscribe to this event to react to the presenter's close request.
+		/// </summary>
+		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
+
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
@@ -42,8 +49,14 @@ namespace GameLovers.UiService.Examples
 			
 			if (_closeButton != null)
 			{
-				_closeButton.clicked += () => Close(destroy: false);
+				_closeButton.clicked += OnCloseButtonClicked;
 			}
+		}
+
+		private void OnCloseButtonClicked()
+		{
+			OnCloseRequested.Invoke();
+			Close(destroy: false);
 		}
 
 		protected override void OnOpened()
@@ -92,6 +105,13 @@ namespace GameLovers.UiService.Examples
 			{
 				_incrementButton.clicked -= OnIncrementClicked;
 			}
+
+			if (_closeButton != null)
+			{
+				_closeButton.clicked -= OnCloseButtonClicked;
+			}
+
+			OnCloseRequested.RemoveAllListeners();
 		}
 	}
 }

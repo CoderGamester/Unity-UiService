@@ -875,10 +875,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<b>Delayed Presenter Example</b>\n\nUse the buttons to interact:\n\u2022
-    <b>Time Delayed</b>: Opens UI with a time-based delay\n\u2022 <b>Animated</b>:
-    Opens UI with animation-based delay\n\u2022 <b>Close</b>: (when enabled) Close
-    the currently open UI"
+  m_text: "<b>Delayed Presenter Example</b>\n\nUse the buttons to interact:\n\u2022 <b>Time Delayed</b>: Opens UI with a time-based delay\n\u2022 <b>Animated</b>: Opens UI with animation-based delay\n\u2022 <b>Close</b>: (when enabled) Close the currently open UI"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

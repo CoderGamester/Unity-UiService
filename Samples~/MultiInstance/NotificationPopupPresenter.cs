@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using GameLovers.UiService;
 
@@ -17,14 +18,16 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _backgroundButton;
 
 		private string _instanceAddress;
-		private MultiInstanceExample _example;
+
+		/// <summary>
+		/// Event invoked when the close button is clicked, before the close transition begins.
+		/// Subscribe to this event to react to the presenter's close request.
+		/// </summary>
+		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
 
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
-			
-			// Find the example manager (in a real game, you'd use dependency injection)
-			_example = Object.FindFirstObjectByType<MultiInstanceExample>();
 			
 			// Setup close buttons
 			if (_closeButton != null)
@@ -70,12 +73,7 @@ namespace GameLovers.UiService.Examples
 
 		private void OnCloseClicked()
 		{
-			// Notify the example manager that this popup is closing
-			if (_example != null)
-			{
-				_example.OnPopupClosed(_instanceAddress);
-			}
-			
+			OnCloseRequested.Invoke();
 			// Close ourselves (but don't destroy - let the manager handle that)
 			Close(destroy: false);
 		}
@@ -92,6 +90,8 @@ namespace GameLovers.UiService.Examples
 			{
 				_backgroundButton.onClick.RemoveListener(OnCloseClicked);
 			}
+
+			OnCloseRequested.RemoveAllListeners();
 		}
 	}
 }

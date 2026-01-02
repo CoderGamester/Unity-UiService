@@ -432,6 +432,7 @@ MonoBehaviour:
   _closeButton: {fileID: 440002}
   _viewSummaryButton: {fileID: 450002}
   _clearDataButton: {fileID: 460002}
+  _explanationText: {fileID: 430004}
 --- !u!1 &410000
 GameObject:
   m_ObjectHideFlags: 0
@@ -879,7 +880,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "<b>Analytics Example</b>\n\nUse the buttons to test analytics tracking."
+  m_text: "<b>Analytics Example</b>\n\nUse the UI buttons to test analytics tracking:\n\u2022 <b>Load/Open/Close</b>: Track lifecycle events\n\u2022 <b>View Summary</b>: Display performance metrics\n\u2022 <b>Clear Data</b>: Reset all analytics data\n\nCheck the console to see the analytics logs."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSize: 36
