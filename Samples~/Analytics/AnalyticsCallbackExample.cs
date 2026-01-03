@@ -89,12 +89,11 @@ namespace GameLovers.UiService.Examples
 		[Header("UI Buttons")]
 		[SerializeField] private Button _loadButton;
 		[SerializeField] private Button _openButton;
-		[SerializeField] private Button _closeButton;
 		[SerializeField] private Button _viewSummaryButton;
 		[SerializeField] private Button _clearDataButton;
 
 		[Header("UI Elements")]
-		[SerializeField] private TMP_Text _explanationText;
+		[SerializeField] private TMP_Text _statusText;
 		
 		private IUiServiceInit _uiService;
 		private UiAnalytics _analytics;
@@ -121,15 +120,12 @@ namespace GameLovers.UiService.Examples
 			// Setup button listeners
 			_loadButton?.onClick.AddListener(LoadUi);
 			_openButton?.onClick.AddListener(OpenUi);
-			_closeButton?.onClick.AddListener(CloseUi);
 			_viewSummaryButton?.onClick.AddListener(ViewPerformanceSummary);
 			_clearDataButton?.onClick.AddListener(ClearAnalyticsData);
 			
 			// Pre-load presenter and subscribe to close events
 			var presenter = await _uiService.LoadUiAsync<AnalyticsExamplePresenter>();
 			presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
-
-			UpdateUiVisibility(false);
 		}
 
 		private void OnDestroy()
@@ -140,7 +136,6 @@ namespace GameLovers.UiService.Examples
 			// Remove button listeners
 			_loadButton?.onClick.RemoveListener(LoadUi);
 			_openButton?.onClick.RemoveListener(OpenUi);
-			_closeButton?.onClick.RemoveListener(CloseUi);
 			_viewSummaryButton?.onClick.RemoveListener(ViewPerformanceSummary);
 			_clearDataButton?.onClick.RemoveListener(ClearAnalyticsData);
 			
@@ -164,17 +159,6 @@ namespace GameLovers.UiService.Examples
 		{
 			Debug.Log("Opening UI with analytics tracking...");
 			await _uiService.OpenUiAsync<AnalyticsExamplePresenter>();
-			UpdateUiVisibility(true);
-		}
-
-		/// <summary>
-		/// Closes the UI with analytics tracking
-		/// </summary>
-		public void CloseUi()
-		{
-			Debug.Log("Closing UI with analytics tracking...");
-			_uiService.CloseUi<AnalyticsExamplePresenter>(destroy: false);
-			UpdateUiVisibility(false);
 		}
 
 		/// <summary>
@@ -248,11 +232,11 @@ namespace GameLovers.UiService.Examples
 			// Debug.Log($"[Event] Performance Updated: {metrics.UiName}");
 		}
 
-		private void UpdateUiVisibility(bool isPresenterActive)
+		private void UpdateStatus(string message)
 		{
-			if (_explanationText != null)
+			if (_statusText != null)
 			{
-				_explanationText.gameObject.SetActive(!isPresenterActive);
+				_statusText.text = message;
 			}
 		}
 	}

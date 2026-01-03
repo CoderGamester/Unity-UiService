@@ -11,7 +11,6 @@ namespace GameLovers.UiService.Examples
 	/// </summary>
 	public class AnalyticsExamplePresenter : UiPresenter
 	{
-		[SerializeField] private TMP_Text _titleText;
 		[SerializeField] private Button _closeButton;
 
 		/// <summary>
@@ -23,6 +22,7 @@ namespace GameLovers.UiService.Examples
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
+			Debug.Log($"[{nameof(AnalyticsExamplePresenter)}] Initialized");
 			if (_closeButton != null)
 			{
 				_closeButton.onClick.AddListener(OnCloseButtonClicked);
@@ -44,10 +44,13 @@ namespace GameLovers.UiService.Examples
 		protected override void OnOpened()
 		{
 			base.OnOpened();
-			if (_titleText != null)
-			{
-				_titleText.text = "Analytics Example";
-			}
+			Debug.Log($"[{nameof(AnalyticsExamplePresenter)}] Closed");
+		}
+
+		protected override void OnClosed()
+		{
+			base.OnClosed();
+			Debug.Log($"[{nameof(AnalyticsExamplePresenter)}] Closed");
 		}
 	}
 }

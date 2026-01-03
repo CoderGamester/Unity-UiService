@@ -569,15 +569,38 @@ public class MyPresenter : UiPresenter { }
 
 **Files:**
 - `ExamplePresenter.cs` - Simple presenter for demonstration
-- `AssetLoadingExample.cs` - Strategy switching and UI service usage
+- `AssetLoadingExample.cs` - Runtime strategy switching with dropdown UI
+- `PrefabAssetLoadingConfigs.asset` - Config for PrefabRegistry strategy
+- `ResourcesAssetLoadingConfigs.asset` - Config for Resources strategy
+- `AddressablesAssetLoadingConfigs.asset` - Config for Addressables strategy
+- `Resources/ExamplePresenter.prefab` - Prefab copy for Resources loading
 
 **Demonstrates:**
 - Using different asset loading strategies (PrefabRegistry, Addressables, Resources)
+- Runtime strategy switching via dropdown
 - Switching loaders via the `IUiAssetLoader` abstraction
 - Setup requirements for each strategy
 
+**Strategy Availability:**
+
+| Strategy | Setup Required | Works After Import |
+|----------|---------------|-------------------|
+| **PrefabRegistry** | None | ✅ Yes |
+| **Resources** | None | ✅ Yes |
+| **Addressables** | Yes (see below) | ❌ No |
+
+**Addressables Setup (required for that strategy):**
+1. Open **Window > Asset Management > Addressables > Groups**
+2. If no groups exist, click **Create Addressables Settings**
+3. Find `ExamplePresenter.prefab` in the sample folder
+4. Check the **Addressable** checkbox in the prefab's Inspector
+5. Set the address to `ExamplePresenter` (must match the config)
+6. For testing: **Window > Asset Management > Addressables > Groups > Play Mode Script** → select **Use Asset Database (fastest)**
+7. For builds: Build the Addressables catalog before building the player
+
 **Pattern:**
 ```csharp
+// Create loader based on strategy
 IUiAssetLoader loader = _strategy switch
 {
     LoadingStrategy.PrefabRegistry => new PrefabRegistryUiAssetLoader(_prefabRegistryConfigs),
@@ -586,8 +609,19 @@ IUiAssetLoader loader = _strategy switch
     _ => throw new ArgumentOutOfRangeException()
 };
 
+// Initialize service with loader and corresponding config
 _uiService = new UiService(loader);
 _uiService.Init(configs);
+```
+
+**Runtime Strategy Switching:**
+```csharp
+// Dispose current service before switching
+_uiService?.Dispose();
+_uiService = null;
+
+// Reinitialize with new strategy
+InitializeService(newStrategy);
 ```
 
 ---

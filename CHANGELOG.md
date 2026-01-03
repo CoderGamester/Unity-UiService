@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed null checks in delay features using explicit null comparisons instead of null-conditional operators for Unity object compatibility
 - Fixed inconsistent lifecycle where `OnOpenTransitionCompleted`/`OnCloseTransitionCompleted` were only called when features existed
 - Fixed split responsibility for visibility control where both `UiPresenter` and features could call `SetActive(false)`, allowing now to properly close the presenters in all scenarios
+- Fixed `LoadUiAsync` visibility state inconsistency where calling it on an already-visible presenter with `openAfter=false` would disable the GameObject but not update `VisiblePresenters`, causing subsequent `OpenUiAsync` calls to fail silently
 
 ## [1.0.0] - 2025-11-04
 

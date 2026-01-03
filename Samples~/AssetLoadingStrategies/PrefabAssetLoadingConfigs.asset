@@ -10,14 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
-  m_Name: AssetLoadingStrategiesConfigs
+  m_Name: PrefabAssetLoadingConfigs
   m_EditorClassIdentifier: GameLovers.UiService::GameLovers.UiService.PrefabRegistryUiConfigs
   _configs:
   - Address: ExamplePresenter
     Layer: 0
-    UiType: GameLovers.UiService.Examples.ExamplePresenter, Assembly-CSharp
-  _sets: []
+    UiType: GameLovers.UiService.Examples.ExamplePresenter, Assembly-CSharp, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+  _sets:
+  - SetId: 0
+    UiEntries: []
+  - SetId: 1
+    UiEntries: []
+  - SetId: 2
+    UiEntries: []
+  - SetId: 3
+    UiEntries: []
+  - SetId: 4
+    UiEntries: []
+  - SetId: 5
+    UiEntries: []
   _prefabEntries:
   - Address: ExamplePresenter
     Prefab: {fileID: 100000, guid: a1b2c3d4e5f60708090a0b0c0d0e0f12, type: 3}
-

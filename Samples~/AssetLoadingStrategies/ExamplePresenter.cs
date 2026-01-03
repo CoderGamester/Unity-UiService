@@ -13,7 +13,6 @@ namespace GameLovers.UiService.Examples
 	/// </summary>
 	public class ExamplePresenter : UiPresenter
 	{
-		[SerializeField] private TMP_Text _titleText;
 		[SerializeField] private Button _closeButton;
 
 		/// <summary>
@@ -49,11 +48,6 @@ namespace GameLovers.UiService.Examples
 		{
 			base.OnOpened();
 			Debug.Log($"[{nameof(ExamplePresenter)}] Opened");
-
-			if (_titleText != null)
-			{
-				_titleText.text = "Asset Loading Example";
-			}
 		}
 
 		protected override void OnClosed()

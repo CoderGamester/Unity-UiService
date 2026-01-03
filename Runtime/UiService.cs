@@ -316,7 +316,6 @@ namespace GameLovers.UiService
 			if (TryFindPresenter(type, instanceAddress, out var existingUi))
 			{
 				Debug.LogWarning($"The Ui {instanceId} was already loaded");
-				existingUi.gameObject.SetActive(openAfter);
 
 				return existingUi;
 			}
@@ -330,7 +329,6 @@ namespace GameLovers.UiService
 			if (TryFindPresenter(type, instanceAddress, out var uiDouble))
 			{
 				_assetLoader.UnloadAsset(gameObject);
-				uiDouble.gameObject.SetActive(openAfter);
 
 				return uiDouble;
 			}
