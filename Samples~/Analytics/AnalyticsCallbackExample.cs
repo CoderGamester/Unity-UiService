@@ -7,72 +7,6 @@ using TMPro;
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example implementation of custom analytics callback.
-	/// This demonstrates how to integrate with external analytics services.
-	/// </summary>
-	public class CustomAnalyticsCallback : IUiAnalyticsCallback
-	{
-		public void OnUiLoaded(UiEventData data)
-		{
-			Debug.Log($"[CustomAnalytics] UI Loaded: {data.UiName} on layer {data.Layer} at {data.Timestamp}s");
-			
-			// Example: Send to your analytics service
-			// AnalyticsService.TrackEvent("ui_loaded", new {
-			//     ui_name = data.UiName,
-			//     layer = data.Layer,
-			//     timestamp = data.Timestamp
-			// });
-		}
-
-		public void OnUiOpened(UiEventData data)
-		{
-			Debug.Log($"[CustomAnalytics] UI Opened: {data.UiName} on layer {data.Layer}");
-			
-			// Example: Send to your analytics service
-			// AnalyticsService.TrackEvent("ui_opened", new {
-			//     ui_name = data.UiName,
-			//     layer = data.Layer
-			// });
-		}
-
-		public void OnUiClosed(UiEventData data)
-		{
-			Debug.Log($"[CustomAnalytics] UI Closed: {data.UiName} (destroyed: {data.WasDestroyed})");
-			
-			// Example: Send to your analytics service
-			// AnalyticsService.TrackEvent("ui_closed", new {
-			//     ui_name = data.UiName,
-			//     was_destroyed = data.WasDestroyed
-			// });
-		}
-
-		public void OnUiUnloaded(UiEventData data)
-		{
-			Debug.Log($"[CustomAnalytics] UI Unloaded: {data.UiName}");
-			
-			// Example: Send to your analytics service
-			// AnalyticsService.TrackEvent("ui_unloaded", new {
-			//     ui_name = data.UiName
-			// });
-		}
-
-		public void OnPerformanceMetricsUpdated(UiPerformanceMetrics metrics)
-		{
-			Debug.Log($"[CustomAnalytics] Performance Updated: {metrics.UiName} - " +
-					  $"Load: {metrics.LoadDuration:F3}s, Open: {metrics.OpenDuration:F3}s, " +
-					  $"Close: {metrics.CloseDuration:F3}s");
-			
-			// Example: Send performance metrics to your analytics service
-			// AnalyticsService.TrackPerformance("ui_performance", new {
-			//     ui_name = metrics.UiName,
-			//     load_duration = metrics.LoadDuration,
-			//     open_duration = metrics.OpenDuration,
-			//     close_duration = metrics.CloseDuration
-			// });
-		}
-	}
-
-	/// <summary>
 	/// Example demonstrating UI analytics integration.
 	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// 
@@ -125,7 +59,7 @@ namespace GameLovers.UiService.Examples
 			
 			// Pre-load presenter and subscribe to close events
 			var presenter = await _uiService.LoadUiAsync<AnalyticsExamplePresenter>();
-			presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			presenter.OnCloseRequested.AddListener(() => UpdateStatus("UI Closed"));
 		}
 
 		private void OnDestroy()
@@ -148,8 +82,8 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void LoadUi()
 		{
-			Debug.Log("Loading UI with analytics tracking...");
 			_uiService.LoadUiAsync<AnalyticsExamplePresenter>().Forget();
+			UpdateStatus("UI Loaded");
 		}
 
 		/// <summary>
@@ -157,8 +91,8 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public async void OpenUi()
 		{
-			Debug.Log("Opening UI with analytics tracking...");
 			await _uiService.OpenUiAsync<AnalyticsExamplePresenter>();
+			UpdateStatus("UI Opened");
 		}
 
 		/// <summary>
@@ -166,14 +100,11 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void ViewPerformanceSummary()
 		{
-			Debug.Log("Displaying performance summary...");
 			_analytics.LogPerformanceSummary();
 			
 			// Get specific metrics
 			var metrics = _analytics.GetMetrics(typeof(AnalyticsExamplePresenter));
-			Debug.Log($"\nDetailed metrics for AnalyticsExamplePresenter:");
-			Debug.Log($"  Opens: {metrics.OpenCount}, Closes: {metrics.CloseCount}");
-			Debug.Log($"  Lifetime: {metrics.TotalLifetime:F1}s");
+			UpdateStatus($"Metrics: Opens={metrics.OpenCount}, Closes={metrics.CloseCount}, Lifetime={metrics.TotalLifetime:F1}s");
 		}
 
 		/// <summary>
@@ -181,8 +112,8 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void ClearAnalyticsData()
 		{
-			Debug.Log("Clearing all analytics data...");
 			_analytics.Clear();
+			UpdateStatus("Analytics data cleared");
 		}
 
 		private void SubscribeToAnalyticsEvents()

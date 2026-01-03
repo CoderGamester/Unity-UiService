@@ -160,8 +160,13 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 		#region Visibility State Consistency Tests
 
+		/// <summary>
+		/// Verifies that LoadUiAsync on an already-visible presenter does NOT change visibility.
+		/// LoadUiAsync is a load operation, not a visibility management operation.
+		/// The openAfter parameter only applies when the presenter is newly loaded.
+		/// </summary>
 		[UnityTest]
-		public IEnumerator LoadUiAsync_OnVisiblePresenter_WithOpenAfterFalse_ClosesPresenter()
+		public IEnumerator LoadUiAsync_OnVisiblePresenter_WithOpenAfterFalse_DoesNotChangeVisibility()
 		{
 			// Arrange - Open the presenter first
 			var openTask = _service.OpenUiAsync(typeof(TestUiPresenter));
@@ -175,13 +180,15 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Act - Call LoadUiAsync with openAfter=false on already visible presenter
 			var loadTask = _service.LoadUiAsync(typeof(TestUiPresenter), openAfter: false);
 			yield return loadTask.ToCoroutine();
-			yield return presenter.CloseTransitionTask.ToCoroutine();
 
-			// Assert - Presenter should be properly closed and removed from visible list
-			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(0));
-			Assert.That(presenter.gameObject.activeSelf, Is.False);
+			// Assert - Presenter should remain visible (LoadUiAsync doesn't manage visibility of already-loaded presenters)
+			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
+			Assert.That(presenter.gameObject.activeSelf, Is.True);
 		}
 
+		/// <summary>
+		/// Verifies that LoadUiAsync on an already-visible presenter with openAfter=true keeps it visible.
+		/// </summary>
 		[UnityTest]
 		public IEnumerator LoadUiAsync_OnVisiblePresenter_WithOpenAfterTrue_RemainsOpen()
 		{
@@ -202,18 +209,21 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.That(presenter.gameObject.activeSelf, Is.True);
 		}
 
+		/// <summary>
+		/// Verifies that CloseUi properly closes a presenter and OpenUiAsync can reopen it.
+		/// This tests the correct API for managing visibility (CloseUi, not LoadUiAsync).
+		/// </summary>
 		[UnityTest]
-		public IEnumerator OpenUiAsync_AfterLoadUiAsyncClosedIt_OpensSuccessfully()
+		public IEnumerator OpenUiAsync_AfterCloseUi_OpensSuccessfully()
 		{
-			// Arrange - Open the presenter, then close it via LoadUiAsync
+			// Arrange - Open the presenter, then close it via CloseUi
 			var openTask1 = _service.OpenUiAsync(typeof(TestUiPresenter));
 			yield return openTask1.ToCoroutine();
 			var presenter = openTask1.GetAwaiter().GetResult();
 			yield return presenter.OpenTransitionTask.ToCoroutine();
 
-			// Close via LoadUiAsync with openAfter=false
-			var loadTask = _service.LoadUiAsync(typeof(TestUiPresenter), openAfter: false);
-			yield return loadTask.ToCoroutine();
+			// Close via CloseUi (the correct API for closing)
+			_service.CloseUi(typeof(TestUiPresenter));
 			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(0));
@@ -230,8 +240,12 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.AreEqual(presenter, reopenedPresenter); // Same instance
 		}
 
+		/// <summary>
+		/// Verifies that CloseUi properly calls close lifecycle hooks.
+		/// This tests the correct API for closing (CloseUi, not LoadUiAsync).
+		/// </summary>
 		[UnityTest]
-		public IEnumerator LoadUiAsync_OnVisiblePresenter_CallsCloseLifecycleHooks()
+		public IEnumerator CloseUi_OnVisiblePresenter_CallsCloseLifecycleHooks()
 		{
 			// Arrange - Open the presenter first
 			var openTask = _service.OpenUiAsync(typeof(TestUiPresenter));
@@ -242,9 +256,8 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var closeCountBefore = presenter.CloseCount;
 			var closeTransitionCountBefore = presenter.CloseTransitionCompletedCount;
 
-			// Act - Call LoadUiAsync with openAfter=false
-			var loadTask = _service.LoadUiAsync(typeof(TestUiPresenter), openAfter: false);
-			yield return loadTask.ToCoroutine();
+			// Act - Call CloseUi (the correct API for closing)
+			_service.CloseUi(typeof(TestUiPresenter));
 			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert - Close lifecycle hooks should have been called
@@ -252,8 +265,13 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.That(presenter.CloseTransitionCompletedCount, Is.EqualTo(closeTransitionCountBefore + 1));
 		}
 
+		/// <summary>
+		/// Verifies that LoadUiAsync on an already-loaded but closed presenter with openAfter=true
+		/// does NOT open it (openAfter only applies to newly loaded presenters).
+		/// Use OpenUiAsync to open an already-loaded presenter.
+		/// </summary>
 		[UnityTest]
-		public IEnumerator LoadUiAsync_OnClosedPresenter_WithOpenAfterTrue_CallsOpenLifecycleHooks()
+		public IEnumerator LoadUiAsync_OnClosedPresenter_WithOpenAfterTrue_DoesNotOpen()
 		{
 			// Arrange - Load but don't open (presenter is closed)
 			var loadTask1 = _service.LoadUiAsync(typeof(TestUiPresenter), openAfter: false);
@@ -262,11 +280,35 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(0));
 			var openCountBefore = presenter.OpenCount;
-			var openTransitionCountBefore = presenter.OpenTransitionCompletedCount;
 
-			// Act - Call LoadUiAsync with openAfter=true on closed presenter
+			// Act - Call LoadUiAsync with openAfter=true on already-loaded closed presenter
 			var loadTask2 = _service.LoadUiAsync(typeof(TestUiPresenter), openAfter: true);
 			yield return loadTask2.ToCoroutine();
+
+			// Assert - Presenter should remain closed (openAfter only applies to new loads)
+			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(0));
+			Assert.That(presenter.OpenCount, Is.EqualTo(openCountBefore));
+		}
+
+		/// <summary>
+		/// Verifies that OpenUiAsync properly opens an already-loaded but closed presenter.
+		/// This is the correct way to open an already-loaded presenter.
+		/// </summary>
+		[UnityTest]
+		public IEnumerator OpenUiAsync_OnClosedPresenter_CallsOpenLifecycleHooks()
+		{
+			// Arrange - Load but don't open (presenter is closed)
+			var loadTask = _service.LoadUiAsync(typeof(TestUiPresenter), openAfter: false);
+			yield return loadTask.ToCoroutine();
+			var presenter = loadTask.GetAwaiter().GetResult() as TestUiPresenter;
+
+			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(0));
+			var openCountBefore = presenter.OpenCount;
+			var openTransitionCountBefore = presenter.OpenTransitionCompletedCount;
+
+			// Act - Call OpenUiAsync (the correct API to open an already-loaded presenter)
+			var openTask = _service.OpenUiAsync(typeof(TestUiPresenter));
+			yield return openTask.ToCoroutine();
 			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			// Assert - Open lifecycle hooks should have been called
