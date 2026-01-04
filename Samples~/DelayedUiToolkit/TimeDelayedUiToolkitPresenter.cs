@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UIElements;
 
-namespace GameLovers.UiServiceExamples
+namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Example implementation using time-based delays with UI Toolkit.
@@ -36,6 +36,7 @@ namespace GameLovers.UiServiceExamples
 		/// <inheritdoc />
 		protected override void OnInitialized()
 		{
+			base.OnInitialized();
 			Debug.Log("TimeDelayedUiToolkitPresenter: Initialized");
 
 			// Query UI Toolkit elements
@@ -59,6 +60,7 @@ namespace GameLovers.UiServiceExamples
 		/// <inheritdoc />
 		protected override void OnOpened()
 		{
+			base.OnOpened();
 			Debug.Log("TimeDelayedUiToolkitPresenter: Opened, starting delay...");
 			
 			if (_statusLabel != null && _delayFeature != null)
@@ -70,6 +72,7 @@ namespace GameLovers.UiServiceExamples
 		/// <inheritdoc />
 		protected override void OnOpenTransitionCompleted()
 		{
+			base.OnOpenTransitionCompleted();
 			Debug.Log("TimeDelayedUiToolkitPresenter: Opening delay completed!");
 			
 			// Update UI after delay
@@ -88,7 +91,7 @@ namespace GameLovers.UiServiceExamples
 		{
 			Debug.Log("Close button clicked, closing UI...");
 			OnCloseRequested.Invoke();
-			Close(false);
+			Close(destroy: false);
 		}
 
 		private void OnDestroy()

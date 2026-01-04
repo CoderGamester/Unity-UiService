@@ -23,15 +23,15 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
 
+		private void OnDestroy()
+		{
+			_closeButton?.onClick.RemoveListener(OnCloseButtonClicked);
+			OnCloseRequested.RemoveAllListeners();
+		}
+
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
-			
-			// Subscribe to feature events if needed
-			if (_scaleFeature != null)
-			{
-				_scaleFeature.OnScaleInComplete += OnScaleInComplete;
-			}
 			
 			if (_closeButton != null)
 			{
@@ -45,32 +45,6 @@ namespace GameLovers.UiService.Examples
 		{
 			OnCloseRequested.Invoke();
 			Close(destroy: false);
-		}
-
-		protected override void OnOpened()
-		{
-			base.OnOpened();
-			
-			if (_titleText != null)
-			{
-				_titleText.text = "Scaling Presenter";
-			}
-		}
-
-		private void OnScaleInComplete()
-		{
-			Debug.Log("[ScalingPresenter] Scale in animation completed!");
-		}
-
-		private void OnDestroy()
-		{
-			if (_scaleFeature != null)
-			{
-				_scaleFeature.OnScaleInComplete -= OnScaleInComplete;
-			}
-
-			_closeButton?.onClick.RemoveListener(OnCloseButtonClicked);
-			OnCloseRequested.RemoveAllListeners();
 		}
 	}
 }

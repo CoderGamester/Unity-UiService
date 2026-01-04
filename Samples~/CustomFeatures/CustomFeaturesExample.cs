@@ -30,9 +30,12 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private Button _closeAllButton;
 
 		[Header("UI Elements")]
-		[SerializeField] private TMP_Text _explanationText;
+		[SerializeField] private TMP_Text _statusText;
 		
 		private IUiServiceInit _uiService;
+		private FadingPresenter _fadingPresenter;
+		private ScalingPresenter _scalingPresenter;
+		private FullFeaturedPresenter _fullFeaturedPresenter;
 
 		private async void Start()
 		{
@@ -49,15 +52,15 @@ namespace GameLovers.UiService.Examples
 			_closeAllButton?.onClick.AddListener(CloseAllUi);
 			
 			// Pre-load presenters and subscribe to close events
-			var fadingPresenter = await _uiService.LoadUiAsync<FadingPresenter>();
-			var scalingPresenter = await _uiService.LoadUiAsync<ScalingPresenter>();
-			var fullFeaturedPresenter = await _uiService.LoadUiAsync<FullFeaturedPresenter>();
+			_fadingPresenter = await _uiService.LoadUiAsync<FadingPresenter>();
+			_scalingPresenter = await _uiService.LoadUiAsync<ScalingPresenter>();
+			_fullFeaturedPresenter = await _uiService.LoadUiAsync<FullFeaturedPresenter>();
 			
-			fadingPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
-			scalingPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
-			fullFeaturedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			_fadingPresenter.OnCloseRequested.AddListener(OnPresenterCloseRequested);
+			_scalingPresenter.OnCloseRequested.AddListener(OnPresenterCloseRequested);
+			_fullFeaturedPresenter.OnCloseRequested.AddListener(OnPresenterCloseRequested);
 
-			UpdateUiVisibility(false);
+			UpdateStatus("Ready - Select a feature to demo");
 		}
 
 		private void OnDestroy()
@@ -67,7 +70,9 @@ namespace GameLovers.UiService.Examples
 			_openAllFeaturesButton?.onClick.RemoveListener(OpenAllFeaturesUi);
 			_closeAllButton?.onClick.RemoveListener(CloseAllUi);
 			
-			_uiService?.Dispose();
+			_fadingPresenter?.OnCloseRequested.RemoveListener(OnPresenterCloseRequested);
+			_scalingPresenter?.OnCloseRequested.RemoveListener(OnPresenterCloseRequested);
+			_fullFeaturedPresenter?.OnCloseRequested.RemoveListener(OnPresenterCloseRequested);
 		}
 
 		/// <summary>
@@ -76,7 +81,7 @@ namespace GameLovers.UiService.Examples
 		public async void OpenFadeUi()
 		{
 			await _uiService.OpenUiAsync<FadingPresenter>();
-			UpdateUiVisibility(true);
+			UpdateStatus("Fade UI Opened");
 		}
 
 		/// <summary>
@@ -85,7 +90,7 @@ namespace GameLovers.UiService.Examples
 		public async void OpenScaleUi()
 		{
 			await _uiService.OpenUiAsync<ScalingPresenter>();
-			UpdateUiVisibility(true);
+			UpdateStatus("Scale UI Opened");
 		}
 
 		/// <summary>
@@ -94,7 +99,7 @@ namespace GameLovers.UiService.Examples
 		public async void OpenAllFeaturesUi()
 		{
 			await _uiService.OpenUiAsync<FullFeaturedPresenter>();
-			UpdateUiVisibility(true);
+			UpdateStatus("All Full Featured UI Opened");
 		}
 
 		/// <summary>
@@ -103,14 +108,19 @@ namespace GameLovers.UiService.Examples
 		public void CloseAllUi()
 		{
 			_uiService.CloseAllUi();
-			UpdateUiVisibility(false);
+			UpdateStatus("All UIs closed");
 		}
 
-		private void UpdateUiVisibility(bool isPresenterActive)
+		private void OnPresenterCloseRequested()
 		{
-			if (_explanationText != null)
+			UpdateStatus("UI Closed");
+		}
+
+		private void UpdateStatus(string message)
+		{
+			if (_statusText != null)
 			{
-				_explanationText.gameObject.SetActive(!isPresenterActive);
+				_statusText.text = message;
 			}
 		}
 	}

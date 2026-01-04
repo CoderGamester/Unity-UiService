@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
@@ -30,7 +31,7 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private TMP_Text _explanationText;
 		[SerializeField] private TMP_Text _statusText;
 		
-		private IUiServiceInit _uiService;
+		private UiService _uiService;
 		private int _popupCounter = 0;
 		private readonly List<string> _activePopupIds = new List<string>();
 
@@ -52,6 +53,17 @@ namespace GameLovers.UiService.Examples
 
 		private void OnDestroy()
 		{
+			// Clean up remaining popups first
+			if (_uiService != null)
+			{
+				foreach (var instanceAddress in _activePopupIds)
+				{
+					_uiService.CloseUi(typeof(NotificationPopupPresenter), instanceAddress, destroy: false);
+					_uiService.UnloadUi(typeof(NotificationPopupPresenter), instanceAddress);
+				}
+			}
+			_activePopupIds.Clear();
+
 			_spawnPopupButton?.onClick.RemoveListener(SpawnNewPopupWrapper);
 			_closeRecentButton?.onClick.RemoveListener(CloseRecentPopup);
 			_listActiveButton?.onClick.RemoveListener(ListActivePopups);
@@ -64,34 +76,27 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public async UniTaskVoid SpawnNewPopup()
 		{
+			if (_uiService == null) return;
+
 			_popupCounter++;
 			var instanceAddress = $"popup_{_popupCounter}";
-			
-			UpdateStatus($"Spawning popup with instance address: '{instanceAddress}'");
+			var data = new NotificationData
+			{
+				Title = $"Notification #{_popupCounter}",
+				Message = $"This is popup instance '{instanceAddress}'.\nClick to close or use Close Recent button.",
+				InstanceAddress = instanceAddress
+			};
 			
 			// Load with a specific instance address
 			// This allows multiple instances of the same UI type
-			var presenter = await _uiService.LoadUiAsync<NotificationPopupPresenter>(
-				instanceAddress, 
-				openAfter: false
-			);
+			var presenter = await _uiService.LoadUiAsync(typeof(NotificationPopupPresenter), instanceAddress, openAfter: false);
 			
 			// Subscribe to close events
-			presenter.OnCloseRequested.AddListener(() => OnPopupClosed(instanceAddress));
+			var popup = (NotificationPopupPresenter)presenter;
+			popup.OnCloseRequested.AddListener(() => OnPopupClosed(instanceAddress));
 			
-			// Set data for this specific popup
-			var popup = presenter as NotificationPopupPresenter;
-			if (popup != null)
-			{
-				popup.SetNotification(
-					$"Notification #{_popupCounter}",
-					$"This is popup instance '{instanceAddress}'.\nClick to close or use Close Recent button.",
-					instanceAddress
-				);
-			}
-			
-			// Open with instance address
-			await _uiService.OpenUiAsync<NotificationPopupPresenter>(instanceAddress);
+			// Open with instance address and data
+			await _uiService.OpenUiAsync(typeof(NotificationPopupPresenter), instanceAddress, data);
 			
 			_activePopupIds.Add(instanceAddress);
 			UpdateStatus($"Popup '{instanceAddress}' opened. Total active: {_activePopupIds.Count}");
@@ -111,11 +116,10 @@ namespace GameLovers.UiService.Examples
 			var instanceAddress = _activePopupIds[^1]; // Last one
 			_activePopupIds.RemoveAt(_activePopupIds.Count - 1);
 			
-			UpdateStatus($"Closing popup: '{instanceAddress}'");
-			
 			// Close and unload with instance address
-			_uiService.CloseUi<NotificationPopupPresenter>(instanceAddress, destroy: true);
-			_uiService.UnloadUi<NotificationPopupPresenter>(instanceAddress);
+			// Recommended pattern for multi-instance: Use destroy: false and manually unload with instance address
+			_uiService.CloseUi(typeof(NotificationPopupPresenter), instanceAddress, destroy: false);
+			_uiService.UnloadUi(typeof(NotificationPopupPresenter), instanceAddress);
 			
 			UpdateStatus($"Popup closed. Remaining: {_activePopupIds.Count}");
 		}
@@ -131,17 +135,15 @@ namespace GameLovers.UiService.Examples
 				return;
 			}
 			
-			UpdateStatus($"Closing all {_activePopupIds.Count} popups...");
-			
 			// Close each popup by its instance address
 			foreach (var instanceAddress in _activePopupIds)
 			{
-				_uiService.CloseUi<NotificationPopupPresenter>(instanceAddress, destroy: true);
-				_uiService.UnloadUi<NotificationPopupPresenter>(instanceAddress);
+				_uiService.CloseUi(typeof(NotificationPopupPresenter), instanceAddress, destroy: false);
+				_uiService.UnloadUi(typeof(NotificationPopupPresenter), instanceAddress);
 			}
-			
+
+			UpdateStatus($"Closed all {_activePopupIds.Count} popups...");
 			_activePopupIds.Clear();
-			UpdateStatus("All popups closed.");
 		}
 
 		/// <summary>
@@ -149,23 +151,20 @@ namespace GameLovers.UiService.Examples
 		/// </summary>
 		public void ListActivePopups()
 		{
+			var sb = new StringBuilder("=== Active Popup Instances ===");
+
 			UpdateStatus("Check console for active popup instances list.");
-			Debug.Log("=== Active Popup Instances ===");
-			
-			if (_activePopupIds.Count == 0)
-			{
-				Debug.Log("No active popups.");
-				return;
-			}
-			
+
 			foreach (var instanceAddress in _activePopupIds)
 			{
 				var instanceId = new UiInstanceId(typeof(NotificationPopupPresenter), instanceAddress);
 				var isVisible = _uiService.IsVisible<NotificationPopupPresenter>(instanceAddress);
-				Debug.Log($"  - {instanceId} (visible: {isVisible})");
+
+				sb.Append($"\n  - {instanceId} (visible: {isVisible})");
 			}
-			
-			Debug.Log($"Total: {_activePopupIds.Count} popups");
+
+			sb.Append($"\nTotal: {_activePopupIds.Count} popups");
+			Debug.Log(sb.ToString());
 		}
 
 		/// <summary>
@@ -175,14 +174,11 @@ namespace GameLovers.UiService.Examples
 		{
 			_activePopupIds.Remove(instanceAddress);
 			
-			// Unload the specific instance
-			try
+			// Only unload if still present (wasn't already unloaded by CloseRecentPopup)
+			if (_uiService.GetLoadedPresenters().Exists(p => 
+				p.Type == typeof(NotificationPopupPresenter) && p.Address == instanceAddress))
 			{
-				_uiService.UnloadUi<NotificationPopupPresenter>(instanceAddress);
-			}
-			catch (KeyNotFoundException)
-			{
-				// Already unloaded
+				_uiService.UnloadUi(typeof(NotificationPopupPresenter), instanceAddress);
 			}
 			
 			UpdateStatus($"Popup '{instanceAddress}' self-closed. Remaining: {_activePopupIds.Count}");
@@ -202,4 +198,3 @@ namespace GameLovers.UiService.Examples
 		}
 	}
 }
-

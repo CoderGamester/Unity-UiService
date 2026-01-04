@@ -1,3 +1,4 @@
+using System.Collections;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using GameLovers.UiService;
@@ -35,6 +36,7 @@ namespace GameLovers.UiService.Examples
 
 		private UniTaskCompletionSource _openTransitionCompletion;
 		private UniTaskCompletionSource _closeTransitionCompletion;
+		private Coroutine _scaleCoroutine;
 
 		/// <inheritdoc />
 		public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
@@ -69,72 +71,84 @@ namespace GameLovers.UiService.Examples
 
 		public override void OnPresenterOpened()
 		{
-			if (_scaleInDuration > 0)
-			{
-				ScaleInAsync().Forget();
-			}
+			StartScale(isOpening: true);
 		}
 
 		public override void OnPresenterClosing()
 		{
-			if (_scaleOutDuration > 0 && Presenter && Presenter.gameObject)
-			{
-				ScaleOutAsync().Forget();
-			}
+			if (!Presenter || !Presenter.gameObject) return;
+			StartScale(isOpening: false);
 		}
 
-		private async UniTask ScaleInAsync()
+		private void StartScale(bool isOpening)
 		{
 			if (_targetTransform == null) return;
-			
-			_openTransitionCompletion = new UniTaskCompletionSource();
-			
-			float elapsed = 0f;
+
+			StopScaleCoroutine();
+
+			Vector3 targetScale = isOpening ? _endScale : _startScale;
+			float duration = isOpening ? _scaleInDuration : _scaleOutDuration;
+			AnimationCurve curve = isOpening ? _scaleInCurve : _scaleOutCurve;
+			var completionSource = new UniTaskCompletionSource();
+
+			// If we are interrupting the opposite direction, ensure it doesn't block the presenter lifecycle.
+			if (isOpening)
+			{
+				_closeTransitionCompletion?.TrySetResult();
+				_openTransitionCompletion = completionSource;
+			}
+			else
+			{
+				_openTransitionCompletion?.TrySetResult();
+				_closeTransitionCompletion = completionSource;
+			}
+
+			if (duration <= 0f)
+			{
+				_targetTransform.localScale = targetScale;
+				completionSource.TrySetResult();
+				return;
+			}
+
 			Vector3 startScale = _targetTransform.localScale;
-			
-			while (elapsed < _scaleInDuration)
-			{
-				if (!this || !gameObject) break;
-				
-				elapsed += Time.deltaTime;
-				float t = _scaleInCurve.Evaluate(elapsed / _scaleInDuration);
-				_targetTransform.localScale = Vector3.LerpUnclamped(startScale, _endScale, t);
-				await UniTask.Yield();
-			}
-			
-			if (this && gameObject && _targetTransform != null)
-			{
-				_targetTransform.localScale = _endScale;
-			}
-			
-			_openTransitionCompletion?.TrySetResult();
+			_scaleCoroutine = StartCoroutine(ScaleRoutine(startScale, targetScale, duration, curve, completionSource));
 		}
 
-		private async UniTask ScaleOutAsync()
+		private IEnumerator ScaleRoutine(
+			Vector3 startScale,
+			Vector3 targetScale,
+			float duration,
+			AnimationCurve curve,
+			UniTaskCompletionSource completionSource)
 		{
-			if (_targetTransform == null) return;
-			
-			_closeTransitionCompletion = new UniTaskCompletionSource();
-			
 			float elapsed = 0f;
-			Vector3 startScale = _targetTransform.localScale;
-			
-			while (elapsed < _scaleOutDuration)
+
+			while (elapsed < duration)
 			{
-				if (!this || !gameObject) break;
-				
+				if (!this || !gameObject || _targetTransform == null) break;
+
 				elapsed += Time.deltaTime;
-				float t = _scaleOutCurve.Evaluate(elapsed / _scaleOutDuration);
-				_targetTransform.localScale = Vector3.LerpUnclamped(startScale, _startScale, t);
-				await UniTask.Yield();
+				float normalized = Mathf.Clamp01(elapsed / duration);
+				float t = curve != null ? curve.Evaluate(normalized) : normalized;
+				_targetTransform.localScale = Vector3.LerpUnclamped(startScale, targetScale, t);
+				yield return null;
 			}
-			
+
 			if (this && gameObject && _targetTransform != null)
 			{
-				_targetTransform.localScale = _startScale;
+				_targetTransform.localScale = targetScale;
 			}
-			
-			_closeTransitionCompletion?.TrySetResult();
+
+			completionSource?.TrySetResult();
+			_scaleCoroutine = null;
+		}
+
+		private void StopScaleCoroutine()
+		{
+			if (_scaleCoroutine == null) return;
+
+			StopCoroutine(_scaleCoroutine);
+			_scaleCoroutine = null;
 		}
 	}
 }

@@ -1,3 +1,4 @@
+using System.Collections;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using GameLovers.UiService;
@@ -6,7 +7,7 @@ namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Custom feature that adds fade in/out effects using CanvasGroup.
-	/// Demonstrates a custom transition feature using UniTask.
+	/// Demonstrates a custom transition feature driven by a coroutine (while still exposing UniTask transition handles).
 	/// 
 	/// Usage:
 	/// 1. Add this component to your presenter prefab
@@ -29,6 +30,7 @@ namespace GameLovers.UiService.Examples
 
 		private UniTaskCompletionSource _openTransitionCompletion;
 		private UniTaskCompletionSource _closeTransitionCompletion;
+		private Coroutine _fadeCoroutine;
 
 		/// <inheritdoc />
 		public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
@@ -61,70 +63,81 @@ namespace GameLovers.UiService.Examples
 
 		public override void OnPresenterOpened()
 		{
-			if (_fadeInDuration > 0)
-			{
-				FadeInAsync().Forget();
-			}
+			StartFade(isOpening: true);
 		}
 
 		public override void OnPresenterClosing()
 		{
-			if (_fadeOutDuration > 0 && Presenter && Presenter.gameObject)
-			{
-				FadeOutAsync().Forget();
-			}
+			if (!Presenter || !Presenter.gameObject) return;
+			StartFade(isOpening: false);
 		}
 
-		private async UniTask FadeInAsync()
+		private void StartFade(bool isOpening)
 		{
 			if (_canvasGroup == null) return;
-			
-			_openTransitionCompletion = new UniTaskCompletionSource();
-			
-			float elapsed = 0f;
+
+			StopFadeCoroutine();
+
+			float targetAlpha = isOpening ? 1f : 0f;
+			float duration = isOpening ? _fadeInDuration : _fadeOutDuration;
+			var completionSource = new UniTaskCompletionSource();
+
+			// If we are interrupting the opposite direction, ensure it doesn't block the presenter lifecycle.
+			if (isOpening)
+			{
+				_closeTransitionCompletion?.TrySetResult();
+				_openTransitionCompletion = completionSource;
+			}
+			else
+			{
+				_openTransitionCompletion?.TrySetResult();
+				_closeTransitionCompletion = completionSource;
+			}
+
+			if (duration <= 0f)
+			{
+				_canvasGroup.alpha = targetAlpha;
+				completionSource.TrySetResult();
+				return;
+			}
+
 			float startAlpha = _canvasGroup.alpha;
-			
-			while (elapsed < _fadeInDuration)
-			{
-				if (!this || !gameObject) break;
-				
-				elapsed += Time.deltaTime;
-				_canvasGroup.alpha = Mathf.Lerp(startAlpha, 1f, elapsed / _fadeInDuration);
-				await UniTask.Yield();
-			}
-			
-			if (this && gameObject && _canvasGroup != null)
-			{
-				_canvasGroup.alpha = 1f;
-			}
-			
-			_openTransitionCompletion?.TrySetResult();
+			_fadeCoroutine = StartCoroutine(FadeRoutine(startAlpha, targetAlpha, duration, completionSource));
 		}
 
-		private async UniTask FadeOutAsync()
+		private IEnumerator FadeRoutine(
+			float startAlpha,
+			float targetAlpha,
+			float duration,
+			UniTaskCompletionSource completionSource)
 		{
-			if (_canvasGroup == null) return;
-			
-			_closeTransitionCompletion = new UniTaskCompletionSource();
-			
 			float elapsed = 0f;
-			float startAlpha = _canvasGroup.alpha;
-			
-			while (elapsed < _fadeOutDuration)
+
+			while (elapsed < duration)
 			{
-				if (!this || !gameObject) break;
-				
+				if (!this || !gameObject || _canvasGroup == null) break;
+
 				elapsed += Time.deltaTime;
-				_canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, elapsed / _fadeOutDuration);
-				await UniTask.Yield();
+				float t = Mathf.Clamp01(elapsed / duration);
+				_canvasGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, t);
+				yield return null;
 			}
-			
+
 			if (this && gameObject && _canvasGroup != null)
 			{
-				_canvasGroup.alpha = 0f;
+				_canvasGroup.alpha = targetAlpha;
 			}
-			
-			_closeTransitionCompletion?.TrySetResult();
+
+			completionSource?.TrySetResult();
+			_fadeCoroutine = null;
+		}
+
+		private void StopFadeCoroutine()
+		{
+			if (_fadeCoroutine == null) return;
+
+			StopCoroutine(_fadeCoroutine);
+			_fadeCoroutine = null;
 		}
 	}
 }

@@ -13,7 +13,6 @@ namespace GameLovers.UiService.Examples
 	[RequireComponent(typeof(FadeFeature))]
 	public class FadingPresenter : UiPresenter
 	{
-		[SerializeField] private TMP_Text _titleText;
 		[SerializeField] private Button _closeButton;
 
 		/// <summary>
@@ -21,6 +20,12 @@ namespace GameLovers.UiService.Examples
 		/// Subscribe to this event to react to the presenter's close request.
 		/// </summary>
 		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
+
+		private void OnDestroy()
+		{
+			_closeButton?.onClick.RemoveListener(OnCloseButtonClicked);
+			OnCloseRequested.RemoveAllListeners();
+		}
 
 		protected override void OnInitialized()
 		{
@@ -34,33 +39,10 @@ namespace GameLovers.UiService.Examples
 			Debug.Log("[FadingPresenter] Initialized with FadeFeature");
 		}
 
-		private void OnDestroy()
-		{
-			_closeButton?.onClick.RemoveListener(OnCloseButtonClicked);
-			OnCloseRequested.RemoveAllListeners();
-		}
-
 		private void OnCloseButtonClicked()
 		{
 			OnCloseRequested.Invoke();
 			Close(destroy: false);
-		}
-
-		protected override void OnOpened()
-		{
-			base.OnOpened();
-			
-			if (_titleText != null)
-			{
-				_titleText.text = "Fading Presenter";
-			}
-		}
-
-		protected override void OnOpenTransitionCompleted()
-		{
-			base.OnOpenTransitionCompleted();
-			Debug.Log("[FadingPresenter] Fade in animation completed!");
-			// You can enable interactions here if needed
 		}
 	}
 }

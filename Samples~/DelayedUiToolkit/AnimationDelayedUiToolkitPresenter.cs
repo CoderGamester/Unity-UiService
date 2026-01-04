@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UIElements;
 
-namespace GameLovers.UiServiceExamples
+namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Data structure for the animated UI Toolkit example
@@ -49,6 +49,7 @@ namespace GameLovers.UiServiceExamples
 		/// <inheritdoc />
 		protected override void OnInitialized()
 		{
+			base.OnInitialized();
 			Debug.Log("AnimationDelayedUiToolkitPresenter: Initialized");
 
 			// Query UI Toolkit elements
@@ -69,6 +70,7 @@ namespace GameLovers.UiServiceExamples
 		/// <inheritdoc />
 		protected override void OnSetData()
 		{
+			base.OnSetData();
 			Debug.Log($"AnimationDelayedUiToolkitPresenter: Data set - {Data.Title}");
 
 			// Update UI elements with the provided data
@@ -91,6 +93,7 @@ namespace GameLovers.UiServiceExamples
 		/// <inheritdoc />
 		protected override void OnOpened()
 		{
+			base.OnOpened();
 			Debug.Log("AnimationDelayedUiToolkitPresenter: Opened, playing intro animation...");
 			
 			if (_statusLabel != null && _animationFeature != null)
@@ -103,6 +106,7 @@ namespace GameLovers.UiServiceExamples
 		/// <inheritdoc />
 		protected override void OnOpenTransitionCompleted()
 		{
+			base.OnOpenTransitionCompleted();
 			Debug.Log("AnimationDelayedUiToolkitPresenter: Opening animation completed!");
 			
 			// Update UI after animation
@@ -121,7 +125,7 @@ namespace GameLovers.UiServiceExamples
 		{
 			Debug.Log("Close button clicked, closing UI with animation...");
 			OnCloseRequested.Invoke();
-			Close(false);
+			Close(destroy: false);
 		}
 
 		private void OnDestroy()

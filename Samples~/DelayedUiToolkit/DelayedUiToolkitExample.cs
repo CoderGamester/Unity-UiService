@@ -47,7 +47,6 @@ namespace GameLovers.UiService.Examples
 
 		private void OnDestroy()
 		{
-			_uiService?.Dispose();
 		}
 
 		private async void OpenTimeDelayedUi()

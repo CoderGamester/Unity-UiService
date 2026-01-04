@@ -48,6 +48,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _delayFeature: {fileID: 100005}
+  _toolkitFeature: {fileID: 100004}
 --- !u!114 &100003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -75,6 +76,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c5d659424979427c91d040dff11e6d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _document: {fileID: 100003}
 --- !u!114 &100005
 MonoBehaviour:
   m_ObjectHideFlags: 0
