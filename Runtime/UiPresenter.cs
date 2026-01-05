@@ -26,6 +26,12 @@ namespace GameLovers.UiService
 		private UniTaskCompletionSource _closeTransitionCompletion;
 
 		/// <summary>
+		/// The instance address that uniquely identifies this presenter instance.
+		/// Empty string for default/singleton instances.
+		/// </summary>
+		internal string InstanceAddress { get; private set; } = string.Empty;
+
+		/// <summary>
 		/// Requests the open status of the <see cref="UiPresenter"/>
 		/// </summary>
 		public bool IsOpen => gameObject.activeSelf;
@@ -47,7 +53,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		protected void Close(bool destroy)
 		{
-			_uiService.CloseUi(this, destroy);
+			_uiService.CloseUi(GetType(), InstanceAddress, destroy);
 		}
 
 		/// <summary>
@@ -79,9 +85,10 @@ namespace GameLovers.UiService
 		/// </summary>
 		protected virtual void OnCloseTransitionCompleted() {}
 
-		internal void Init(IUiService uiService)
+		internal void Init(IUiService uiService, string instanceAddress)
 		{
 			_uiService = uiService;
+			InstanceAddress = instanceAddress ?? string.Empty;
 			InitializeFeatures();
 			OnInitialized();
 		}
@@ -158,7 +165,7 @@ namespace GameLovers.UiService
 			if (destroy)
 			{
 				// UI Service calls the Addressables.UnloadAsset that unloads the asset from the memory and destroys the game object
-				_uiService.UnloadUi(GetType());
+				_uiService.UnloadUi(GetType(), InstanceAddress);
 			}
 		}
 

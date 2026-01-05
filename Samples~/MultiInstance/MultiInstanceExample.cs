@@ -53,15 +53,6 @@ namespace GameLovers.UiService.Examples
 
 		private void OnDestroy()
 		{
-			// Clean up remaining popups first
-			if (_uiService != null)
-			{
-				foreach (var instanceAddress in _activePopupIds)
-				{
-					_uiService.CloseUi(typeof(NotificationPopupPresenter), instanceAddress, destroy: false);
-					_uiService.UnloadUi(typeof(NotificationPopupPresenter), instanceAddress);
-				}
-			}
 			_activePopupIds.Clear();
 
 			_spawnPopupButton?.onClick.RemoveListener(SpawnNewPopupWrapper);
@@ -116,10 +107,8 @@ namespace GameLovers.UiService.Examples
 			var instanceAddress = _activePopupIds[^1]; // Last one
 			_activePopupIds.RemoveAt(_activePopupIds.Count - 1);
 			
-			// Close and unload with instance address
-			// Recommended pattern for multi-instance: Use destroy: false and manually unload with instance address
-			_uiService.CloseUi(typeof(NotificationPopupPresenter), instanceAddress, destroy: false);
-			_uiService.UnloadUi(typeof(NotificationPopupPresenter), instanceAddress);
+			// Close and unload with instance address.
+			_uiService.CloseUi(typeof(NotificationPopupPresenter), instanceAddress, destroy: true);
 			
 			UpdateStatus($"Popup closed. Remaining: {_activePopupIds.Count}");
 		}
@@ -135,11 +124,11 @@ namespace GameLovers.UiService.Examples
 				return;
 			}
 			
-			// Close each popup by its instance address
+			// Close each popup by its instance address.
+			// As of v1.2.0, destroy:true is safe for multi-instance presenters (no ambiguity).
 			foreach (var instanceAddress in _activePopupIds)
 			{
-				_uiService.CloseUi(typeof(NotificationPopupPresenter), instanceAddress, destroy: false);
-				_uiService.UnloadUi(typeof(NotificationPopupPresenter), instanceAddress);
+				_uiService.CloseUi(typeof(NotificationPopupPresenter), instanceAddress, destroy: true);
 			}
 
 			UpdateStatus($"Closed all {_activePopupIds.Count} popups...");
@@ -173,14 +162,7 @@ namespace GameLovers.UiService.Examples
 		public void OnPopupClosed(string instanceAddress)
 		{
 			_activePopupIds.Remove(instanceAddress);
-			
-			// Only unload if still present (wasn't already unloaded by CloseRecentPopup)
-			if (_uiService.GetLoadedPresenters().Exists(p => 
-				p.Type == typeof(NotificationPopupPresenter) && p.Address == instanceAddress))
-			{
-				_uiService.UnloadUi(typeof(NotificationPopupPresenter), instanceAddress);
-			}
-			
+
 			UpdateStatus($"Popup '{instanceAddress}' self-closed. Remaining: {_activePopupIds.Count}");
 		}
 		

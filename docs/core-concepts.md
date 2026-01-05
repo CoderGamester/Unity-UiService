@@ -235,6 +235,7 @@ public class ConfirmPopup : UiPresenter
     public void OnCancelClicked()
     {
         // Close and unload from memory
+        // Works correctly even for multi-instance presenters
         Close(destroy: true);
     }
 }

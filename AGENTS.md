@@ -117,8 +117,8 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `UiService` uses an internal `ResolveInstanceAddress(type)` when an API is called without an explicit `instanceAddress`.
   - If **multiple instances** exist, it logs a warning and selects the **first** instance. For multi-instance usage, prefer calling `UiService` overloads that include `instanceAddress`.
 - **Presenter self-close + destroy with multi-instance**
-  - `UiPresenter.Close(destroy: true)` ultimately calls `_uiService.UnloadUi(GetType())` (no instance address), which can be ambiguous when multiple instances exist.
-  - For multi-instance cleanup, close/unload via `UiService` overloads using `(Type, instanceAddress)` (or by tracking your own `UiInstanceId` externally).
+  - `UiPresenter.Close(destroy: true)` now correctly uses the presenter's stored `InstanceAddress` to unload the correct instance.
+  - This works seamlessly for both singleton and multi-instance presenters.
 - **Layering**
   - `UiService` enforces sorting by setting `Canvas.sortingOrder` or `UIDocument.sortingOrder` to the config layer when adding/loading.
   - Loaded presenters are instantiated under the `"Ui"` root directly (no per-layer container GameObjects).
@@ -160,7 +160,9 @@ When you need third-party source/docs, prefer the locally-cached UPM packages:
   - The default `UiConfigs` inspector uses `DefaultUiSetId` (out-of-the-box).
   - To customize set ids, create your own enum and your own `[CustomEditor(typeof(UiConfigs))] : UiConfigsEditor<TEnum>`.
 - **Add multi-instance flows**
-  - Use `UiInstanceId` (default = `string.Empty`) and prefer calling `UiService` overloads that take `instanceAddress` when multiple instances may exist.
+  - Use `UiInstanceId` (default = `string.Empty`) when you need to track instances externally.
+  - Presenters automatically know their own instance address via the internal `InstanceAddress` property.
+  - `Close(destroy: true)` from within a presenter works correctly for multi-instance scenarios.
 - **Add a presenter feature**
   - Extend `PresenterFeatureBase` and attach it to the presenter prefab.
   - Features are discovered via `GetComponents` at init time and notified during open/close.

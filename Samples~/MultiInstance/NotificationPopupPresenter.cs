@@ -25,7 +25,6 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private TMP_Text _titleText;
 		[SerializeField] private TMP_Text _messageText;
 		[SerializeField] private Button _closeButton;
-		[SerializeField] private Button _backgroundButton;
 
 		/// <summary>
 		/// Event invoked when the close button is clicked, before the close transition begins.
@@ -39,11 +38,6 @@ namespace GameLovers.UiService.Examples
 			if (_closeButton != null)
 			{
 				_closeButton.onClick.RemoveListener(OnCloseClicked);
-			}
-			
-			if (_backgroundButton != null)
-			{
-				_backgroundButton.onClick.RemoveListener(OnCloseClicked);
 			}
 
 			OnCloseRequested.RemoveAllListeners();
@@ -95,8 +89,8 @@ namespace GameLovers.UiService.Examples
 		private void OnCloseClicked()
 		{
 			OnCloseRequested.Invoke();
-			// Close ourselves (but don't destroy - let the manager handle that)
-			Close(destroy: false);
+			// Now works correctly for multi-instance - unloads the correct instance
+			Close(destroy: true);
 		}
 	}
 }

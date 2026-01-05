@@ -4,7 +4,7 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
-## [1.1.0] - 2026-01-02
+## [1.1.0] - 2026-01-05
 
 **New**:
 - Added `OpenUiSetAsync(int setId, CancellationToken)` method to `IUiService` for opening all UI presenters in a set with proper address handling, ensuring compatibility with `CloseAllUiSet` and `UnloadUiSet`
@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed inconsistent lifecycle where `OnOpenTransitionCompleted`/`OnCloseTransitionCompleted` were only called when features existed
 - Fixed split responsibility for visibility control where both `UiPresenter` and features could call `SetActive(false)`, allowing now to properly close the presenters in all scenarios
 - Fixed `LoadUiAsync` visibility state inconsistency where calling it on an already-visible presenter with `openAfter=false` would disable the GameObject but not update `VisiblePresenters`, causing subsequent `OpenUiAsync` calls to fail silently
+- Fixed multi-instance ambiguity when calling `Close(destroy: true)` from within a presenter and now correctly unloads the specific instance instead of potentially unloading the wrong one
 
 ## [1.0.0] - 2025-11-04
 
