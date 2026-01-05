@@ -52,11 +52,6 @@ namespace GameLovers.UiService.Examples
 			{
 				_closeButton.onClick.AddListener(OnCloseClicked);
 			}
-			
-			if (_backgroundButton != null)
-			{
-				_backgroundButton.onClick.AddListener(OnCloseClicked);
-			}
 		}
 
 		protected override void OnSetData()

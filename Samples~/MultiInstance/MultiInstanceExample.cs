@@ -24,11 +24,11 @@ namespace GameLovers.UiService.Examples
 
 		[Header("UI Buttons")]
 		[SerializeField] private Button _spawnPopupButton;
+		[SerializeField] private Button _closeAllButton;
 		[SerializeField] private Button _closeRecentButton;
 		[SerializeField] private Button _listActiveButton;
 
 		[Header("UI Elements")]
-		[SerializeField] private TMP_Text _explanationText;
 		[SerializeField] private TMP_Text _statusText;
 		
 		private UiService _uiService;
@@ -45,6 +45,7 @@ namespace GameLovers.UiService.Examples
 			
 			// Setup button listeners
 			_spawnPopupButton?.onClick.AddListener(SpawnNewPopupWrapper);
+			_closeAllButton?.onClick.AddListener(CloseAllPopups);
 			_closeRecentButton?.onClick.AddListener(CloseRecentPopup);
 			_listActiveButton?.onClick.AddListener(ListActivePopups);
 			
@@ -56,6 +57,7 @@ namespace GameLovers.UiService.Examples
 			_activePopupIds.Clear();
 
 			_spawnPopupButton?.onClick.RemoveListener(SpawnNewPopupWrapper);
+			_closeAllButton?.onClick.RemoveListener(CloseAllPopups);
 			_closeRecentButton?.onClick.RemoveListener(CloseRecentPopup);
 			_listActiveButton?.onClick.RemoveListener(ListActivePopups);
 			
