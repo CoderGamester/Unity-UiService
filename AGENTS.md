@@ -41,7 +41,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `PresenterFeatureBase` allows attaching components to a presenter prefab to hook lifecycle.
   - `ITransitionFeature` interface for features that provide open/close transition delays (presenter awaits these).
   - Built-in transition features: `TimeDelayFeature`, `AnimationDelayFeature`.
-  - UI Toolkit support: `UiToolkitPresenterFeature` (via `UIDocument`) exposes `IsVisualTreeAttached` + `OnVisualTreeAttached` and provides `AddVisualTreeAttachedListener(callback)` for safe queries.
+  - UI Toolkit support: `UiToolkitPresenterFeature` (via `UIDocument`) provides `AddVisualTreeAttachedListener(callback)` for safe element queries. Callback is invoked on each open because UI Toolkit recreates elements when the presenter is deactivated/reactivated.
 - **Helper views**: `Runtime/Views/*` (`GameLovers.UiService.Views`)
   - `SafeAreaHelperView`: adjusts anchors/size based on safe area (notches).
   - `NonDrawingView`: raycast target without rendering (extends `Graphic`).
@@ -106,9 +106,9 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `UiService.Dispose()` closes all visible UI, attempts to unload all loaded instances, clears collections, and destroys the `"Ui"` root GameObject.
 - **Editor debugging tools**
   - Some editor windows toggle `presenter.gameObject.SetActive(...)` directly for convenience; this may not reflect in `IUiService.VisiblePresenters` since it bypasses `UiService` bookkeeping.
-- **UI Toolkit visual tree timing**
+- **UI Toolkit visual tree timing and element recreation**
   - `UIDocument.rootVisualElement` may not be ready when `OnInitialized()` is called on a presenter.
-  - When using `UiToolkitPresenterFeature`, always use `AddVisualTreeAttachedListener(callback)` instead of querying elements directly in `OnInitialized()`.
+  - UI Toolkit **recreates visual elements** when the presenter GameObject is deactivated/reactivated (close/reopen cycle), `AddVisualTreeAttachedListener(callback)` invokes  on **each open** to handle element recreation.
 
 ## 5. Coding Standards (Unity 6 / C# 9.0)
 - **C#**: C# 9.0 syntax; no global `using`s; keep **explicit namespaces**.

@@ -14,15 +14,21 @@ namespace GameLovers.UiService.Tests.PlayMode
 		public UiToolkitPresenterFeature ToolkitFeature { get; private set; }
 		public TimeDelayFeature DelayFeature { get; private set; }
 
-		private void Awake()
+	private void Awake()
+	{
+		var document = GetComponent<UIDocument>();
+		if (document == null)
 		{
-			var document = GetComponent<UIDocument>();
-			if (document == null)
-			{
-				document = gameObject.AddComponent<UIDocument>();
-			}
+			document = gameObject.AddComponent<UIDocument>();
+		}
 
-			ToolkitFeature = GetComponent<UiToolkitPresenterFeature>();
+		// Create PanelSettings for test environment (required for panel attachment)
+		if (document.panelSettings == null)
+		{
+			document.panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
+		}
+
+		ToolkitFeature = GetComponent<UiToolkitPresenterFeature>();
 			if (ToolkitFeature == null)
 			{
 				ToolkitFeature = gameObject.AddComponent<UiToolkitPresenterFeature>();

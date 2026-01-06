@@ -55,7 +55,7 @@ namespace GameLovers.UiService.Examples
 			// Setup UI elements
 			if (_titleLabel != null)
 			{
-				_titleLabel.text = "Time-Delayed UI Toolkit";
+				_titleLabel.text = "Delayed UI Toolkit Example";
 			}
 
 			// Register callbacks on current elements
@@ -71,6 +71,8 @@ namespace GameLovers.UiService.Examples
 			{
 				_statusLabel.text = $"Opening with {_delayFeature.OpenDelayInSeconds}s delay...";
 			}
+
+			_closeButton?.SetEnabled(false);
 		}
 
 		/// <inheritdoc />
@@ -81,13 +83,10 @@ namespace GameLovers.UiService.Examples
 			// Update UI after delay
 			if (_statusLabel != null)
 			{
-				_statusLabel.text = "Ready!";
+				_statusLabel.text = $"Opened successfully after {_delayFeature.OpenDelayInSeconds}s!";
 			}
 
-			if (_titleLabel != null)
-			{
-				_titleLabel.text = "Time-Delayed UI Toolkit - Ready!";
-			}
+			_closeButton?.SetEnabled(true);
 		}
 
 		private void OnCloseButtonClicked(ClickEvent evt)

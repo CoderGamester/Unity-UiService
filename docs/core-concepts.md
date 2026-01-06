@@ -320,18 +320,19 @@ public class AnimatedPopup : UiPresenter
 
 Provides UI Toolkit (UI Elements) integration with safe visual tree handling.
 
-> **⚠️ Important:** The `UIDocument.rootVisualElement` may not be ready when `OnInitialized()` is called. Always use `AddVisualTreeAttachedListener` to safely query elements.
+> **⚠️ Important:** UI Toolkit **recreates visual elements** when the presenter GameObject is deactivated/reactivated. The callback registered via `AddVisualTreeAttachedListener` is invoked on **each open** to handle this.
 
 **Properties:**
 - `Document` - The attached `UIDocument`
-- `Root` - The root `VisualElement` (may be null before attachment)
-- `IsVisualTreeAttached` - Returns `true` when the visual tree is ready
-
-**Events:**
-- `OnVisualTreeAttached` - `UnityEvent<VisualElement>` invoked when the visual tree is ready
+- `Root` - The root `VisualElement` (may be null before panel attachment)
 
 **Methods:**
-- `AddVisualTreeAttachedListener(callback)` - Subscribes to `OnVisualTreeAttached` and invokes immediately if already attached
+- `AddVisualTreeAttachedListener(callback)` - Registers a callback invoked when the visual tree is ready. Invokes on each open to handle element recreation.
+- `RemoveVisualTreeAttachedListener(callback)` - Removes a previously registered callback.
+
+**Recommended Pattern:**
+
+Since elements may be recreated on each open, always unregister from old elements before querying and registering on new ones:
 
 ```csharp
 [RequireComponent(typeof(UiToolkitPresenterFeature))]
@@ -343,14 +344,24 @@ public class UIToolkitMenu : UiPresenter
     
     protected override void OnInitialized()
     {
-        // Use AddVisualTreeAttachedListener for safe element queries
         _toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
     }
     
     private void SetupUI(VisualElement root)
     {
+        // 1. Unregister from old elements (may be stale after close/reopen)
+        _playButton?.UnregisterCallback<ClickEvent>(OnPlayClicked);
+        
+        // 2. Query fresh elements
         _playButton = root.Q<Button>("play-button");
+        
+        // 3. Register on current elements
         _playButton?.RegisterCallback<ClickEvent>(OnPlayClicked);
+    }
+    
+    private void OnPlayClicked(ClickEvent evt)
+    {
+        // Handle click
     }
     
     private void OnDestroy()
@@ -381,10 +392,7 @@ public class DelayedUiToolkitPresenter : UiPresenter
     protected override void OnOpenTransitionCompleted()
     {
         // Enable UI after delay completes
-        if (_toolkitFeature.IsVisualTreeAttached)
-        {
-            _toolkitFeature.Root.SetEnabled(true);
-        }
+        _toolkitFeature.Root?.SetEnabled(true);
     }
 }
 ```

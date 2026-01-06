@@ -24,7 +24,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `PrefabRegistryUiAssetLoader`: Simple loader for direct prefab references (useful for testing and samples).
   - `ResourcesUiAssetLoader`: Support for loading from Unity's `Resources` folder.
 - Added `AddressablesUiConfigs`, `ResourcesUiConfigs`, `PrefabRegistryUiConfigs`, `ResourcesUiConfigsEditor`, `AddressablesUiConfigsEditor` and `PrefabRegistryUiConfigsEditor` for managing UI configurations.
-- Added `AddVisualTreeAttachedListener(UnityAction<VisualElement>)` convenience method to `UiToolkitPresenterFeature` that subscribes to `OnVisualTreeAttached` and invokes the callback immediately if already attached
 
 **Changed**:
 - **BREAKING**: Made `UiConfigs` class `abstract` to enforce usage of specialized subclasses (`AddressablesUiConfigs`, `ResourcesUiConfigs`, `PrefabRegistryUiConfigs`) and prevent runtime errors from misconfiguration

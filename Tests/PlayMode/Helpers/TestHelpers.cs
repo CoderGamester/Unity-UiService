@@ -1,6 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace GameLovers.UiService.Tests.PlayMode
 {
@@ -71,6 +74,45 @@ namespace GameLovers.UiService.Tests.PlayMode
 				UiTypeName = type.AssemblyQualifiedName,
 				InstanceAddress = address
 			};
+		}
+
+		/// <summary>
+		/// Waits until the UIDocument's panel is attached.
+		/// UI Toolkit requires a few frames for panel attachment after activation.
+		/// </summary>
+		/// <param name="document">The UIDocument to wait for.</param>
+		/// <param name="maxFrames">Maximum frames to wait before failing.</param>
+		/// <returns>Coroutine enumerator.</returns>
+		public static IEnumerator WaitForPanelAttachment(UIDocument document, int maxFrames = 10)
+		{
+			for (int i = 0; i < maxFrames; i++)
+			{
+				if (document != null && document.rootVisualElement?.panel != null)
+				{
+					yield break;
+				}
+				yield return null;
+			}
+
+			Assert.Fail($"UIDocument panel not attached after {maxFrames} frames");
+		}
+
+		/// <summary>
+		/// Waits until the presenter's UIDocument panel is attached.
+		/// </summary>
+		/// <param name="presenter">The presenter containing a UIDocument.</param>
+		/// <param name="maxFrames">Maximum frames to wait before failing.</param>
+		/// <returns>Coroutine enumerator.</returns>
+		public static IEnumerator WaitForPanelAttachment(UiPresenter presenter, int maxFrames = 10)
+		{
+			var document = presenter?.GetComponent<UIDocument>();
+			if (document == null)
+			{
+				Assert.Fail("Presenter does not have a UIDocument component");
+				yield break;
+			}
+
+			yield return WaitForPanelAttachment(document, maxFrames);
 		}
 	}
 }

@@ -55,7 +55,13 @@ namespace GameLovers.UiService.Examples
 
 		private async void OpenAnimatedUi()
 		{
-			await _uiService.OpenUiAsync<AnimationDelayedUiToolkitPresenter>();
+			var data = new UiToolkitExampleData
+			{
+				Title = "Animated UI",
+				Message = "Animation-based delay example",
+				Score = 100
+			};
+			await _uiService.OpenUiAsync<AnimationDelayedUiToolkitPresenter, UiToolkitExampleData>(data);
 			UpdateStatus("Animated UI Opened");
 		}
 

@@ -93,5 +93,63 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.IsNotNull(presenter.ToolkitFeature);
 			Assert.IsNotNull(presenter.DelayFeature);
 		}
+
+	[UnityTest]
+	public IEnumerator UiToolkitFeature_ListenerInvokedOnEachOpen()
+	{
+		// Arrange
+		var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
+		yield return task.ToCoroutine();
+		var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
+
+		// Wait for UI Toolkit panel attachment
+		yield return TestHelpers.WaitForPanelAttachment(presenter);
+
+		var initialCallbackCount = presenter.SetupCallbackCount;
+
+		// Act - Close and reopen
+		_service.CloseUi<TestUiToolkitPresenter>();
+		yield return null; // Wait a frame
+
+		var reopenTask = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
+		yield return reopenTask.ToCoroutine();
+
+		// Wait for panel reattachment after reopen
+		yield return TestHelpers.WaitForPanelAttachment(presenter);
+
+		// Assert - Callback should have been invoked again
+		Assert.Greater(presenter.SetupCallbackCount, initialCallbackCount, 
+			"Callback should be invoked on each open");
+	}
+
+	[UnityTest]
+	public IEnumerator UiToolkitFeature_RemoveListener_StopsInvocation()
+	{
+		// Arrange
+		var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
+		yield return task.ToCoroutine();
+		var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
+
+		// Wait for UI Toolkit panel attachment
+		yield return TestHelpers.WaitForPanelAttachment(presenter);
+
+		// Remove the listener
+		presenter.RemoveSetupListener();
+		var countAfterRemove = presenter.SetupCallbackCount;
+
+		// Act - Close and reopen
+		_service.CloseUi<TestUiToolkitPresenter>();
+		yield return null;
+
+		var reopenTask = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
+		yield return reopenTask.ToCoroutine();
+
+		// Wait for panel reattachment after reopen
+		yield return TestHelpers.WaitForPanelAttachment(presenter);
+
+		// Assert - Callback count should not have changed
+		Assert.AreEqual(countAfterRemove, presenter.SetupCallbackCount, 
+			"Callback should not be invoked after removal");
+	}
 	}
 }

@@ -69,6 +69,8 @@ namespace GameLovers.UiService.Examples
 
 			// Register callbacks on current elements
 			_closeButton?.RegisterCallback<ClickEvent>(OnCloseButtonClicked);
+
+			OnSetData();
 		}
 
 		/// <inheritdoc />
@@ -90,18 +92,6 @@ namespace GameLovers.UiService.Examples
 			if (_scoreLabel != null)
 			{
 				_scoreLabel.text = $"Score: {Data.Score}";
-			}
-		}
-
-		/// <inheritdoc />
-		protected override void OnOpened()
-		{
-			base.OnOpened();
-			
-			if (_messageLabel != null && _animationFeature != null)
-			{
-				var duration = _animationFeature.OpenDelayInSeconds;
-				_messageLabel.text = $"Playing animation ({duration:F2}s)...";
 			}
 		}
 
