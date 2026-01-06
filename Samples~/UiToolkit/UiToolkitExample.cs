@@ -32,7 +32,6 @@ namespace GameLovers.UiService.Examples
 			
 			root.Q<Button>("load-button")?.RegisterCallback<ClickEvent>(_ => LoadUiToolkit());
 			root.Q<Button>("open-button")?.RegisterCallback<ClickEvent>(_ => OpenUiToolkit());
-			root.Q<Button>("close-button")?.RegisterCallback<ClickEvent>(_ => CloseUiToolkit());
 			root.Q<Button>("unload-button")?.RegisterCallback<ClickEvent>(_ => UnloadUiToolkit());
 			
 			// Pre-load the presenter and subscribe to close events
@@ -62,15 +61,6 @@ namespace GameLovers.UiService.Examples
 		{
 			await _uiService.OpenUiAsync<UiToolkitExamplePresenter>();
 			UpdateStatus("UI Opened");
-		}
-
-		/// <summary>
-		/// Closes the UI Toolkit presenter but keeps it in memory
-		/// </summary>
-		public void CloseUiToolkit()
-		{
-			_uiService.CloseUi<UiToolkitExamplePresenter>(destroy: false);
-			UpdateStatus("UI Closed but still in memory");
 		}
 
 		/// <summary>

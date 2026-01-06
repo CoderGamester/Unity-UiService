@@ -6,45 +6,25 @@ namespace GameLovers.UiService
 {
 	/// <summary>
 	/// Feature that provides UI Toolkit integration for a <see cref="UiPresenter"/>.
-	/// Ensures a <see cref="UIDocument"/> is present and provides access to it.
+	/// Handles visual tree timing so subscribers don't need to worry about it.
 	/// </summary>
-	/// <remarks>
-	/// UI Toolkit documents may not have their visual tree ready immediately after instantiation.
-	/// Subscribe to <see cref="OnVisualTreeAttached"/> to safely query elements after the visual tree is attached to a panel.
-	/// </remarks>
 	[RequireComponent(typeof(UIDocument))]
 	public class UiToolkitPresenterFeature : PresenterFeatureBase
 	{
 		[SerializeField] private UIDocument _document;
 
+		private readonly UnityEvent<VisualElement> _onVisualTreeReady = new UnityEvent<VisualElement>();
+		private bool _callbacksRegistered;
+
 		/// <summary>
-		/// Provides access to the attached <see cref="UIDocument"/>
+		/// The attached <see cref="UIDocument"/>.
 		/// </summary>
 		public UIDocument Document => _document;
 
 		/// <summary>
-		/// The root element of the <see cref="UIDocument"/>.
-		/// May be null or empty if the visual tree is not yet attached to a panel.
-		/// Check <see cref="IsVisualTreeAttached"/> or subscribe to <see cref="OnVisualTreeAttached"/> for safe element queries.
+		/// The root <see cref="VisualElement"/> of the UIDocument.
 		/// </summary>
 		public VisualElement Root => _document?.rootVisualElement;
-
-		/// <summary>
-		/// Returns true if the visual tree is attached to a panel and ready for element queries.
-		/// </summary>
-		public bool IsVisualTreeAttached { get; private set; }
-
-		/// <summary>
-		/// Event invoked when the visual tree is attached to a panel and ready for element queries.
-		/// The <see cref="Root"/> element is passed as a parameter.
-		/// </summary>
-		/// <remarks>
-		/// If the visual tree is already attached when subscribing, the event will be invoked immediately.
-		/// Use <see cref="AddVisualTreeAttachedListener"/> for safe subscription that handles this case.
-		/// </remarks>
-		public UnityEvent<VisualElement> OnVisualTreeAttached { get; } = new UnityEvent<VisualElement>();
-
-		private bool _callbacksRegistered;
 
 		private void OnValidate()
 		{
@@ -53,15 +33,15 @@ namespace GameLovers.UiService
 
 		private void OnDestroy()
 		{
-			OnVisualTreeAttached.RemoveAllListeners();
+			_onVisualTreeReady.RemoveAllListeners();
 			UnregisterPanelCallbacks();
 		}
 
 		/// <summary>
-		/// Adds a listener to <see cref="OnVisualTreeAttached"/> and invokes it immediately if already attached.
-		/// This is a convenience method for safe element queries that handles the visual tree timing issue.
+		/// Registers a callback to be invoked when the visual tree is ready.
+		/// Invokes on each open (UI Toolkit recreates elements on activate).
+		/// Safe to call in OnInitialized().
 		/// </summary>
-		/// <param name="callback">The callback to invoke with the root <see cref="VisualElement"/>.</param>
 		public void AddVisualTreeAttachedListener(UnityAction<VisualElement> callback)
 		{
 			if (callback == null)
@@ -69,12 +49,26 @@ namespace GameLovers.UiService
 				return;
 			}
 
-			OnVisualTreeAttached.AddListener(callback);
+			_onVisualTreeReady.AddListener(callback);
 
-			if (IsVisualTreeAttached && Root != null)
+			// Visual tree already ready? Invoke immediately
+			if (Root?.panel != null)
 			{
 				callback(Root);
 			}
+		}
+
+		/// <summary>
+		/// Removes a previously registered callback.
+		/// </summary>
+		public void RemoveVisualTreeAttachedListener(UnityAction<VisualElement> callback)
+		{
+			if (callback == null)
+			{
+				return;
+			}
+
+			_onVisualTreeReady.RemoveListener(callback);
 		}
 
 		/// <inheritdoc />
@@ -82,17 +76,15 @@ namespace GameLovers.UiService
 		{
 			base.OnPresenterInitialized(presenter);
 			RegisterPanelCallbacks();
-			TrySetReady();
+			TryInvokeListeners();
 		}
 
 		/// <inheritdoc />
 		public override void OnPresenterOpened()
 		{
 			base.OnPresenterOpened();
-			
-			// Retry registration if Root wasn't available during initialization
 			RegisterPanelCallbacks();
-			TrySetReady();
+			TryInvokeListeners();
 		}
 
 		private void RegisterPanelCallbacks()
@@ -109,7 +101,6 @@ namespace GameLovers.UiService
 			}
 
 			root.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-			root.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 			_callbacksRegistered = true;
 		}
 
@@ -124,31 +115,24 @@ namespace GameLovers.UiService
 			if (root != null)
 			{
 				root.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-				root.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 			}
 			_callbacksRegistered = false;
 		}
 
 		private void OnAttachToPanel(AttachToPanelEvent evt)
 		{
-			TrySetReady();
+			TryInvokeListeners();
 		}
 
-		private void OnDetachFromPanel(DetachFromPanelEvent evt)
-		{
-			IsVisualTreeAttached = false;
-		}
-
-		private void TrySetReady()
+		private void TryInvokeListeners()
 		{
 			var root = Root;
-			if (root?.panel == null || IsVisualTreeAttached)
+			if (root?.panel == null)
 			{
 				return;
 			}
 
-			IsVisualTreeAttached = true;
-			OnVisualTreeAttached.Invoke(root);
+			_onVisualTreeReady.Invoke(root);
 		}
 	}
 }

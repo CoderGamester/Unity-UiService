@@ -39,13 +39,15 @@ namespace GameLovers.UiService.Examples
 			base.OnInitialized();
 			Debug.Log("TimeDelayedUiToolkitPresenter: Initialized");
 
-			// Subscribe to visual tree attachment to safely query elements
 			_toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
 		}
 
 		private void SetupUI(VisualElement root)
 		{
-			// Query UI Toolkit elements
+			// Unregister from old elements (may be stale after close/reopen)
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
+			
+			// Query fresh elements (UI Toolkit may recreate them on activate)
 			_titleLabel = root.Q<Label>("Title");
 			_statusLabel = root.Q<Label>("Message");
 			_closeButton = root.Q<Button>("CloseButton");
@@ -56,7 +58,7 @@ namespace GameLovers.UiService.Examples
 				_titleLabel.text = "Time-Delayed UI Toolkit";
 			}
 
-			// Set up event handlers using RegisterCallback for more control
+			// Register callbacks on current elements
 			_closeButton?.RegisterCallback<ClickEvent>(OnCloseButtonClicked);
 		}
 

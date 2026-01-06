@@ -31,7 +31,6 @@ namespace GameLovers.UiService.Examples
 			base.OnInitialized();
 			Debug.Log("[UiToolkitExample] UI Initialized");
 			
-			// Subscribe to visual tree attachment to safely query elements
 			_toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
 		}
 
@@ -39,14 +38,20 @@ namespace GameLovers.UiService.Examples
 		{
 			Debug.Log("[UiToolkitExample] Visual tree ready, setting up UI elements");
 			
-			// Get UI elements from the VisualElement root
+			// Unregister from old elements (may be stale after close/reopen)
+			_incrementButton?.UnregisterCallback<ClickEvent>(OnIncrementClicked);
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
+			
+			// Query fresh elements (UI Toolkit may recreate them on activate)
 			_incrementButton = root.Q<Button>("IncrementButton");
 			_closeButton = root.Q<Button>("CloseButton");
 			_counterLabel = root.Q<Label>("CounterLabel");
 			
-			// Set up event handlers using RegisterCallback for more control
+			// Register callbacks on current elements
 			_incrementButton?.RegisterCallback<ClickEvent>(OnIncrementClicked);
 			_closeButton?.RegisterCallback<ClickEvent>(OnCloseButtonClicked);
+
+			UpdateCounter();
 		}
 
 		private void OnCloseButtonClicked(ClickEvent evt)
@@ -59,8 +64,6 @@ namespace GameLovers.UiService.Examples
 		{
 			base.OnOpened();
 			Debug.Log("[UiToolkitExample] UI Opened");
-			
-			UpdateCounter();
 		}
 
 		protected override void OnClosed()
