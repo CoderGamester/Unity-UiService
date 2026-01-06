@@ -1,51 +1,69 @@
 using UnityEngine;
+using UnityEngine.UI;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example demonstrating data-driven UI presenters
+	/// Example demonstrating data-driven UI presenters using <see cref="UiPresenter{T}"/>.
+	/// Shows two patterns for passing data:
+	/// <list type="bullet">
+	/// <item>Initial data via <c>OpenUiAsync&lt;T, TData&gt;(data)</c> when opening the UI</item>
+	/// <item>Dynamic updates via the public <c>Data</c> property setter (triggers <c>OnSetData()</c> automatically)</item>
+	/// </list>
+	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// </summary>
 	public class DataPresenterExample : MonoBehaviour
 	{
-		[SerializeField] private UiConfigs _uiConfigs;
-		
-		private IUiService _uiService;
+		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
 
-		private void Start()
+		[Header("UI Buttons")]
+		[SerializeField] private Button _showWarriorButton;
+		[SerializeField] private Button _showMageButton;
+		[SerializeField] private Button _showRogueButton;
+		[SerializeField] private Button _updateLowHealthButton;
+
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _statusText;
+		
+		private IUiServiceInit _uiService;
+
+		private async void Start()
 		{
 			// Initialize UI Service
-			_uiService = new UiService();
+			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
+
+			_uiService = new UiService(loader);
 			_uiService.Init(_uiConfigs);
 			
-			Debug.Log("=== Data Presenter Example Started ===");
-			Debug.Log("Press 1: Show Warrior Data");
-			Debug.Log("Press 2: Show Mage Data");
-			Debug.Log("Press 3: Show Rogue Data");
-			Debug.Log("Press 4: Update to Low Health");
+			// Setup button listeners
+			_showWarriorButton?.onClick.AddListener(ShowWarriorData);
+			_showMageButton?.onClick.AddListener(ShowMageData);
+			_showRogueButton?.onClick.AddListener(ShowRogueData);
+			_updateLowHealthButton?.onClick.AddListener(UpdateToLowHealth);
+			_updateLowHealthButton?.gameObject.SetActive(false);
+			
+			// Pre-load presenter and subscribe to close events
+			var presenter = await _uiService.LoadUiAsync<DataUiExamplePresenter>();
+			presenter.OnCloseRequested.AddListener(UpdateCloseButtonStatus);
+
+			UpdateStatus("Ready");
 		}
 
-		private void Update()
+		private void OnDestroy()
 		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
-			{
-				ShowWarriorData();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
-			{
-				ShowMageData();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha3))
-			{
-				ShowRogueData();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha4))
-			{
-				UpdateToLowHealth();
-			}
+			_showWarriorButton?.onClick.RemoveListener(ShowWarriorData);
+			_showMageButton?.onClick.RemoveListener(ShowMageData);
+			_showRogueButton?.onClick.RemoveListener(ShowRogueData);
+			_updateLowHealthButton?.onClick.RemoveListener(UpdateToLowHealth);
 		}
 
-		private void ShowWarriorData()
+		/// <summary>
+		/// Shows the warrior character data
+		/// </summary>
+		public async void ShowWarriorData()
 		{
 			var data = new PlayerData
 			{
@@ -55,11 +73,14 @@ namespace GameLovers.UiService.Examples
 				HealthPercentage = 0.85f
 			};
 			
-			Debug.Log("Opening UI with Warrior data...");
-			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
+			UpdateStatus("Opening UI with Warrior data...");
+			await OpenOrUpdateUi(data);
 		}
 
-		private void ShowMageData()
+		/// <summary>
+		/// Shows the mage character data
+		/// </summary>
+		public async void ShowMageData()
 		{
 			var data = new PlayerData
 			{
@@ -69,11 +90,14 @@ namespace GameLovers.UiService.Examples
 				HealthPercentage = 0.60f
 			};
 			
-			Debug.Log("Opening UI with Mage data...");
-			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
+			UpdateStatus("Opening UI with Mage data...");
+			await OpenOrUpdateUi(data);
 		}
 
-		private void ShowRogueData()
+		/// <summary>
+		/// Shows the rogue character data
+		/// </summary>
+		public async void ShowRogueData()
 		{
 			var data = new PlayerData
 			{
@@ -83,22 +107,54 @@ namespace GameLovers.UiService.Examples
 				HealthPercentage = 1.0f
 			};
 			
-			Debug.Log("Opening UI with Rogue data...");
-			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
+			UpdateStatus("Opening UI with Rogue data...");
+			await OpenOrUpdateUi(data);
 		}
 
-		private void UpdateToLowHealth()
+		/// <summary>
+		/// Updates the UI to show low health state.
+		/// Demonstrates direct Data property assignment which triggers OnSetData() automatically.
+		/// </summary>
+		public void UpdateToLowHealth()
 		{
-			var data = new PlayerData
-			{
-				PlayerName = "Wounded Hero",
-				Level = 15,
-				Score = 3500,
-				HealthPercentage = 0.15f
-			};
+			UpdateStatus("Updating data directly...");
 			
-			Debug.Log("Updating to low health data...");
-			_uiService.OpenUi<DataUiExamplePresenter, PlayerData>(data);
+			// Get the presenter and update its Data property directly.
+			// Setting Data automatically triggers OnSetData() to refresh the UI.
+			var presenter = _uiService.GetUi<DataUiExamplePresenter>();
+			var data = presenter.Data;
+
+			data.HealthPercentage = 0.15f;
+			presenter.Data = data;
+		}
+
+		private void UpdateCloseButtonStatus()
+		{
+			_updateLowHealthButton.gameObject.SetActive(false);
+			UpdateStatus("UI Closed but still in memory");
+		}
+
+		private async UniTask OpenOrUpdateUi(PlayerData data)
+		{
+			if(_uiService.IsVisible<DataUiExamplePresenter>())
+			{
+				var presenter = _uiService.GetUi<DataUiExamplePresenter>();
+				presenter.Data = data;
+			}
+			else
+			{
+				await _uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(data);
+
+				_updateLowHealthButton.gameObject.SetActive(true);
+			}
+		}
+
+		private void UpdateStatus(string message)
+		{
+			if (_statusText != null)
+			{
+				_statusText.text = message;
+			}
 		}
 	}
 }

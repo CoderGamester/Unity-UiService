@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); padding-left: 50px; padding-top: 100px;">
+        <ui:Label text="Delayed UI Toolkit Example" style="-unity-font-style: bold; font-size: 52px; color: rgb(255, 255, 255); margin-bottom: 10px;"/>
+        <ui:Label text="Use the buttons to interact:&#10;• &lt;b&gt;Time Delayed&lt;/b&gt;: Opens UI with a time-based delay&#10;• &lt;b&gt;Animated&lt;/b&gt;: Opens UI with animation-based delay" name="description-label" style="font-size: 36px; color: rgb(200, 200, 200); margin-bottom: 30px; white-space: normal;"/>
+        <ui:Button text="Open Time Delayed" name="open-time-delayed-button" style="width: 250px; height: 60px; font-size: 24px; margin-bottom: 10px;"/>
+        <ui:Button text="Open Animated" name="open-animated-button" style="width: 250px; height: 60px; font-size: 24px; margin-bottom: 10px;"/>
+        <ui:Label text="Ready" name="status-label" style="font-size: 32px; color: rgb(150, 255, 150); margin-top: 20px; -unity-font-style: italic;"/>
+    </ui:VisualElement>
+</ui:UXML>

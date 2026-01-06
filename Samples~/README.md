@@ -1,19 +1,88 @@
 # UI Service Samples
 
-This folder contains example implementations demonstrating the **pure feature composition** pattern of the UI Service.
+This folder contains example implementations demonstrating the **feature composition** pattern of the UI Service.
+
+---
+
+## Quick Start (Zero Setup!)
+
+1. Open **Window > Package Manager**
+2. Select **UiService** from the list
+3. Expand the **Samples** section
+4. Click **Import** next to any sample
+5. Open the sample scene in `Assets/Samples/UiService/{version}/{SampleName}/`
+6. **Press Play** - it just works!
+
+No Addressables setup, no prefab creation, no configuration needed.
 
 ---
 
 ## Architecture Overview
 
-All samples use the new self-contained feature pattern:
+All samples use the self-contained feature pattern:
+
 - **Base:** `UiPresenter` or `UiPresenter<T>`
-- **Features:** Self-contained components (TimeDelayFeature, AnimationDelayFeature, UiToolkitPresenterFeature)
+- **Features:** Self-contained components (`TimeDelayFeature`, `AnimationDelayFeature`, `UiToolkitPresenterFeature`)
 - **Composition:** Mix features as needed using `[RequireComponent]`
+
+### Service Interfaces (Important for AI Assistants)
+
+The UI Service uses **two interfaces** with different purposes:
+
+| Interface | Purpose | Has `Init()` | Has `Dispose()` |
+|-----------|---------|--------------|-----------------|
+| `IUiService` | **Consuming** - Use when you only need to open/close/query UI | ❌ No | ❌ No |
+| `IUiServiceInit` | **Initializing** - Use when you create and initialize the service | ✅ Yes | ✅ Yes |
+
+**⚠️ Critical:** The `Init(UiConfigs)` method is **only available on `IUiServiceInit`**, not on `IUiService`.
+
+**Correct initialization pattern:**
+```csharp
+// ✅ CORRECT - Use IUiServiceInit when you need to call Init()
+private IUiServiceInit _uiService;
+
+void Start()
+{
+    _uiService = new UiService();
+    _uiService.Init(_uiConfigs);  // Works!
+}
+
+void OnDestroy()
+{
+    _uiService?.Dispose();  // Also available on IUiServiceInit
+}
+```
+
+**Common mistake (will cause CS1061 error):**
+```csharp
+// ❌ WRONG - IUiService does NOT have Init()
+private IUiService _uiService;
+
+void Start()
+{
+    _uiService = new UiService();
+    _uiService.Init(_uiConfigs);  // ERROR: CS1061
+}
+```
 
 ---
 
 ## Samples Included
+
+| # | Sample | Focus |
+|---|--------|-------|
+| 1 | [BasicUiFlow](#1-basicuiflow) | Core lifecycle |
+| 2 | [DataPresenter](#2-datapresenter) | Data-driven UI |
+| 3 | [DelayedPresenter](#3-delayedpresenter) | Time & animation delays |
+| 4 | [UiToolkit](#4-uitoolkit) | UI Toolkit integration |
+| 5 | [DelayedUiToolkit](#5-delayeduitoolkit) | Multi-feature composition |
+| 6 | [Analytics](#6-analytics) | Performance tracking |
+| 7 | [UiSets](#7-uisets) | HUD management |
+| 8 | [MultiInstance](#8-multiinstance) | Popup stacking |
+| 9 | [CustomFeatures](#9-customfeatures) | Create your own features |
+| 10 | [AssetLoadingStrategies](#10-assetloadingstrategies) | Compare loading strategies |
+
+---
 
 ### 1. BasicUiFlow
 
@@ -23,13 +92,14 @@ All samples use the new self-contained feature pattern:
 
 **Demonstrates:**
 - Basic UI presenter lifecycle
-- Opening and closing UI
+- Loading, opening, closing, and unloading UI
 - Simple button interactions
 
 **Pattern:**
 ```csharp
 public class BasicUiExamplePresenter : UiPresenter
 {
+    protected override void OnInitialized() { }
     protected override void OnOpened() { }
     protected override void OnClosed() { }
 }
@@ -40,7 +110,7 @@ public class BasicUiExamplePresenter : UiPresenter
 ### 2. DataPresenter
 
 **Files:**
-- `DataUiExamplePresenter.cs` - Presenter with data
+- `DataUiExamplePresenter.cs` - Presenter with typed data
 - `DataPresenterExample.cs` - Data-driven UI example
 
 **Demonstrates:**
@@ -50,18 +120,22 @@ public class BasicUiExamplePresenter : UiPresenter
 
 **Pattern:**
 ```csharp
-public struct MyData
+public struct PlayerData
 {
-    public string Title;
+    public string PlayerName;
+    public int Level;
 }
 
-public class DataUiExamplePresenter : UiPresenter<MyData>
+public class DataUiExamplePresenter : UiPresenter<PlayerData>
 {
     protected override void OnSetData()
     {
-        // Use Data.Title
+        // Access data via Data.PlayerName, Data.Level
     }
 }
+
+// Opening with data
+_uiService.OpenUiAsync<DataUiExamplePresenter, PlayerData>(playerData);
 ```
 
 ---
@@ -76,8 +150,7 @@ public class DataUiExamplePresenter : UiPresenter<MyData>
 **Demonstrates:**
 - Using `TimeDelayFeature` for time-based delays
 - Using `AnimationDelayFeature` for animation-synchronized delays
-- Subscribing to delay completion events
-- Configuring delays in inspector
+- Reacting to delay completion via presenter lifecycle hooks
 
 **Pattern (Time Delay):**
 ```csharp
@@ -86,19 +159,22 @@ public class DelayedUiExamplePresenter : UiPresenter
 {
     [SerializeField] private TimeDelayFeature _delayFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpened()
     {
-        _delayFeature.OnOpenCompletedEvent += OnDelayComplete;
+        base.OnOpened();
+        // UI is visible, delay is starting...
     }
     
-    private void OnDelayComplete()
+    protected override void OnOpenTransitionCompleted()
     {
-        // Called after delay finishes
+        // Called after delay finishes - UI is fully ready for interaction
+        Debug.Log($"Opened after {_delayFeature.OpenDelayInSeconds}s delay!");
     }
     
-    private void OnDestroy()
+    protected override void OnCloseTransitionCompleted()
     {
-        _delayFeature.OnOpenCompletedEvent -= OnDelayComplete;
+        // Called after close delay finishes
+        Debug.Log("Closing transition completed!");
     }
 }
 ```
@@ -110,23 +186,20 @@ public class AnimatedUiExamplePresenter : UiPresenter
 {
     [SerializeField] private AnimationDelayFeature _animationFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpenTransitionCompleted()
     {
-        _animationFeature.OnOpenCompletedEvent += OnAnimationComplete;
-    }
-    
-    private void OnAnimationComplete()
-    {
-        // Called after animation finishes
+        // Called after intro animation finishes
+        Debug.Log("Intro animation completed!");
     }
 }
 ```
 
-**Setup:**
-1. Attach presenter to GameObject
-2. Add `TimeDelayFeature` or `AnimationDelayFeature` component
-3. Configure delay times (time) or animation clips (animation) in inspector
-4. Feature handles all timing automatically
+**Feature Configuration:**
+
+| Feature | Inspector Settings |
+|---------|-------------------|
+| `TimeDelayFeature` | Open/Close delay in seconds |
+| `AnimationDelayFeature` | Animation component, Intro/Outro clips |
 
 ---
 
@@ -141,7 +214,6 @@ public class AnimatedUiExamplePresenter : UiPresenter
 - Using `UiToolkitPresenterFeature` for UI Toolkit integration
 - Querying VisualElements from the root
 - Binding UI Toolkit events
-- Clean event subscription management
 
 **Pattern:**
 ```csharp
@@ -152,23 +224,13 @@ public class UiToolkitExamplePresenter : UiPresenter
     
     protected override void OnInitialized()
     {
+        base.OnInitialized();
         var root = _toolkitFeature.Root;
         var button = root.Q<Button>("MyButton");
         button.clicked += OnButtonClicked;
     }
-    
-    private void OnButtonClicked()
-    {
-        // Handle button click
-    }
 }
 ```
-
-**Setup:**
-1. Attach presenter to GameObject
-2. Add `UiToolkitPresenterFeature` component (auto-detects UIDocument)
-3. Create UXML file with your UI elements
-4. Assign UXML to UIDocument in inspector
 
 ---
 
@@ -181,67 +243,31 @@ public class UiToolkitExamplePresenter : UiPresenter
 - `DelayedUiToolkitExample.uxml` - UI Toolkit layout
 
 **Demonstrates:**
-- **Composing multiple features together**
-- Combining TimeDelayFeature/AnimationDelayFeature + UiToolkitPresenterFeature
+- Composing multiple features together
+- Combining delay features with UI Toolkit
 - Using data with multiple features
-- Coordinating feature interactions
 
-**Pattern (Time Delay + UI Toolkit):**
+**Pattern:**
 ```csharp
 [RequireComponent(typeof(TimeDelayFeature))]
 [RequireComponent(typeof(UiToolkitPresenterFeature))]
 public class TimeDelayedUiToolkitPresenter : UiPresenter
 {
-    [SerializeField] private TimeDelayFeature _delayFeature;
     [SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
     
-    protected override void OnInitialized()
+    protected override void OnOpened()
     {
-        // Disable UI until delay completes
+        base.OnOpened();
         _toolkitFeature.Root.SetEnabled(false);
-        _delayFeature.OnOpenCompletedEvent += EnableUI;
     }
     
-    private void EnableUI()
+    protected override void OnOpenTransitionCompleted()
     {
+        // Enable UI after delay completes
         _toolkitFeature.Root.SetEnabled(true);
     }
 }
 ```
-
-**Pattern (Animation + UI Toolkit + Data):**
-```csharp
-[RequireComponent(typeof(AnimationDelayFeature))]
-[RequireComponent(typeof(UiToolkitPresenterFeature))]
-public class AnimationDelayedUiToolkitPresenter : UiPresenter<MyData>
-{
-    [SerializeField] private AnimationDelayFeature _animationFeature;
-    [SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
-    
-    protected override void OnSetData()
-    {
-        // Update UI with data
-        _toolkitFeature.Root.Q<Label>("Title").text = Data.Title;
-    }
-    
-    protected override void OnInitialized()
-    {
-        _animationFeature.OnOpenCompletedEvent += OnAnimationComplete;
-    }
-    
-    private void OnAnimationComplete()
-    {
-        // Enable interactions after animation
-        _toolkitFeature.Root.SetEnabled(true);
-    }
-}
-```
-
-**Setup:**
-1. Attach presenter to GameObject
-2. Add both feature components
-3. Configure each feature in inspector
-4. Features work together automatically
 
 ---
 
@@ -251,176 +277,429 @@ public class AnimationDelayedUiToolkitPresenter : UiPresenter<MyData>
 - `AnalyticsCallbackExample.cs` - Analytics integration example
 
 **Demonstrates:**
-- Integrating analytics with UI events
-- Tracking UI opens/closes
-- Custom analytics callbacks
+- Creating a `UiAnalytics` instance
+- Setting custom analytics callbacks
+- Subscribing to UI lifecycle events
+- Viewing performance metrics
 
----
-
-## Common Patterns
-
-### Feature Configuration
-
-#### TimeDelayFeature
-Configure in inspector:
-- **Open Delay In Seconds:** Time to wait after opening (default: 0.5s)
-- **Close Delay In Seconds:** Time to wait before closing (default: 0.3s)
-
-#### AnimationDelayFeature
-Configure in inspector:
-- **Animation Component:** Auto-detected or manually assigned
-- **Intro Animation Clip:** Animation to play when opening
-- **Outro Animation Clip:** Animation to play when closing
-
-Delays automatically match animation clip lengths!
-
-#### UiToolkitPresenterFeature
-Configure in inspector:
-- **Document:** Auto-detected UIDocument component
-- Access via: `_toolkitFeature.Document` or `_toolkitFeature.Root`
-
----
-
-### Event Subscription Pattern
-
-Always subscribe in `OnInitialized()` and unsubscribe in `OnDestroy()`:
-
+**Pattern:**
 ```csharp
-protected override void OnInitialized()
-{
-    _delayFeature.OnOpenCompletedEvent += MyHandler;
-}
+// Create analytics instance
+var analytics = new UiAnalytics();
 
-private void OnDestroy()
+// Set custom callback
+analytics.SetCallback(new CustomAnalyticsCallback());
+
+// Pass to UiService constructor
+IUiServiceInit uiService = new UiService(new AddressablesUiAssetLoader(), analytics);
+uiService.Init(_uiConfigs);
+
+// Subscribe to UnityEvents
+analytics.OnUiOpened.AddListener(data => Debug.Log($"Opened: {data.UiName}"));
+
+// Access metrics
+var metrics = analytics.GetMetrics(typeof(MyPresenter));
+Debug.Log($"Opens: {metrics.OpenCount}, Load time: {metrics.LoadDuration}s");
+
+// Log summary
+analytics.LogPerformanceSummary();
+```
+
+**Custom Callback:**
+```csharp
+public class CustomAnalyticsCallback : IUiAnalyticsCallback
 {
-    if (_delayFeature != null)
-    {
-        _delayFeature.OnOpenCompletedEvent -= MyHandler;
-    }
+    public void OnUiLoaded(UiEventData data) { }
+    public void OnUiOpened(UiEventData data) { }
+    public void OnUiClosed(UiEventData data) { }
+    public void OnUiUnloaded(UiEventData data) { }
+    public void OnPerformanceMetricsUpdated(UiPerformanceMetrics metrics) { }
 }
 ```
 
 ---
 
-### Multiple Features Pattern
+### 7. UiSets
 
+**Files:**
+- `UiSetsExample.cs` - Scene setup and UI set management
+- `HudHealthBarPresenter.cs` - Example HUD element (health bar)
+- `HudCurrencyPresenter.cs` - Example HUD element (currency display)
+
+**Demonstrates:**
+- Grouping multiple UIs for simultaneous management
+- Common HUD pattern (health, currency, minimap, etc.)
+- Preloading UI sets for smooth transitions
+
+**Pattern:**
 ```csharp
-[RequireComponent(typeof(TimeDelayFeature))]
-[RequireComponent(typeof(UiToolkitPresenterFeature))]
-public class MyPresenter : UiPresenter
+// Define set IDs as enum for type safety
+public enum UiSetId { GameHud = 0, PauseMenu = 1 }
+
+// Load all UIs in a set (preload without showing)
+var loadTasks = _uiService.LoadUiSetAsync((int)UiSetId.GameHud);
+await UniTask.WhenAll(loadTasks);
+
+// Close all UIs in a set (hide but keep in memory)
+_uiService.CloseAllUiSet((int)UiSetId.GameHud);
+
+// Unload all UIs in a set (destroy)
+_uiService.UnloadUiSet((int)UiSetId.GameHud);
+
+// List configured sets
+foreach (var kvp in _uiService.UiSets)
 {
-    [SerializeField] private TimeDelayFeature _delayFeature;
-    [SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
-    
-    // Use both features together!
+    Debug.Log($"Set {kvp.Key}: {kvp.Value.UiInstanceIds.Length} UIs");
 }
 ```
 
+**Setup:**
+1. Create UI presenters for your HUD elements
+2. Configure them in `UiConfigs` with appropriate layers
+3. Create a UI Set in `UiConfigs` containing all HUD presenters
+4. Use `LoadUiSetAsync` to preload all at once
+
 ---
 
-## Creating Custom Features
+### 8. MultiInstance
 
-Follow this pattern to create your own features:
+**Files:**
+- `MultiInstanceExample.cs` - Scene setup and instance management
+- `NotificationPopupPresenter.cs` - Popup that supports multiple instances
 
+**Demonstrates:**
+- Creating multiple instances of the same UI type
+- Using instance addresses for unique identification
+- Managing popup stacking and notifications
+
+**Pattern:**
+```csharp
+// Create unique instance address
+var instanceAddress = $"popup_{_counter}";
+
+// Load with instance address
+await _uiService.LoadUiAsync(typeof(MyPopup), instanceAddress, openAfter: false);
+
+// Open specific instance
+await _uiService.OpenUiAsync(typeof(MyPopup), instanceAddress);
+
+// Check visibility of specific instance
+bool visible = _uiService.IsVisible<MyPopup>(instanceAddress);
+
+// Close specific instance
+_uiService.CloseUi(typeof(MyPopup), instanceAddress, destroy: true);
+
+// Unload specific instance
+_uiService.UnloadUi(typeof(MyPopup), instanceAddress);
+```
+
+**Key Concepts:**
+
+| Concept | Description |
+|---------|-------------|
+| `UiInstanceId` | Combines Type + InstanceAddress for unique identification |
+| Instance Address | A string that distinguishes instances (e.g., `"popup_1"`, `"popup_2"`) |
+| Default Instance | When instanceAddress is `null` or empty (singleton behavior) |
+
+---
+
+### 9. CustomFeatures
+
+**Files:**
+- `CustomFeaturesExample.cs` - Scene setup demonstrating custom features
+- `FadeFeature.cs` - Custom feature for fade in/out effects
+- `ScaleFeature.cs` - Custom feature for scale in/out with curves
+- `SoundFeature.cs` - Custom feature for open/close sounds
+- `FadingPresenter.cs` - Presenter using FadeFeature
+- `ScalingPresenter.cs` - Presenter using ScaleFeature
+- `FullFeaturedPresenter.cs` - Presenter combining all three features
+
+**Demonstrates:**
+- Creating custom presenter features
+- Extending `PresenterFeatureBase`
+- Implementing lifecycle hooks
+- Feature composition (multiple features on one presenter)
+
+**Pattern (Custom Transition Feature using ITransitionFeature):**
 ```csharp
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 using GameLovers.UiService;
 
-/// <summary>
-/// Custom feature that adds fade effect
-/// </summary>
 [RequireComponent(typeof(CanvasGroup))]
-public class FadeFeature : PresenterFeatureBase
+public class FadeFeature : PresenterFeatureBase, ITransitionFeature
 {
+    [SerializeField] private float _fadeInDuration = 0.3f;
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private float _fadeDuration = 0.3f;
-    
+
+    private UniTaskCompletionSource _openTransitionCompletion;
+    private UniTaskCompletionSource _closeTransitionCompletion;
+
+    // ITransitionFeature implementation - presenter awaits these
+    public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
+    public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
+
     private void OnValidate()
     {
         _canvasGroup = _canvasGroup ?? GetComponent<CanvasGroup>();
     }
-    
+
     public override void OnPresenterOpening()
     {
         _canvasGroup.alpha = 0f;
     }
-    
+
     public override void OnPresenterOpened()
     {
-        StartCoroutine(FadeIn());
+        FadeInAsync().Forget();
     }
-    
-    private IEnumerator FadeIn()
+
+    private async UniTask FadeInAsync()
     {
+        _openTransitionCompletion = new UniTaskCompletionSource();
+        
         float elapsed = 0f;
-        while (elapsed < _fadeDuration)
+        while (elapsed < _fadeInDuration)
         {
-            _canvasGroup.alpha = elapsed / _fadeDuration;
+            _canvasGroup.alpha = elapsed / _fadeInDuration;
             elapsed += Time.deltaTime;
-            yield return null;
+            await UniTask.Yield();
         }
         _canvasGroup.alpha = 1f;
+        
+        // Signal that transition is complete - presenter will await this
+        _openTransitionCompletion.TrySetResult();
     }
 }
 ```
 
-Use it:
+**Pattern (Using Custom Features):**
 ```csharp
 [RequireComponent(typeof(FadeFeature))]
-public class MyFadingPresenter : UiPresenter
+[RequireComponent(typeof(ScaleFeature))]
+[RequireComponent(typeof(SoundFeature))]
+public class FullFeaturedPresenter : UiPresenter
 {
-    // Fade happens automatically!
+    protected override void OnOpenTransitionCompleted()
+    {
+        // Called after ALL ITransitionFeature tasks complete
+        Debug.Log("All animations complete - UI is ready!");
+    }
 }
 ```
+
+**Lifecycle Hooks:**
+
+| Hook | When Called |
+|------|-------------|
+| `OnPresenterInitialized(presenter)` | Once when presenter is created |
+| `OnPresenterOpening()` | Before presenter becomes visible |
+| `OnPresenterOpened()` | After presenter is visible |
+| `OnPresenterClosing()` | Before presenter is hidden |
+| `OnPresenterClosed()` | After presenter is hidden |
 
 ---
 
 ## Best Practices
 
-### 1. One Component Per Feature
-Each feature is self-contained - no need for separate delayer components.
+### 1. Use Presenter Lifecycle Hooks for Transitions
 
-### 2. Clean Up Events
-Always unsubscribe from events in `OnDestroy()`.
+Override `OnOpenTransitionCompleted()` and `OnCloseTransitionCompleted()` to react to feature transitions:
 
-### 3. Use OnValidate
-Let Unity auto-assign component references in `OnValidate()`.
+```csharp
+protected override void OnOpenTransitionCompleted()
+{
+    // Called when delay/animation features complete their open transition
+    Debug.Log("UI is fully ready for interaction!");
+}
 
-### 4. Configure in Inspector
-Use `[SerializeField]` and let designers configure values in Unity's inspector.
+protected override void OnCloseTransitionCompleted()
+{
+    // Called when delay/animation features complete their close transition
+    Debug.Log("UI closing transition finished!");
+}
+```
 
-### 5. Compose Freely
-Mix and match features without worrying about inheritance conflicts.
+### 2. Use OnValidate for Auto-Assignment
+
+Let Unity auto-assign component references in the editor:
+
+```csharp
+private void OnValidate()
+{
+    _canvasGroup = _canvasGroup ?? GetComponent<CanvasGroup>();
+}
+```
+
+### 3. Configure in Inspector
+
+Use `[SerializeField]` to expose settings to designers:
+
+```csharp
+[SerializeField] private float _fadeDuration = 0.3f;
+[SerializeField] private AnimationCurve _easeCurve;
+```
+
+### 4. Compose Freely
+
+Mix and match features without worrying about inheritance conflicts:
+
+```csharp
+[RequireComponent(typeof(TimeDelayFeature))]
+[RequireComponent(typeof(UiToolkitPresenterFeature))]
+[RequireComponent(typeof(SoundFeature))]
+public class MyPresenter : UiPresenter { }
+```
 
 ---
 
 ## Architecture Benefits
 
-✅ **Self-Contained** - Each feature owns its complete logic  
-✅ **Composable** - Mix any features freely  
-✅ **Configurable** - All settings in Unity inspector  
-✅ **Clear** - One component = one capability  
-✅ **Scalable** - Add new features without modifying existing code  
+| Benefit | Description |
+|---------|-------------|
+| ✅ Self-Contained | Each feature owns its complete logic |
+| ✅ Composable | Mix any features freely |
+| ✅ Configurable | All settings in Unity inspector |
+| ✅ Clear | One component = one capability |
+| ✅ Scalable | Add new features without modifying existing code |
+
+---
+
+### 10. AssetLoadingStrategies
+
+**Files:**
+- `ExamplePresenter.cs` - Simple presenter for demonstration
+- `AssetLoadingExample.cs` - Runtime strategy switching with dropdown UI
+- `PrefabAssetLoadingConfigs.asset` - Config for PrefabRegistry strategy
+- `ResourcesAssetLoadingConfigs.asset` - Config for Resources strategy
+- `AddressablesAssetLoadingConfigs.asset` - Config for Addressables strategy
+- `Resources/ExamplePresenter.prefab` - Prefab copy for Resources loading
+
+**Demonstrates:**
+- Using different asset loading strategies (PrefabRegistry, Addressables, Resources)
+- Runtime strategy switching via dropdown
+- Switching loaders via the `IUiAssetLoader` abstraction
+- Setup requirements for each strategy
+
+**Strategy Availability:**
+
+| Strategy | Setup Required | Works After Import |
+|----------|---------------|-------------------|
+| **PrefabRegistry** | None | ✅ Yes |
+| **Resources** | None | ✅ Yes |
+| **Addressables** | Yes (see below) | ❌ No |
+
+**Addressables Setup (required for that strategy):**
+1. Open **Window > Asset Management > Addressables > Groups**
+2. If no groups exist, click **Create Addressables Settings**
+3. Find `ExamplePresenter.prefab` in the sample folder
+4. Check the **Addressable** checkbox in the prefab's Inspector
+5. Set the address to `ExamplePresenter` (must match the config)
+6. For testing: **Window > Asset Management > Addressables > Groups > Play Mode Script** → select **Use Asset Database (fastest)**
+7. For builds: Build the Addressables catalog before building the player
+
+**Pattern:**
+```csharp
+// Create loader based on strategy
+IUiAssetLoader loader = _strategy switch
+{
+    LoadingStrategy.PrefabRegistry => new PrefabRegistryUiAssetLoader(_prefabRegistryConfigs),
+    LoadingStrategy.Addressables => new AddressablesUiAssetLoader(),
+    LoadingStrategy.Resources => new ResourcesUiAssetLoader(),
+    _ => throw new ArgumentOutOfRangeException()
+};
+
+// Initialize service with loader and corresponding config
+_uiService = new UiService(loader);
+_uiService.Init(configs);
+```
+
+**Runtime Strategy Switching:**
+```csharp
+// Dispose current service before switching
+_uiService?.Dispose();
+_uiService = null;
+
+// Reinitialize with new strategy
+InitializeService(newStrategy);
+```
+
+---
+
+## Sample Scene Setup
+
+All samples use **UI buttons** for input to avoid dependency on any specific input system (legacy vs new). This ensures samples work regardless of your project's input configuration.
+
+### Prefab Structure
+
+When setting up a sample scene, create a UI Canvas with control buttons. Example structure:
+
+```
+Scene
+├── EventSystem (with StandaloneInputModule or InputSystemUIInputModule)
+├── SampleControlsCanvas (Screen Space - Overlay)
+│   └── VerticalLayoutGroup
+│       ├── HeaderText ("Sample Name")
+│       ├── Button_Action1 ("Load UI")
+│       ├── Button_Action2 ("Open UI")
+│       ├── Button_Action3 ("Close UI")
+│       └── ... more buttons as needed
+├── SampleExample (MonoBehaviour)
+│   ├── UiConfigs reference
+│   └── Button references (serialized fields)
+└── (UI presenter prefabs are instantiated at runtime by UiService)
+```
+
+### Button Wiring
+
+Each sample MonoBehaviour exposes button fields that should be wired in the inspector:
+
+```csharp
+[Header("UI Buttons")]
+[SerializeField] private Button _loadButton;
+[SerializeField] private Button _openButton;
+[SerializeField] private Button _closeButton;
+```
+
+The sample will:
+1. Subscribe to button click events in `Start()`
+2. Unsubscribe in `OnDestroy()` to prevent memory leaks
+3. Expose public methods that can also be called from code
+
+### Input System Compatibility
+
+| Project Setting | What Works |
+|-----------------|------------|
+| Legacy Input Manager | ✅ Buttons work via `StandaloneInputModule` |
+| New Input System | ✅ Buttons work via `InputSystemUIInputModule` |
+| Both | ✅ Either module works |
 
 ---
 
 ## Getting Started
 
 1. **Choose a sample** that matches your use case
-2. **Copy the pattern** to your own presenter
-3. **Add required features** via `[RequireComponent]`
-4. **Configure in inspector** - delays, animations, etc.
-5. **Subscribe to events** for feature completion notifications
+2. **Import it** via Package Manager
+3. **Create a scene** with a control Canvas and buttons (see structure above)
+4. **Wire button references** in the sample MonoBehaviour inspector
+5. **Copy the pattern** to your own presenter
+6. **Add required features** via `[RequireComponent]`
+7. **Configure in inspector** - delays, animations, etc.
+8. **Override transition hooks** (`OnOpenTransitionCompleted`, `OnCloseTransitionCompleted`) to react to feature completions
 
 ---
 
 ## Documentation
 
-For complete architecture documentation, see:
-- **[README.md](../README.md)** - Quick start guide
-- **[FINAL_SIMPLIFICATION.md](../FINAL_SIMPLIFICATION.md)** - Architecture details
-- **[FINAL_ARCHITECTURE_SUMMARY.md](../FINAL_ARCHITECTURE_SUMMARY.md)** - Complete overview
+For complete documentation, see:
+
+- **[docs/README.md](../docs/README.md)** - Documentation index
+- **[docs/getting-started.md](../docs/getting-started.md)** - Quick start guide
+- **[docs/core-concepts.md](../docs/core-concepts.md)** - Core concepts
+- **[docs/api-reference.md](../docs/api-reference.md)** - API reference
+- **[docs/advanced.md](../docs/advanced.md)** - Advanced topics
+- **[docs/troubleshooting.md](../docs/troubleshooting.md)** - Troubleshooting
 
 ---
 
-**All samples use the pure feature composition pattern introduced in architecture v2.0**
+**All samples use the feature composition pattern for maximum flexibility and reusability.**

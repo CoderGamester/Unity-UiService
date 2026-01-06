@@ -48,7 +48,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		public IUiAnalytics Analytics => _analytics;
 
-		public UiService() : this(new UiAssetLoader(), null) { }
+		public UiService() : this(new AddressablesUiAssetLoader(), null) { }
 
 		public UiService(IUiAssetLoader assetLoader) : this(assetLoader, null) { }
 
@@ -78,13 +78,13 @@ namespace GameLovers.UiService
 
 			foreach (var uiConfig in uiConfigs)
 			{
-				if (string.IsNullOrEmpty(uiConfig.AddressableAddress))
+				if (string.IsNullOrEmpty(uiConfig.Address))
 				{
-					throw new ArgumentException($"UiConfig for type '{uiConfig.UiType.Name}' has empty addressable address. This UI will fail to load.");
+					throw new ArgumentException($"UiConfig for type '{uiConfig.UiType.Name}' has empty address. This UI will fail to load.");
 				}
 				if (uiConfig.UiType == null)
 				{
-					throw new ArgumentException($"UiConfig with addressable '{uiConfig.AddressableAddress}' has null UiType, skipping");
+					throw new ArgumentException($"UiConfig with address '{uiConfig.Address}' has null UiType, skipping");
 				}
 
 				if (uiConfig.Layer < 0)
@@ -166,7 +166,7 @@ namespace GameLovers.UiService
 		{
 			if (!_uiConfigs.TryAdd(config.UiType, config))
 			{
-				Debug.LogWarning($"The UiConfig {config.AddressableAddress} was already added");
+				Debug.LogWarning($"The UiConfig {config.Address} was already added");
 			}
 		}
 
@@ -215,12 +215,24 @@ namespace GameLovers.UiService
 			// Ensure Canvas sorting order matches layer
 			EnsureCanvasSortingOrder(ui.gameObject, layer);
 
-			ui.Init(this);
+			ui.Init(this, instanceAddress);
 
 			if (openAfter)
 			{
 				OpenUi(instanceId);
 			}
+		}
+
+		/// <inheritdoc />
+		public bool RemoveUi<T>() where T : UiPresenter
+		{
+			return RemoveUi(typeof(T));
+		}
+
+		/// <inheritdoc />
+		public bool RemoveUi<T>(T uiPresenter) where T : UiPresenter
+		{
+			return RemoveUi(uiPresenter.GetType().UnderlyingSystemType, uiPresenter.InstanceAddress);
 		}
 
 		/// <inheritdoc />
@@ -291,9 +303,20 @@ namespace GameLovers.UiService
 		}
 
 		/// <inheritdoc />
+		public async UniTask<T> LoadUiAsync<T>(bool openAfter = false, CancellationToken cancellationToken = default) where T : UiPresenter
+		{
+			return await LoadUiAsync(typeof(T), openAfter, cancellationToken) as T;
+		}
+
+		/// <inheritdoc />
 		public async UniTask<UiPresenter> LoadUiAsync(Type type, bool openAfter = false, CancellationToken cancellationToken = default)
 		{
-			return await LoadUiAsync(type, ResolveInstanceAddress(type), openAfter, cancellationToken);
+			// Use config.Address as the default/singleton instance address to ensure consistency with UI set operations. ResolveInstanceAddress is only for existing instances
+			if (!_uiConfigs.TryGetValue(type, out var config))
+			{
+				throw new KeyNotFoundException($"The UiConfig of type {type} was not added to the service. Call {nameof(AddUiConfig)} first");
+			}
+			return await LoadUiAsync(type, config.Address, openAfter, cancellationToken);
 		}
 		
 		/// <summary>
@@ -316,7 +339,6 @@ namespace GameLovers.UiService
 			if (TryFindPresenter(type, instanceAddress, out var existingUi))
 			{
 				Debug.LogWarning($"The Ui {instanceId} was already loaded");
-				existingUi.gameObject.SetActive(openAfter);
 
 				return existingUi;
 			}
@@ -330,7 +352,6 @@ namespace GameLovers.UiService
 			if (TryFindPresenter(type, instanceAddress, out var uiDouble))
 			{
 				_assetLoader.UnloadAsset(gameObject);
-				uiDouble.gameObject.SetActive(openAfter);
 
 				return uiDouble;
 			}
@@ -367,6 +388,18 @@ namespace GameLovers.UiService
 		}
 
 		/// <inheritdoc />
+		public void UnloadUi<T>() where T : UiPresenter
+		{
+			UnloadUi(typeof(T));
+		}
+
+		/// <inheritdoc />
+		public void UnloadUi<T>(T uiPresenter) where T : UiPresenter
+		{
+			UnloadUi(uiPresenter.GetType().UnderlyingSystemType, uiPresenter.InstanceAddress);
+		}
+
+		/// <inheritdoc />
 		public void UnloadUi(Type type)
 		{
 			UnloadUi(type, ResolveInstanceAddress(type));
@@ -391,7 +424,6 @@ namespace GameLovers.UiService
 			RemoveUi(type, instanceAddress);
 
 			_assetLoader.UnloadAsset(ui.gameObject);
-			
 			_analytics.TrackUnload(type, config.Layer);
 		}
 
@@ -410,9 +442,20 @@ namespace GameLovers.UiService
 		}
 
 		/// <inheritdoc />
+		public async UniTask<T> OpenUiAsync<T>(CancellationToken cancellationToken = default) where T : UiPresenter
+		{
+			return await OpenUiAsync(typeof(T), cancellationToken) as T;
+		}
+
+		/// <inheritdoc />
 		public async UniTask<UiPresenter> OpenUiAsync(Type type, CancellationToken cancellationToken = default)
 		{
-			return await OpenUiAsync(type, ResolveInstanceAddress(type), cancellationToken);
+			// Use config.Address as the default/singleton instance address to ensure consistency with UI set operations. ResolveInstanceAddress is only for existing instances
+			if (!_uiConfigs.TryGetValue(type, out var config))
+			{
+				throw new KeyNotFoundException($"The UiConfig of type {type} was not added to the service. Call {nameof(AddUiConfig)} first");
+			}
+			return await OpenUiAsync(type, config.Address, cancellationToken);
 		}
 		
 		/// <summary>
@@ -431,9 +474,22 @@ namespace GameLovers.UiService
 		}
 
 		/// <inheritdoc />
+		public async UniTask<T> OpenUiAsync<T, TData>(TData initialData, CancellationToken cancellationToken = default) 
+			where T : class, IUiPresenterData 
+			where TData : struct
+		{
+			return await OpenUiAsync(typeof(T), initialData, cancellationToken) as T;
+		}
+
+		/// <inheritdoc />
 		public async UniTask<UiPresenter> OpenUiAsync<TData>(Type type, TData initialData, CancellationToken cancellationToken = default) where TData : struct
 		{
-			return await OpenUiAsync(type, ResolveInstanceAddress(type), initialData, cancellationToken);
+			// Use config.Address as the default/singleton instance address to ensure consistency with UI set operations. ResolveInstanceAddress is only for existing instances
+			if (!_uiConfigs.TryGetValue(type, out var config))
+			{
+				throw new KeyNotFoundException($"The UiConfig of type {type} was not added to the service. Call {nameof(AddUiConfig)} first");
+			}
+			return await OpenUiAsync(type, config.Address, initialData, cancellationToken);
 		}
 		
 		/// <summary>
@@ -449,7 +505,7 @@ namespace GameLovers.UiService
 
 			if (ui is UiPresenter<TData> uiPresenter)
 			{
-				uiPresenter.InternalSetData(initialData);
+				uiPresenter.Data = initialData;
 			}
 			else
 			{
@@ -461,6 +517,18 @@ namespace GameLovers.UiService
 			OpenUi(new UiInstanceId(type, instanceAddress));
 
 			return ui;
+		}
+
+		/// <inheritdoc />
+		public void CloseUi<T>(bool destroy = false) where T : UiPresenter
+		{
+			CloseUi(typeof(T), destroy);
+		}
+
+		/// <inheritdoc />
+		public void CloseUi<T>(T uiPresenter, bool destroy = false) where T : UiPresenter
+		{
+			CloseUi(uiPresenter.GetType().UnderlyingSystemType, uiPresenter.InstanceAddress, destroy);
 		}
 
 		/// <inheritdoc />
@@ -541,6 +609,24 @@ namespace GameLovers.UiService
 			}
 		}
 
+		/// <inheritdoc />
+		public async UniTask<UiPresenter[]> OpenUiSetAsync(int setId, CancellationToken cancellationToken = default)
+		{
+			if (!_uiSets.TryGetValue(setId, out var set))
+			{
+				throw new KeyNotFoundException($"UI Set with id {setId} not found.");
+			}
+
+			var openTasks = new List<UniTask<UiPresenter>>(set.UiInstanceIds.Length);
+			
+			foreach (var instanceId in set.UiInstanceIds)
+			{
+				openTasks.Add(OpenUiAsync(instanceId.PresenterType, instanceId.InstanceAddress, cancellationToken));
+			}
+
+			return await UniTask.WhenAll(openTasks);
+		}
+
 		/// <summary>
 		/// Disposes of the UI service, cleaning up all resources and unsubscribing from events.
 		/// </summary>
@@ -593,7 +679,6 @@ namespace GameLovers.UiService
 
 			// Clean up static events
 			// Note: We don't call RemoveAllListeners on static UnityEvents as it would affect other instances
-			// Users should unsubscribe from OnOrientationChanged and OnResolutionChanged in their own code
 
 			// Destroy UI parent GameObject
 			if (_uiParent != null)
@@ -671,10 +756,15 @@ namespace GameLovers.UiService
 		}
 
 		/// <summary>
-		/// Resolves the instance address for a given type when no specific instance is requested.
-		/// If only one instance of the type exists, returns that instance's address.
-		/// If multiple instances exist, returns the first one found and logs a warning.
-		/// If no instances exist, returns string.Empty (default).
+		/// Resolves the instance address for a given type when operating on an already-loaded presenter.
+		/// This is used by operations that need to find an existing instance (GetUi, IsVisible, CloseUi, etc.).
+		/// 
+		/// Priority:
+		/// 1. If no instances exist, return string.Empty (default/singleton)
+		/// 2. If exactly one instance exists, return that instance's address
+		/// 3. If multiple instances exist, return the first one found (with warning)
+		/// 
+		/// Note: This method should NOT be used for Load/Open operations that create new instances.
 		/// </summary>
 		/// <param name="type">The type of UI presenter to resolve</param>
 		/// <returns>The resolved instance address</returns>
@@ -682,7 +772,7 @@ namespace GameLovers.UiService
 		{
 			if (!_uiPresenters.TryGetValue(type, out var instances))
 			{
-				// No instances found, return default (string.Empty)
+				// No instances loaded - return empty string for default/singleton instance
 				return string.Empty;
 			}
 			

@@ -1,8 +1,9 @@
 using GameLovers.UiService;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UIElements;
 
-namespace GameLovers.UiServiceExamples
+namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Example implementation using time-based delays with UI Toolkit.
@@ -26,80 +27,78 @@ namespace GameLovers.UiServiceExamples
 		private Label _statusLabel;
 		private Button _closeButton;
 
+		/// <summary>
+		/// Event invoked when the close button is clicked, before the close transition begins.
+		/// Subscribe to this event to react to the presenter's close request.
+		/// </summary>
+		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
+
 		/// <inheritdoc />
 		protected override void OnInitialized()
 		{
+			base.OnInitialized();
 			Debug.Log("TimeDelayedUiToolkitPresenter: Initialized");
 
-			// Subscribe to delay completion
-			if (_delayFeature != null)
-			{
-				_delayFeature.OnOpenCompletedEvent += OnOpenDelayCompleted;
-			}
+			_toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
+		}
 
-			// Query UI Toolkit elements
-			var root = _toolkitFeature.Root;
+		private void SetupUI(VisualElement root)
+		{
+			// Unregister from old elements (may be stale after close/reopen)
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
+			
+			// Query fresh elements (UI Toolkit may recreate them on activate)
 			_titleLabel = root.Q<Label>("Title");
-			_statusLabel = root.Q<Label>("Status");
+			_statusLabel = root.Q<Label>("Message");
 			_closeButton = root.Q<Button>("CloseButton");
 
 			// Setup UI elements
 			if (_titleLabel != null)
 			{
-				_titleLabel.text = "Time-Delayed UI Toolkit";
+				_titleLabel.text = "Delayed UI Toolkit Example";
 			}
 
-			if (_closeButton != null)
-			{
-				_closeButton.clicked += OnCloseButtonClicked;
-			}
+			// Register callbacks on current elements
+			_closeButton?.RegisterCallback<ClickEvent>(OnCloseButtonClicked);
 		}
 
 		/// <inheritdoc />
 		protected override void OnOpened()
 		{
-			Debug.Log("TimeDelayedUiToolkitPresenter: Opened, starting delay...");
+			base.OnOpened();
 			
 			if (_statusLabel != null && _delayFeature != null)
 			{
 				_statusLabel.text = $"Opening with {_delayFeature.OpenDelayInSeconds}s delay...";
 			}
+
+			_closeButton?.SetEnabled(false);
 		}
 
-		private void OnOpenDelayCompleted()
+		/// <inheritdoc />
+		protected override void OnOpenTransitionCompleted()
 		{
-			Debug.Log("TimeDelayedUiToolkitPresenter: Opening delay completed!");
+			base.OnOpenTransitionCompleted();
 			
 			// Update UI after delay
 			if (_statusLabel != null)
 			{
-				_statusLabel.text = "Ready!";
+				_statusLabel.text = $"Opened successfully after {_delayFeature.OpenDelayInSeconds}s!";
 			}
 
-			if (_titleLabel != null)
-			{
-				_titleLabel.text = "Time-Delayed UI Toolkit - Ready!";
-			}
+			_closeButton?.SetEnabled(true);
 		}
 
-		private void OnCloseButtonClicked()
+		private void OnCloseButtonClicked(ClickEvent evt)
 		{
-			Debug.Log("Close button clicked, closing UI...");
-			Close(false);
+			OnCloseRequested.Invoke();
+			Close(destroy: false);
 		}
 
 		private void OnDestroy()
 		{
-			// Clean up event subscriptions
-			if (_delayFeature != null)
-			{
-				_delayFeature.OnOpenCompletedEvent -= OnOpenDelayCompleted;
-			}
-
-			if (_closeButton != null)
-			{
-				_closeButton.clicked -= OnCloseButtonClicked;
-			}
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
+			OnCloseRequested.RemoveAllListeners();
 		}
 	}
 }

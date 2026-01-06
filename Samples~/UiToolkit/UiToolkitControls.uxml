@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0); padding-left: 80px; padding-right: 80px; padding-top: 80px; padding-bottom: 80px; justify-content: flex-start; align-items: flex-start;">
+        <ui:Label text="UI Toolkit Example" style="-unity-font-style: bold; font-size: 52px; color: rgb(255, 255, 255); margin-bottom: 20px;"/>
+        <ui:Label text="Use the buttons to test basic UI lifecycle operations:&#10;• &lt;b&gt;Load&lt;/b&gt;: Load UI into memory&#10;• &lt;b&gt;Open&lt;/b&gt;: Make UI visible (load first if not in memory)&#10;• &lt;b&gt;Unload&lt;/b&gt;: Destroy UI from memory" name="description-label" style="font-size: 36px; color: rgb(200, 200, 200); margin-bottom: 40px; white-space: normal; max-width: 1200px;"/>
+        <ui:VisualElement name="button-container" style="flex-direction: column; align-items: flex-start;">
+            <ui:Button text="Load UI" name="load-button" style="width: 250px; height: 60px; font-size: 36px; margin-bottom: 15px;"/>
+            <ui:Button text="Open UI" name="open-button" style="width: 250px; height: 60px; font-size: 36px; margin-bottom: 15px;"/>
+            <ui:Button text="Unload UI" name="unload-button" style="width: 250px; height: 60px; font-size: 36px; margin-bottom: 15px;"/>
+        </ui:VisualElement>
+        <ui:Label text="Ready" name="status-label" style="font-size: 32px; color: rgb(150, 255, 150); margin-top: 30px; -unity-font-style: italic;"/>
+    </ui:VisualElement>
+</ui:UXML>

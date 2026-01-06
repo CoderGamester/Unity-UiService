@@ -4,6 +4,50 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
+## [1.1.0] - 2026-01-06
+
+**New**:
+- Added `OpenUiSetAsync(int setId, CancellationToken)` method to `IUiService` for opening all UI presenters in a set with proper address handling, ensuring compatibility with `CloseAllUiSet` and `UnloadUiSet`
+- Added `OnOpenTransitionCompleted()` and `OnCloseTransitionCompleted()` lifecycle hooks to `UiPresenter` for reacting after all transition animations/delays complete
+- Added comprehensive test suite:
+  - Unit tests for `UiAnalytics`, `UiConfig`, `UiInstanceId`, `UiServiceCore`, `UiSetConfig`
+  - PlayMode integration tests for multi-instance, loading, open/close, and UI set management
+  - Performance and smoke tests
+  - Feature-specific tests for `AnimationDelayFeature`, `TimeDelayFeature`, and `PresenterFeatureBase`
+- Added `ITransitionFeature` interface for features that provide open/close transition delays
+- Added `OpenTransitionTask` and `CloseTransitionTask` public properties on `UiPresenter` for awaiting transition completion externally
+- Added `AGENTS.md` documentation for AI coding agents
+- Added structured documentation under `docs/` folder with separate pages for getting started, core concepts, API reference, advanced topics, and troubleshooting
+- Added multiple new samples to the package library
+- Added multiple `IUiAssetLoader` implementations to support different asset loading scenarios:
+  - `AddressablesUiAssetLoader` (default): Integration with Unity Addressables.
+  - `PrefabRegistryUiAssetLoader`: Simple loader for direct prefab references (useful for testing and samples).
+  - `ResourcesUiAssetLoader`: Support for loading from Unity's `Resources` folder.
+- Added `AddressablesUiConfigs`, `ResourcesUiConfigs`, `PrefabRegistryUiConfigs`, `ResourcesUiConfigsEditor`, `AddressablesUiConfigsEditor` and `PrefabRegistryUiConfigsEditor` for managing UI configurations.
+
+**Changed**:
+- **BREAKING**: Made `UiConfigs` class `abstract` to enforce usage of specialized subclasses (`AddressablesUiConfigs`, `ResourcesUiConfigs`, `PrefabRegistryUiConfigs`) and prevent runtime errors from misconfiguration
+- **BREAKING**: Removed `IPresenterFeature` interface; features now extend `PresenterFeatureBase` directly
+- **BREAKING**: Renamed `UiAssetLoader` to `AddressablesUiAssetLoader` to reflect its specific loading mechanism.
+- **BREAKING**: Renamed `UiConfig.AddressableAddress` to `UiConfig.Address` for loader-agnosticism
+- Changed `UiPresenter<T>.Data` property to have a public setter that automatically triggers `OnSetData()` when assigned
+- Refactored `TimeDelayFeature` and `AnimationDelayFeature` to no longer call `gameObject.SetActive(false)` directly; visibility is now controlled solely by `UiPresenter`
+- Refactored `UiPresenter.InternalOpen()` and `InternalClose()` to use internal async processes that await `ITransitionFeature` tasks
+- Refactored `AnimationDelayFeature` and `TimeDelayFeature` to use `Presenter.NotifyOpenTransitionCompleted()` and `Presenter.NotifyCloseTransitionCompleted()` instead of internal events
+- Removed `OnOpenCompletedEvent` and `OnCloseCompletedEvent` internal events from delay features
+- Updated all samples to use UI buttons instead of input system dependencies for better project compatibility
+
+**Fixed**:
+- Fixed `AnimationDelayFeature` animation playback logic - was incorrectly checking `!_introAnimationClip` instead of `_introAnimationClip != null`
+- Fixed `UiPresenterEditor` play-mode buttons to properly call `InternalOpen()` and `InternalClose()` instead of just toggling `gameObject.SetActive()`
+- Fixed delay features to work correctly when tests run together (UniTaskCompletionSource lifecycle)
+- Fixed null checks in delay features using explicit null comparisons instead of null-conditional operators for Unity object compatibility
+- Fixed inconsistent lifecycle where `OnOpenTransitionCompleted`/`OnCloseTransitionCompleted` were only called when features existed
+- Fixed split responsibility for visibility control where both `UiPresenter` and features could call `SetActive(false)`, allowing now to properly close the presenters in all scenarios
+- Fixed `LoadUiAsync` visibility state inconsistency where calling it on an already-visible presenter with `openAfter=false` would disable the GameObject but not update `VisiblePresenters`, causing subsequent `OpenUiAsync` calls to fail silently
+- Fixed multi-instance ambiguity when calling `Close(destroy: true)` from within a presenter and now correctly unloads the specific instance instead of potentially unloading the wrong one
+- Fixed UI Toolkit timing issue where element queries in `OnInitialized()` would fail because the visual tree was not yet attached to a panel
+
 ## [1.0.0] - 2025-11-04
 
 **New**:

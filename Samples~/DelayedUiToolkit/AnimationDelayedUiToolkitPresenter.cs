@@ -1,8 +1,9 @@
 using GameLovers.UiService;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UIElements;
 
-namespace GameLovers.UiServiceExamples
+namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Data structure for the animated UI Toolkit example
@@ -36,39 +37,46 @@ namespace GameLovers.UiServiceExamples
 		private Label _titleLabel;
 		private Label _messageLabel;
 		private Label _scoreLabel;
-		private Label _statusLabel;
 		private Button _closeButton;
+
+		/// <summary>
+		/// Event invoked when the close button is clicked, before the close transition begins.
+		/// Subscribe to this event to react to the presenter's close request.
+		/// </summary>
+		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
 
 		/// <inheritdoc />
 		protected override void OnInitialized()
 		{
+			base.OnInitialized();
 			Debug.Log("AnimationDelayedUiToolkitPresenter: Initialized");
 
-			// Subscribe to animation completion
-			if (_animationFeature != null)
-			{
-				_animationFeature.OnOpenCompletedEvent += OnOpenAnimationCompleted;
-			}
+			_toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
+		}
 
-			// Query UI Toolkit elements
-			var root = _toolkitFeature.Root;
+		private void SetupUI(VisualElement root)
+		{
+			Debug.Log("AnimationDelayedUiToolkitPresenter: Visual tree ready, setting up UI elements");
+
+			// Unregister from old elements (may be stale after close/reopen)
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
+			
+			// Query fresh elements (UI Toolkit may recreate them on activate)
 			_titleLabel = root.Q<Label>("Title");
 			_messageLabel = root.Q<Label>("Message");
 			_scoreLabel = root.Q<Label>("Score");
-			_statusLabel = root.Q<Label>("Status");
 			_closeButton = root.Q<Button>("CloseButton");
 
-			// Setup button event
-			if (_closeButton != null)
-			{
-				_closeButton.clicked += OnCloseButtonClicked;
-			}
+			// Register callbacks on current elements
+			_closeButton?.RegisterCallback<ClickEvent>(OnCloseButtonClicked);
+
+			OnSetData();
 		}
 
 		/// <inheritdoc />
 		protected override void OnSetData()
 		{
-			Debug.Log($"AnimationDelayedUiToolkitPresenter: Data set - {Data.Title}");
+			base.OnSetData();
 
 			// Update UI elements with the provided data
 			if (_titleLabel != null)
@@ -88,51 +96,27 @@ namespace GameLovers.UiServiceExamples
 		}
 
 		/// <inheritdoc />
-		protected override void OnOpened()
+		protected override void OnOpenTransitionCompleted()
 		{
-			Debug.Log("AnimationDelayedUiToolkitPresenter: Opened, playing intro animation...");
-			
-			if (_statusLabel != null && _animationFeature != null)
-			{
-				var duration = _animationFeature.OpenDelayInSeconds;
-				_statusLabel.text = $"Playing animation ({duration:F2}s)...";
-			}
-		}
-
-		private void OnOpenAnimationCompleted()
-		{
-			Debug.Log("AnimationDelayedUiToolkitPresenter: Opening animation completed!");
+			base.OnOpenTransitionCompleted();
 			
 			// Update UI after animation
-			if (_statusLabel != null)
-			{
-				_statusLabel.text = "Animation Complete!";
-			}
-
 			if (_messageLabel != null)
 			{
 				_messageLabel.text = Data.Message + " (Ready)";
 			}
 		}
 
-		private void OnCloseButtonClicked()
+		private void OnCloseButtonClicked(ClickEvent evt)
 		{
-			Debug.Log("Close button clicked, closing UI with animation...");
-			Close(false);
+			OnCloseRequested.Invoke();
+			Close(destroy: false);
 		}
 
 		private void OnDestroy()
 		{
-			// Clean up event subscriptions
-			if (_animationFeature != null)
-			{
-				_animationFeature.OnOpenCompletedEvent -= OnOpenAnimationCompleted;
-			}
-
-			if (_closeButton != null)
-			{
-				_closeButton.clicked -= OnCloseButtonClicked;
-			}
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
+			OnCloseRequested.RemoveAllListeners();
 		}
 	}
 }

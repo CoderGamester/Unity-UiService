@@ -2,7 +2,7 @@
   "name": "com.gamelovers.uiservice",
   "displayName": "UiService",
   "author": "Miguel Tomas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "unity": "6000.0",
   "license": "MIT",
   "description": "This package provides a service to help manage an Unity's, game UI.\nIt allows to open, close, load, unload and request any Ui Configured in the game.\nThe package provides a Ui Set that allows to group a set of Ui Presenters to help load, open and close multiple Uis at the same time.\n\nTo help configure the game's UI you need to create a UiConfigs Scriptable object by:\n- Right Click on the Project View > Create > ScriptableObjects > Configs > UiConfigs",
@@ -11,5 +11,57 @@
     "com.cysharp.unitask": "2.5.10"
   },
   "type": "library",
-  "hideInEditor": false
+  "hideInEditor": false,
+  "samples": [
+    {
+      "displayName": "Basic UI Flow",
+      "description": "Basic UI presenter lifecycle: loading, opening, closing, and unloading UI.",
+      "path": "Samples~/BasicUiFlow"
+    },
+    {
+      "displayName": "Data Presenter",
+      "description": "Data-driven UI with UiPresenter<T>. Demonstrates initial data via OpenUiAsync and dynamic updates via the public Data property setter.",
+      "path": "Samples~/DataPresenter"
+    },
+    {
+      "displayName": "Delayed Presenter",
+      "description": "Time and animation-based delay features with TimeDelayFeature and AnimationDelayFeature.",
+      "path": "Samples~/DelayedPresenter"
+    },
+    {
+      "displayName": "UI Toolkit",
+      "description": "UI Toolkit integration using UiToolkitPresenterFeature.",
+      "path": "Samples~/UiToolkit"
+    },
+    {
+      "displayName": "Delayed UI Toolkit",
+      "description": "Combining delay features with UI Toolkit for advanced composition patterns.",
+      "path": "Samples~/DelayedUiToolkit"
+    },
+    {
+      "displayName": "Analytics",
+      "description": "Analytics callback integration for tracking UI lifecycle events and performance.",
+      "path": "Samples~/Analytics"
+    },
+    {
+      "displayName": "UI Sets",
+      "description": "Group multiple UIs to load, open, and close together (e.g., game HUD with health, currency, minimap).",
+      "path": "Samples~/UiSets"
+    },
+    {
+      "displayName": "Multi-Instance",
+      "description": "Create multiple instances of the same UI type (e.g., notification popups, chat windows).",
+      "path": "Samples~/MultiInstance"
+    },
+    {
+      "displayName": "Custom Features",
+      "description": "Create custom presenter features (fade, scale, sound) by extending PresenterFeatureBase.",
+      "path": "Samples~/CustomFeatures"
+    },
+    {
+      "displayName": "Asset Loading Strategies",
+      "description": "Compare PrefabRegistry, Addressables, and Resources loading strategies.",
+      "path": "Samples~/AssetLoadingStrategies"
+    }
+  ]
 }

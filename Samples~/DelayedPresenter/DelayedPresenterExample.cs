@@ -1,55 +1,76 @@
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.UI;
+using TMPro;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example demonstrating delayed UI presenters with animations and time delays
+	/// Example demonstrating delayed UI presenters with animations and time delays.
+	/// Uses UI buttons for input to avoid dependency on any specific input system.
 	/// </summary>
 	public class DelayedPresenterExample : MonoBehaviour
 	{
-		[SerializeField] private UiConfigs _uiConfigs;
+		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
+
+		[Header("UI Buttons")]
+		[SerializeField] private Button _openTimeDelayedButton;
+		[SerializeField] private Button _openAnimatedButton;
 		
-		private IUiService _uiService;
+		private IUiServiceInit _uiService;
 
 		private void Start()
 		{
 			// Initialize UI Service
-			_uiService = new UiService();
+			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
+
+			_uiService = new UiService(loader);
 			_uiService.Init(_uiConfigs);
 			
-			Debug.Log("=== Delayed Presenter Example Started ===");
-			Debug.Log("Press 1: Show Time-Delayed UI");
-			Debug.Log("Press 2: Show Animation-Delayed UI");
-			Debug.Log("Press 3: Close Active UI");
+			// Setup button listeners
+			_openTimeDelayedButton?.onClick.AddListener(OpenTimeDelayedUi);
+			_openAnimatedButton?.onClick.AddListener(OpenAnimatedUi);
 		}
 
-		private void Update()
+		private void OnDestroy()
 		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
+			_openTimeDelayedButton?.onClick.RemoveListener(OpenTimeDelayedUi);
+			_openAnimatedButton?.onClick.RemoveListener(OpenAnimatedUi);
+		}
+
+		/// <summary>
+		/// Opens the time-delayed UI presenter
+		/// </summary>
+		public async void OpenTimeDelayedUi()
+		{
+			CloseActiveUi();
+			await _uiService.OpenUiAsync<DelayedUiExamplePresenter>();
+		}
+
+		/// <summary>
+		/// Opens the animation-delayed UI presenter
+		/// </summary>
+		public async void OpenAnimatedUi()
+		{
+			CloseActiveUi();
+			await _uiService.OpenUiAsync<AnimatedUiExamplePresenter>();
+		}
+
+		/// <summary>
+		/// Closes the currently active UI
+		/// </summary>
+		public void CloseActiveUi()
+		{
+			if (_uiService.IsVisible<DelayedUiExamplePresenter>())
 			{
-				Debug.Log("Opening Time-Delayed UI (watch for delayed appearance)...");
-				_uiService.OpenUi<DelayedUiExamplePresenter>();
+				_uiService.CloseUi<DelayedUiExamplePresenter>(destroy: false);
 			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
+			else if (_uiService.IsVisible<AnimatedUiExamplePresenter>())
 			{
-				Debug.Log("Opening Animation-Delayed UI (watch for animation)...");
-				_uiService.OpenUi<AnimatedUiExamplePresenter>();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha3))
-			{
-				Debug.Log("Closing UI...");
-				
-				if (_uiService.IsUiOpen<DelayedUiExamplePresenter>())
-				{
-					_uiService.CloseUi<DelayedUiExamplePresenter>(destroy: false);
-				}
-				else if (_uiService.IsUiOpen<AnimatedUiExamplePresenter>())
-				{
-					_uiService.CloseUi<AnimatedUiExamplePresenter>(destroy: false);
-				}
+				_uiService.CloseUi<AnimatedUiExamplePresenter>(destroy: false);
 			}
 		}
 	}
 }
-

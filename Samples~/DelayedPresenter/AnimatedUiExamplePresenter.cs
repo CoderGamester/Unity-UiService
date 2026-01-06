@@ -1,4 +1,6 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using GameLovers.UiService;
 
@@ -6,14 +8,15 @@ namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Example UI Presenter with animation-based delays using the self-contained AnimationDelayFeature.
-	/// Demonstrates how animations automatically control timing and respond to animation completion.
+	/// Demonstrates how animations automatically control timing via the unified virtual hooks pattern.
+	/// No manual event subscription required - just override OnOpenTransitionCompleted/OnCloseTransitionCompleted.
 	/// </summary>
 	[RequireComponent(typeof(AnimationDelayFeature))]
 	public class AnimatedUiExamplePresenter : UiPresenter
 	{
 		[SerializeField] private AnimationDelayFeature _animationFeature;
-		[SerializeField] private Text _titleText;
-		[SerializeField] private Text _statusText;
+		[SerializeField] private TMP_Text _titleText;
+		[SerializeField] private TMP_Text _statusText;
 		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()
@@ -21,17 +24,19 @@ namespace GameLovers.UiService.Examples
 			base.OnInitialized();
 			Debug.Log("[AnimatedUiExample] UI Initialized");
 			
-			if (_closeButton != null)
-			{
-				_closeButton.onClick.AddListener(() => Close(destroy: false));
-			}
-			
-			// Subscribe to animation completion events
-			if (_animationFeature != null)
-			{
-				_animationFeature.OnOpenCompletedEvent += OnOpenAnimationCompleted;
-				_animationFeature.OnCloseCompletedEvent += OnCloseAnimationCompleted;
-			}
+			// Wire up the close button
+			_closeButton.onClick.AddListener(OnCloseButtonClicked);
+			_closeButton.gameObject.SetActive(false);
+		}
+
+		private void OnDestroy()
+		{
+			_closeButton.onClick.RemoveListener(OnCloseButtonClicked);
+		}
+
+		private void OnCloseButtonClicked()
+		{
+			Close(destroy: false);
 		}
 
 		protected override void OnOpened()
@@ -54,11 +59,23 @@ namespace GameLovers.UiService.Examples
 		protected override void OnClosed()
 		{
 			base.OnClosed();
-			Debug.Log("[AnimatedUiExample] UI Closed, outro animation playing...");
+			_closeButton.gameObject.SetActive(false);
+			Debug.Log("[AnimatedUiExample] UI Closing, playing outro animation...");
+			
+			if (_statusText != null && _animationFeature != null)
+			{
+				var duration = _animationFeature.CloseDelayInSeconds;
+				_statusText.text = $"Playing outro animation ({duration:F2}s)...";
+			}
 		}
 
-		private void OnOpenAnimationCompleted()
+		/// <summary>
+		/// Called automatically when the animation feature completes its open transition.
+		/// No manual subscription needed - just override this virtual method.
+		/// </summary>
+		protected override void OnOpenTransitionCompleted()
 		{
+			_closeButton.gameObject.SetActive(true);
 			Debug.Log("[AnimatedUiExample] Intro animation completed!");
 			
 			if (_statusText != null)
@@ -67,18 +84,17 @@ namespace GameLovers.UiService.Examples
 			}
 		}
 
-		private void OnCloseAnimationCompleted()
+		/// <summary>
+		/// Called automatically when the animation feature completes its close transition.
+		/// No manual subscription needed - just override this virtual method.
+		/// </summary>
+		protected override void OnCloseTransitionCompleted()
 		{
 			Debug.Log("[AnimatedUiExample] Outro animation completed!");
-		}
-
-		private void OnDestroy()
-		{
-			// Clean up event subscriptions
-			if (_animationFeature != null)
+			
+			if (_statusText != null)
 			{
-				_animationFeature.OnOpenCompletedEvent -= OnOpenAnimationCompleted;
-				_animationFeature.OnCloseCompletedEvent -= OnCloseAnimationCompleted;
+				_statusText.text = "Outro animation complete - Closed!";
 			}
 		}
 	}

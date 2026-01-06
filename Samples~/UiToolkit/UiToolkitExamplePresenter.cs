@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UIElements;
 using GameLovers.UiService;
 
@@ -13,55 +14,56 @@ namespace GameLovers.UiService.Examples
 	{
 		[SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
 
-		private Label _titleLabel;
-		private Label _descriptionLabel;
 		private Button _incrementButton;
 		private Button _closeButton;
 		private Label _counterLabel;
 		
 		private int _counter = 0;
 
+		/// <summary>
+		/// Event invoked when the close button is clicked, before the close transition begins.
+		/// Subscribe to this event to react to the presenter's close request.
+		/// </summary>
+		public UnityEvent OnCloseRequested { get; } = new UnityEvent();
+
 		protected override void OnInitialized()
 		{
 			base.OnInitialized();
 			Debug.Log("[UiToolkitExample] UI Initialized");
 			
-			// Get UI elements from the VisualElement root
-			var root = _toolkitFeature.Root;
-			_titleLabel = root.Q<Label>("TitleLabel");
-			_descriptionLabel = root.Q<Label>("DescriptionLabel");
+			_toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
+		}
+
+		private void SetupUI(VisualElement root)
+		{
+			Debug.Log("[UiToolkitExample] Visual tree ready, setting up UI elements");
+			
+			// Unregister from old elements (may be stale after close/reopen)
+			_incrementButton?.UnregisterCallback<ClickEvent>(OnIncrementClicked);
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
+			
+			// Query fresh elements (UI Toolkit may recreate them on activate)
 			_incrementButton = root.Q<Button>("IncrementButton");
 			_closeButton = root.Q<Button>("CloseButton");
 			_counterLabel = root.Q<Label>("CounterLabel");
 			
-			// Set up event handlers
-			if (_incrementButton != null)
-			{
-				_incrementButton.clicked += OnIncrementClicked;
-			}
-			
-			if (_closeButton != null)
-			{
-				_closeButton.clicked += () => Close(destroy: false);
-			}
+			// Register callbacks on current elements
+			_incrementButton?.RegisterCallback<ClickEvent>(OnIncrementClicked);
+			_closeButton?.RegisterCallback<ClickEvent>(OnCloseButtonClicked);
+
+			UpdateCounter();
+		}
+
+		private void OnCloseButtonClicked(ClickEvent evt)
+		{
+			OnCloseRequested.Invoke();
+			Close(destroy: false);
 		}
 
 		protected override void OnOpened()
 		{
 			base.OnOpened();
 			Debug.Log("[UiToolkitExample] UI Opened");
-			
-			if (_titleLabel != null)
-			{
-				_titleLabel.text = "UI Toolkit Example";
-			}
-			
-			if (_descriptionLabel != null)
-			{
-				_descriptionLabel.text = "This UI uses Unity's UI Toolkit with feature composition";
-			}
-			
-			UpdateCounter();
 		}
 
 		protected override void OnClosed()
@@ -70,7 +72,7 @@ namespace GameLovers.UiService.Examples
 			Debug.Log("[UiToolkitExample] UI Closed");
 		}
 
-		private void OnIncrementClicked()
+		private void OnIncrementClicked(ClickEvent evt)
 		{
 			_counter++;
 			UpdateCounter();
@@ -88,10 +90,10 @@ namespace GameLovers.UiService.Examples
 		private void OnDestroy()
 		{
 			// Clean up event handlers
-			if (_incrementButton != null)
-			{
-				_incrementButton.clicked -= OnIncrementClicked;
-			}
+			_incrementButton?.UnregisterCallback<ClickEvent>(OnIncrementClicked);
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
+
+			OnCloseRequested.RemoveAllListeners();
 		}
 	}
 }

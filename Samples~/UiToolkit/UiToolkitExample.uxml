@@ -1,15 +1,13 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.8); align-items: center; justify-content: center;">
-        <ui:VisualElement style="background-color: rgb(45, 45, 48); padding: 20px; border-radius: 10px; min-width: 400px; min-height: 300px;">
-            <ui:Label name="TitleLabel" text="UI Toolkit Example" style="font-size: 24px; -unity-font-style: bold; margin-bottom: 10px; -unity-text-align: upper-center;" />
-            <ui:Label name="DescriptionLabel" text="This UI uses Unity&apos;s UI Toolkit system" style="font-size: 14px; margin-bottom: 20px; -unity-text-align: upper-center;" />
-            
+        <ui:VisualElement style="background-color: rgb(45, 45, 48); padding: 60px; border-radius: 20px; min-width: 600px; min-height: 500px;">
+            <ui:Label name="TitleLabel" text="UI Toolkit Example" style="font-size: 52px; -unity-font-style: bold; margin-bottom: 20px; -unity-text-align: upper-center; color: rgb(255, 255, 255);"/>
+            <ui:Label name="DescriptionLabel" text="This UI uses Unity&apos;s UI Toolkit with feature composition" style="font-size: 28px; margin-bottom: 40px; -unity-text-align: upper-center; color: rgb(197, 197, 197);"/>
             <ui:VisualElement style="flex-grow: 1; align-items: center; justify-content: center;">
-                <ui:Label name="CounterLabel" text="Count: 0" style="font-size: 36px; -unity-font-style: bold; margin-bottom: 20px;" />
-                <ui:Button name="IncrementButton" text="Increment" style="width: 200px; height: 50px; font-size: 18px; margin-bottom: 10px;" />
-                <ui:Button name="CloseButton" text="Close" style="width: 200px; height: 50px; font-size: 18px;" />
+                <ui:Label name="CounterLabel" text="Count: 0" style="font-size: 72px; -unity-font-style: bold; margin-bottom: 40px; color: rgb(255, 255, 255);"/>
+                <ui:Button name="IncrementButton" text="Increment" style="width: 350px; height: 120px; font-size: 36px; margin-bottom: 20px;"/>
+                <ui:Button name="CloseButton" text="Close" style="width: 350px; height: 120px; font-size: 36px;"/>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
-

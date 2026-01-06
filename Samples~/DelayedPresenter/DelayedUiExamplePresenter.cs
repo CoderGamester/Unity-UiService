@@ -1,4 +1,6 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using GameLovers.UiService;
 
@@ -6,14 +8,14 @@ namespace GameLovers.UiService.Examples
 {
 	/// <summary>
 	/// Example UI Presenter with time-based delays using the new self-contained TimeDelayFeature.
-	/// Demonstrates how to configure delays and respond to delay completion events.
+	/// Demonstrates how to configure delays and respond to delay completion via presenter lifecycle hooks.
 	/// </summary>
 	[RequireComponent(typeof(TimeDelayFeature))]
 	public class DelayedUiExamplePresenter : UiPresenter
 	{
 		[SerializeField] private TimeDelayFeature _delayFeature;
-		[SerializeField] private Text _titleText;
-		[SerializeField] private Text _statusText;
+		[SerializeField] private TMP_Text _titleText;
+		[SerializeField] private TMP_Text _statusText;
 		[SerializeField] private Button _closeButton;
 
 		protected override void OnInitialized()
@@ -21,17 +23,19 @@ namespace GameLovers.UiService.Examples
 			base.OnInitialized();
 			Debug.Log("[DelayedUiExample] UI Initialized");
 			
-			if (_closeButton != null)
-			{
-				_closeButton.onClick.AddListener(() => Close(destroy: false));
-			}
-			
-			// Subscribe to delay completion events
-			if (_delayFeature != null)
-			{
-				_delayFeature.OnOpenCompletedEvent += OnOpenDelayCompleted;
-				_delayFeature.OnCloseCompletedEvent += OnCloseDelayCompleted;
-			}
+			// Wire up the close button
+			_closeButton.onClick.AddListener(OnCloseButtonClicked);
+			_closeButton.gameObject.SetActive(false);
+		}
+
+		private void OnDestroy()
+		{
+			_closeButton.onClick.RemoveListener(OnCloseButtonClicked);
+		}
+
+		private void OnCloseButtonClicked()
+		{
+			Close(destroy: false);
 		}
 
 		protected override void OnOpened()
@@ -53,11 +57,18 @@ namespace GameLovers.UiService.Examples
 		protected override void OnClosed()
 		{
 			base.OnClosed();
-			Debug.Log($"[DelayedUiExample] UI Closed after {_delayFeature.CloseDelayInSeconds}s delay");
+			_closeButton.gameObject.SetActive(false);
+			Debug.Log($"[DelayedUiExample] UI Closing with {_delayFeature.CloseDelayInSeconds}s delay...");
+			
+			if (_statusText != null)
+			{
+				_statusText.text = $"Closing with {_delayFeature.CloseDelayInSeconds}s delay...";
+			}
 		}
 
-		private void OnOpenDelayCompleted()
+		protected override void OnOpenTransitionCompleted()
 		{
+			_closeButton.gameObject.SetActive(true);
 			Debug.Log("[DelayedUiExample] Opening delay completed!");
 			
 			if (_statusText != null)
@@ -66,18 +77,13 @@ namespace GameLovers.UiService.Examples
 			}
 		}
 
-		private void OnCloseDelayCompleted()
+		protected override void OnCloseTransitionCompleted()
 		{
 			Debug.Log("[DelayedUiExample] Closing delay completed!");
-		}
-
-		private void OnDestroy()
-		{
-			// Clean up event subscriptions
-			if (_delayFeature != null)
+			
+			if (_statusText != null)
 			{
-				_delayFeature.OnOpenCompletedEvent -= OnOpenDelayCompleted;
-				_delayFeature.OnCloseCompletedEvent -= OnCloseDelayCompleted;
+				_statusText.text = $"Closed successfully after {_delayFeature.CloseDelayInSeconds}s!";
 			}
 		}
 	}

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
+  m_Name: PrefabRegistryUiConfigs
+  m_EditorClassIdentifier: GameLovers.UiService::GameLovers.UiService.PrefabRegistryUiConfigs
+  _configs:
+  - Address: DelayedUiExamplePresenter
+    Layer: 0
+    UiType: GameLovers.UiService.Examples.DelayedUiExamplePresenter, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - Address: AnimatedUiExamplePresenter
+    Layer: 0
+    UiType: GameLovers.UiService.Examples.AnimatedUiExamplePresenter, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  _sets:
+  - SetId: 0
+    UiEntries: []
+  - SetId: 1
+    UiEntries: []
+  - SetId: 2
+    UiEntries: []
+  - SetId: 3
+    UiEntries: []
+  - SetId: 4
+    UiEntries: []
+  - SetId: 5
+    UiEntries: []
+  _prefabEntries:
+  - Address: DelayedUiExamplePresenter
+    Prefab: {fileID: 100000, guid: 8113feac3cdea4f55abc635a277bdb0a, type: 3}
+  - Address: AnimatedUiExamplePresenter
+    Prefab: {fileID: 100000, guid: 947c73cf48f1c422d9f41e6ca241b755, type: 3}

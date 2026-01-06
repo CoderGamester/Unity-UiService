@@ -7,11 +7,15 @@ namespace GameLovers.UiService
 	/// <summary>
 	/// Feature that adds time-based delayed opening and closing to a <see cref="UiPresenter"/>.
 	/// Configure delays in seconds directly on this component.
+	/// Implements <see cref="ITransitionFeature"/> to allow the presenter to await transitions.
 	/// </summary>
-	public class TimeDelayFeature : PresenterFeatureBase
+	public class TimeDelayFeature : PresenterFeatureBase, ITransitionFeature
 	{
 		[SerializeField, Range(0f, float.MaxValue)] private float _openDelayInSeconds = 0.5f;
 		[SerializeField, Range(0f, float.MaxValue)] private float _closeDelayInSeconds = 0.3f;
+
+		private UniTaskCompletionSource _openTransitionCompletion;
+		private UniTaskCompletionSource _closeTransitionCompletion;
 
 		/// <summary>
 		/// Gets the delay in seconds before opening the presenter
@@ -23,31 +27,25 @@ namespace GameLovers.UiService
 		/// </summary>
 		public float CloseDelayInSeconds => _closeDelayInSeconds;
 
-		/// <summary>
-		/// Gets the UniTask of the current delay process
-		/// </summary>
-		public UniTask CurrentDelayTask { get; private set; }
+		/// <inheritdoc />
+		public UniTask OpenTransitionTask => _openTransitionCompletion?.Task ?? UniTask.CompletedTask;
 
-		/// <summary>
-		/// Event triggered when the opening delay is completed
-		/// </summary>
-		internal event Action OnOpenCompletedEvent;
-
-		/// <summary>
-		/// Event triggered when the closing delay is completed
-		/// </summary>
-		internal event Action OnCloseCompletedEvent;
+		/// <inheritdoc />
+		public UniTask CloseTransitionTask => _closeTransitionCompletion?.Task ?? UniTask.CompletedTask;
 
 		/// <inheritdoc />
 		public override void OnPresenterOpened()
 		{
-			OpenWithDelayAsync().Forget();
+			if (_openDelayInSeconds > 0)
+			{
+				OpenWithDelayAsync().Forget();
+			}
 		}
 
 		/// <inheritdoc />
 		public override void OnPresenterClosing()
 		{
-			if (Presenter && Presenter.gameObject)
+			if (_closeDelayInSeconds > 0 && Presenter && Presenter.gameObject)
 			{
 				CloseWithDelayAsync().Forget();
 			}
@@ -63,10 +61,7 @@ namespace GameLovers.UiService
 		/// Called when the presenter's opening delay is completed.
 		/// Override this in derived classes to add custom behavior.
 		/// </summary>
-		protected virtual void OnOpenedCompleted()
-		{
-			OnOpenCompletedEvent?.Invoke();
-		}
+		protected virtual void OnOpenedCompleted() { }
 
 		/// <summary>
 		/// Called when the presenter's closing delay starts.
@@ -78,36 +73,39 @@ namespace GameLovers.UiService
 		/// Called when the presenter's closing delay is completed.
 		/// Override this in derived classes to add custom behavior.
 		/// </summary>
-		protected virtual void OnClosedCompleted()
-		{
-			OnCloseCompletedEvent?.Invoke();
-		}
+		protected virtual void OnClosedCompleted() { }
 
 		private async UniTask OpenWithDelayAsync()
 		{
+			_openTransitionCompletion = new UniTaskCompletionSource();
+			
 			OnOpenStarted();
 
-			CurrentDelayTask = UniTask.Delay(TimeSpan.FromSeconds(_openDelayInSeconds));
-			await CurrentDelayTask;
+			await UniTask.Delay(TimeSpan.FromSeconds(_openDelayInSeconds));
 
-			if (gameObject != null)
+			if (this && gameObject)
 			{
 				OnOpenedCompleted();
 			}
+			
+			_openTransitionCompletion?.TrySetResult();
 		}
 
 		private async UniTask CloseWithDelayAsync()
 		{
+			_closeTransitionCompletion = new UniTaskCompletionSource();
+			
 			OnCloseStarted();
 
-			CurrentDelayTask = UniTask.Delay(TimeSpan.FromSeconds(_closeDelayInSeconds));
-			await CurrentDelayTask;
+			await UniTask.Delay(TimeSpan.FromSeconds(_closeDelayInSeconds));
 
-			if (gameObject != null)
+			if (this && gameObject)
 			{
-				gameObject.SetActive(false);
+				// Note: Visibility (SetActive) is now handled by UiPresenter after all transitions complete
 				OnClosedCompleted();
 			}
+			
+			_closeTransitionCompletion?.TrySetResult();
 		}
 	}
 }

@@ -2,7 +2,6 @@ using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using UnityEngine;
 
 // ReSharper disable CheckNamespace
 
@@ -105,7 +104,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		/// <typeparam name="T">The type of UI to remove.</typeparam>
 		/// <returns>True if the UI was removed, false otherwise.</returns>
-		bool RemoveUi<T>() where T : UiPresenter => RemoveUi(typeof(T));
+		bool RemoveUi<T>() where T : UiPresenter;
 
 		/// <summary>
 		/// Removes the specified UI presenter from the service without unloading it.
@@ -113,7 +112,7 @@ namespace GameLovers.UiService
 		/// <typeparam name="T">The type of UI presenter to remove.</typeparam>
 		/// <param name="uiPresenter">The UI presenter to remove.</param>
 		/// <returns>True if the UI presenter was removed, false otherwise.</returns>
-		bool RemoveUi<T>(T uiPresenter) where T : UiPresenter => RemoveUi(uiPresenter.GetType().UnderlyingSystemType);
+		bool RemoveUi<T>(T uiPresenter) where T : UiPresenter;
 
 		/// <summary>
 		/// Removes the UI of the specified type from the service without unloading it.
@@ -140,7 +139,7 @@ namespace GameLovers.UiService
 		/// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
 		/// <returns>A task that completes with the loaded UI.</returns>
 		/// <exception cref="KeyNotFoundException">Thrown if the service does not contain a UI configuration for the specified type.</exception>
-		async UniTask<T> LoadUiAsync<T>(bool openAfter = false, CancellationToken cancellationToken = default) where T : UiPresenter => (await LoadUiAsync(typeof(T), openAfter, cancellationToken)) as T;
+		UniTask<T> LoadUiAsync<T>(bool openAfter = false, CancellationToken cancellationToken = default) where T : UiPresenter;
 
 		/// <summary>
 		/// Loads the UI of the specified type asynchronously.
@@ -169,7 +168,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		/// <typeparam name="T">The type of UI to unload.</typeparam>
 		/// <exception cref="KeyNotFoundException">Thrown if the service does not contain a UI of the specified type.</exception>
-		void UnloadUi<T>() where T : UiPresenter => UnloadUi(typeof(T));
+		void UnloadUi<T>() where T : UiPresenter;
 
 		/// <summary>
 		/// Unloads the specified UI presenter.
@@ -177,7 +176,7 @@ namespace GameLovers.UiService
 		/// <typeparam name="T">The type of UI presenter to unload.</typeparam>
 		/// <param name="uiPresenter">The UI presenter to unload.</param>
 		/// <exception cref="KeyNotFoundException">Thrown if the service does not contain the specified UI presenter.</exception>
-		void UnloadUi<T>(T uiPresenter) where T : UiPresenter => UnloadUi(uiPresenter.GetType().UnderlyingSystemType);
+		void UnloadUi<T>(T uiPresenter) where T : UiPresenter;
 
 		/// <summary>
 		/// Unloads the UI of the specified type.
@@ -185,6 +184,14 @@ namespace GameLovers.UiService
 		/// <param name="type">The type of UI to unload.</param>
 		/// <exception cref="KeyNotFoundException">Thrown if the service does not contain a UI of the specified type.</exception>
 		void UnloadUi(Type type);
+
+		/// <summary>
+		/// Unloads a specific presenter instance of the specified type.
+		/// </summary>
+		/// <param name="type">The type of UI to unload.</param>
+		/// <param name="instanceAddress">The instance address (empty string for default/singleton instances).</param>
+		/// <exception cref="KeyNotFoundException">Thrown if the service does not contain a UI of the specified type and instance address.</exception>
+		void UnloadUi(Type type, string instanceAddress);
 
 		/// <summary>
 		/// Unloads all UI presenters from the specified UI set.
@@ -199,7 +206,7 @@ namespace GameLovers.UiService
 		/// <typeparam name="T">The type of UI presenter to open.</typeparam>
 		/// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
 		/// <returns>A task that completes when the UI presenter is opened.</returns>
-		async UniTask<T> OpenUiAsync<T>(CancellationToken cancellationToken = default) where T : UiPresenter => (await OpenUiAsync(typeof(T), cancellationToken)) as T;
+		UniTask<T> OpenUiAsync<T>(CancellationToken cancellationToken = default) where T : UiPresenter;
 
 		/// <summary>
 		/// Opens a UI presenter asynchronously, loading its assets if necessary.
@@ -217,9 +224,9 @@ namespace GameLovers.UiService
 		/// <param name="initialData">The initial data to set.</param>
 		/// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
 		/// <returns>A task that completes when the UI presenter is opened.</returns>
-		async UniTask<T> OpenUiAsync<T, TData>(TData initialData, CancellationToken cancellationToken = default) 
+		UniTask<T> OpenUiAsync<T, TData>(TData initialData, CancellationToken cancellationToken = default) 
 			where T : class, IUiPresenterData 
-			where TData : struct => await OpenUiAsync(typeof(T), initialData, cancellationToken) as T;
+			where TData : struct;
 
 		/// <summary>
 		/// Opens a UI presenter asynchronously, loading its assets if necessary, and sets its initial data.
@@ -231,11 +238,23 @@ namespace GameLovers.UiService
 		UniTask<UiPresenter> OpenUiAsync<TData>(Type type, TData initialData, CancellationToken cancellationToken = default) where TData : struct;
 
 		/// <summary>
+		/// Opens all UI presenters in the specified UI set, loading them if necessary.
+		/// This method ensures proper address handling for UI sets, making it safe to use
+		/// in combination with <see cref="CloseAllUiSet"/> and <see cref="UnloadUiSet"/>.
+		/// All UIs in the set are opened in parallel using UniTask.WhenAll.
+		/// </summary>
+		/// <param name="setId">The ID of the UI set to open.</param>
+		/// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+		/// <returns>A task that completes with an array of all opened UI presenters when all UIs in the set are opened.</returns>
+		/// <exception cref="KeyNotFoundException">Thrown if the service does not contain a UI set with the specified ID.</exception>
+		UniTask<UiPresenter[]> OpenUiSetAsync(int setId, CancellationToken cancellationToken = default);
+
+		/// <summary>
 		/// Closes a UI presenter and optionally destroys its assets.
 		/// </summary>
 		/// <typeparam name="T">The type of UI presenter to close.</typeparam>
 		/// <param name="destroy">Whether to destroy the UI presenter's assets.</param>
-		void CloseUi<T>(bool destroy = false) where T : UiPresenter => CloseUi(typeof(T), destroy);
+		void CloseUi<T>(bool destroy = false) where T : UiPresenter;
 
 		/// <summary>
 		/// Closes a UI presenter and optionally destroys its assets.
@@ -243,7 +262,7 @@ namespace GameLovers.UiService
 		/// <param name="uiPresenter">The UI presenter to close.</param>
 		/// <param name="destroy">Whether to destroy the UI presenter's assets.</param>
 		/// <returns>A task that completes when the UI presenter is closed.</returns>
-		void CloseUi<T>(T uiPresenter, bool destroy = false) where T : UiPresenter => CloseUi(uiPresenter.GetType().UnderlyingSystemType, destroy);
+		void CloseUi<T>(T uiPresenter, bool destroy = false) where T : UiPresenter;
 
 		/// <summary>
 		/// Closes a UI presenter and optionally destroys its assets.
@@ -252,6 +271,14 @@ namespace GameLovers.UiService
 		/// <param name="destroy">Whether to destroy the UI presenter's assets.</param>
 		/// <returns>A task that completes when the UI presenter is closed.</returns>
 		void CloseUi(Type type, bool destroy = false);
+
+		/// <summary>
+		/// Closes a specific presenter instance and optionally destroys its assets.
+		/// </summary>
+		/// <param name="type">The type of UI presenter to close.</param>
+		/// <param name="instanceAddress">The instance address (empty string for default/singleton instances).</param>
+		/// <param name="destroy">Whether to destroy the UI presenter's assets.</param>
+		void CloseUi(Type type, string instanceAddress, bool destroy = false);
 
 		/// <summary>
 		/// Closes all visible UI presenters.
@@ -271,7 +298,7 @@ namespace GameLovers.UiService
 		void CloseAllUiSet(int setId);
 	}
 
-	/// <inheritdoc />
+	/// <inheritdoc cref="IUiService" />
 	/// <remarks>
 	/// This interface provides a way to initialize the UI service with the game's UI configurations.
 	/// </remarks>

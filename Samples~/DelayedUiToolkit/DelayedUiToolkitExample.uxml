@@ -1,10 +1,15 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="Container" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.8); align-items: center; justify-content: center;">
-        <ui:VisualElement name="Panel" style="background-color: rgb(45, 45, 48); padding-left: 20px; padding-right: 20px; padding-top: 20px; padding-bottom: 20px; border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; min-width: 400px; min-height: 300px; align-items: center; justify-content: center;">
-            <ui:Label text="Title" display-tooltip-when-elided="true" name="Title" style="font-size: 32px; -unity-font-style: bold; color: rgb(255, 255, 255); margin-bottom: 20px;" />
-            <ui:Label text="Message" display-tooltip-when-elided="true" name="Message" style="font-size: 18px; color: rgb(200, 200, 200); margin-bottom: 10px; white-space: normal; max-width: 350px;" />
-            <ui:Label text="Score: 0" display-tooltip-when-elided="true" name="Score" style="font-size: 24px; -unity-font-style: bold; color: rgb(100, 200, 255); margin-top: 20px; margin-bottom: 30px;" />
-            <ui:Button text="Close" display-tooltip-when-elided="true" name="CloseButton" style="padding-left: 30px; padding-right: 30px; padding-top: 10px; padding-bottom: 10px; font-size: 18px; background-color: rgb(200, 50, 50); color: rgb(255, 255, 255); border-top-left-radius: 5px; border-bottom-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px;" />
+    <!-- Container: anchors 0.3-1 horizontally (right 70%), full height - matches Canvas RectTransform -->
+    <ui:VisualElement name="Container" style="flex-grow: 1; flex-direction: row; justify-content: flex-end;">
+        <!-- Outer wrapper: 70% width positioned on right side -->
+        <ui:VisualElement name="OuterWrapper" style="width: 70%; height: 100%;">
+            <!-- Panel: inner area with 50px horizontal margin, 100px vertical margin, semi-transparent background -->
+            <ui:VisualElement name="Panel" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.5); margin-left: 50px; margin-right: 50px; margin-top: 100px; margin-bottom: 100px; align-items: center; justify-content: center;">
+                <ui:Label text="Title" display-tooltip-when-elided="true" name="Title" style="font-size: 52px; -unity-font-style: bold; color: rgb(255, 255, 255); margin-bottom: 20px; -unity-text-align: upper-center;" />
+                <ui:Label text="Message" display-tooltip-when-elided="true" name="Message" style="font-size: 42px; color: rgb(200, 200, 200); margin-bottom: 40px; white-space: normal; -unity-text-align: upper-center;" />
+                <ui:Label text="Score: 0" display-tooltip-when-elided="true" name="Score" style="font-size: 72px; -unity-font-style: bold; color: rgb(100, 200, 255); margin-top: 20px; margin-bottom: 40px; -unity-text-align: upper-center;" />
+                <ui:Button text="Close" display-tooltip-when-elided="true" name="CloseButton" style="width: 350px; height: 120px; font-size: 36px; background-color: rgb(77, 153, 230); color: rgb(255, 255, 255); border-radius: 10px;" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -1,41 +1,82 @@
 using UnityEngine;
+using UnityEngine.UIElements;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example demonstrating UI Toolkit integration with UiService
+	/// Example demonstrating UI Toolkit integration with UiService.
+	/// Uses UI Toolkit for both the example controls and the presenter.
 	/// </summary>
 	public class UiToolkitExample : MonoBehaviour
 	{
-		[SerializeField] private UiConfigs _uiConfigs;
-		
-		private IUiService _uiService;
+		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
+		[SerializeField] private UIDocument _uiDocument;
 
-		private void Start()
+		private IUiServiceInit _uiService;
+		private Label _statusLabel;
+
+		private async void Start()
 		{
 			// Initialize UI Service
-			_uiService = new UiService();
+			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
+
+			_uiService = new UiService(loader);
 			_uiService.Init(_uiConfigs);
 			
-			Debug.Log("=== UI Toolkit Example Started ===");
-			Debug.Log("Press 1: Open UI Toolkit UI");
-			Debug.Log("Press 2: Close UI Toolkit UI");
-			Debug.Log("");
-			Debug.Log("Note: Make sure to create a UXML document and assign it to the UIDocument component");
+			// Setup button listeners from UIDocument
+			var root = _uiDocument.rootVisualElement;
+			
+			_statusLabel = root.Q<Label>("status-label");
+			
+			root.Q<Button>("load-button")?.RegisterCallback<ClickEvent>(_ => LoadUiToolkit());
+			root.Q<Button>("open-button")?.RegisterCallback<ClickEvent>(_ => OpenUiToolkit());
+			root.Q<Button>("unload-button")?.RegisterCallback<ClickEvent>(_ => UnloadUiToolkit());
+			
+			// Pre-load the presenter and subscribe to close events
+			var presenter = await _uiService.LoadUiAsync<UiToolkitExamplePresenter>();
+			presenter.OnCloseRequested.AddListener(() => UpdateStatus("UI Closed but still in memory"));
+
+			UpdateStatus("Ready");
 		}
 
-		private void Update()
+		private void OnDestroy()
 		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
+		}
+
+		/// <summary>
+		/// Loads the UI Toolkit presenter into memory without showing it
+		/// </summary>
+		public void LoadUiToolkit()
+		{
+			_uiService.LoadUiAsync<UiToolkitExamplePresenter>().Forget();
+			UpdateStatus("UI Loaded (but not visible yet)");
+		}
+
+		/// <summary>
+		/// Opens (shows) the UI Toolkit presenter
+		/// </summary>
+		public async void OpenUiToolkit()
+		{
+			await _uiService.OpenUiAsync<UiToolkitExamplePresenter>();
+			UpdateStatus("UI Opened");
+		}
+
+		/// <summary>
+		/// Unloads (destroys) the UI Toolkit presenter from memory
+		/// </summary>
+		public void UnloadUiToolkit()
+		{
+			_uiService.UnloadUi<UiToolkitExamplePresenter>();
+			UpdateStatus("UI Destroyed and removed from memory");
+		}
+
+		private void UpdateStatus(string message)
+		{
+			if (_statusLabel != null)
 			{
-				Debug.Log("Opening UI Toolkit UI...");
-				_uiService.OpenUi<UiToolkitExamplePresenter>();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
-			{
-				Debug.Log("Closing UI Toolkit UI...");
-				_uiService.CloseUi<UiToolkitExamplePresenter>(destroy: false);
+				_statusLabel.text = message;
 			}
 		}
 	}

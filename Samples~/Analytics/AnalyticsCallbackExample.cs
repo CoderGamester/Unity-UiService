@@ -1,165 +1,140 @@
 using UnityEngine;
+using UnityEngine.UI;
 using GameLovers.UiService;
+using Cysharp.Threading.Tasks;
+using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example implementation of custom analytics callback
-	/// This demonstrates how to integrate with external analytics services
-	/// </summary>
-	public class CustomAnalyticsCallback : IUiAnalyticsCallback
-	{
-		public void OnUiLoaded(UiEventData data)
-		{
-			Debug.Log($"[CustomAnalytics] UI Loaded: {data.UiName} on layer {data.Layer} at {data.Timestamp}s");
-			
-			// Example: Send to your analytics service
-			// AnalyticsService.TrackEvent("ui_loaded", new {
-			//     ui_name = data.UiName,
-			//     layer = data.Layer,
-			//     timestamp = data.Timestamp
-			// });
-		}
-
-		public void OnUiOpened(UiEventData data)
-		{
-			Debug.Log($"[CustomAnalytics] UI Opened: {data.UiName} on layer {data.Layer}");
-			
-			// Example: Send to your analytics service
-			// AnalyticsService.TrackEvent("ui_opened", new {
-			//     ui_name = data.UiName,
-			//     layer = data.Layer
-			// });
-		}
-
-		public void OnUiClosed(UiEventData data)
-		{
-			Debug.Log($"[CustomAnalytics] UI Closed: {data.UiName} (destroyed: {data.WasDestroyed})");
-			
-			// Example: Send to your analytics service
-			// AnalyticsService.TrackEvent("ui_closed", new {
-			//     ui_name = data.UiName,
-			//     was_destroyed = data.WasDestroyed
-			// });
-		}
-
-		public void OnUiUnloaded(UiEventData data)
-		{
-			Debug.Log($"[CustomAnalytics] UI Unloaded: {data.UiName}");
-			
-			// Example: Send to your analytics service
-			// AnalyticsService.TrackEvent("ui_unloaded", new {
-			//     ui_name = data.UiName
-			// });
-		}
-
-		public void OnPerformanceMetricsUpdated(UiPerformanceMetrics metrics)
-		{
-			Debug.Log($"[CustomAnalytics] Performance Updated: {metrics.UiName} - " +
-					  $"Load: {metrics.LoadDuration:F3}s, Open: {metrics.OpenDuration:F3}s, " +
-					  $"Close: {metrics.CloseDuration:F3}s");
-			
-			// Example: Send performance metrics to your analytics service
-			// AnalyticsService.TrackPerformance("ui_performance", new {
-			//     ui_name = metrics.UiName,
-			//     load_duration = metrics.LoadDuration,
-			//     open_duration = metrics.OpenDuration,
-			//     close_duration = metrics.CloseDuration
-			// });
-		}
-	}
-
-	/// <summary>
-	/// Example demonstrating UI analytics integration
+	/// Example demonstrating UI analytics integration.
+	/// Uses UI buttons for input to avoid dependency on any specific input system.
+	/// 
+	/// Shows how to:
+	/// - Create and configure a UiAnalytics instance
+	/// - Set a custom callback for analytics events
+	/// - Subscribe to analytics UnityEvents
+	/// - View performance metrics
 	/// </summary>
 	public class AnalyticsExample : MonoBehaviour
 	{
-		[SerializeField] private UiConfigs _uiConfigs;
+		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
+
+		[Header("UI Buttons")]
+		[SerializeField] private Button _loadButton;
+		[SerializeField] private Button _openButton;
+		[SerializeField] private Button _viewSummaryButton;
+		[SerializeField] private Button _clearDataButton;
+
+		[Header("UI Elements")]
+		[SerializeField] private TMP_Text _statusText;
 		
-		private IUiService _uiService;
+		private IUiServiceInit _uiService;
+		private UiAnalytics _analytics;
 		private CustomAnalyticsCallback _analyticsCallback;
 
-		private void Start()
+		private async void Start()
 		{
-			// Initialize analytics callback
+			// Create analytics instance
+			_analytics = new UiAnalytics();
+			
+			// Set custom callback for analytics events
 			_analyticsCallback = new CustomAnalyticsCallback();
-			UiAnalytics.SetCallback(_analyticsCallback);
+			_analytics.SetCallback(_analyticsCallback);
 			
-			// Enable analytics (enabled by default)
-			UiAnalytics.IsEnabled = true;
-			
-			// Subscribe to analytics events
+			// Subscribe to analytics UnityEvents (alternative to callback)
 			SubscribeToAnalyticsEvents();
 			
-			// Initialize UI Service
-			_uiService = new UiService();
+			// Initialize UI Service with analytics
+			var loader = new PrefabRegistryUiAssetLoader(_uiConfigs);
+
+			_uiService = new UiService(loader, _analytics);
 			_uiService.Init(_uiConfigs);
 			
-			Debug.Log("=== Analytics Example Started ===");
-			Debug.Log("Press 1: Load UI (track load time)");
-			Debug.Log("Press 2: Open UI (track open time)");
-			Debug.Log("Press 3: Close UI (track close time)");
-			Debug.Log("Press 4: View Performance Summary");
-			Debug.Log("Press 5: Clear Analytics Data");
+			// Setup button listeners
+			_loadButton?.onClick.AddListener(LoadUi);
+			_openButton?.onClick.AddListener(OpenUi);
+			_viewSummaryButton?.onClick.AddListener(ViewPerformanceSummary);
+			_clearDataButton?.onClick.AddListener(ClearAnalyticsData);
+			
+			// Pre-load presenter and subscribe to close events
+			var presenter = await _uiService.LoadUiAsync<AnalyticsExamplePresenter>();
+			presenter.OnCloseRequested.AddListener(() => UpdateStatus("UI Closed"));
 		}
 
 		private void OnDestroy()
 		{
 			// Unsubscribe from events
 			UnsubscribeFromAnalyticsEvents();
+			
+			// Remove button listeners
+			_loadButton?.onClick.RemoveListener(LoadUi);
+			_openButton?.onClick.RemoveListener(OpenUi);
+			_viewSummaryButton?.onClick.RemoveListener(ViewPerformanceSummary);
+			_clearDataButton?.onClick.RemoveListener(ClearAnalyticsData);
+			
+			// Dispose the UI service
+			_uiService?.Dispose();
 		}
 
-		private void Update()
+		/// <summary>
+		/// Loads the UI with analytics tracking
+		/// </summary>
+		public void LoadUi()
 		{
-			if (Input.GetKeyDown(KeyCode.Alpha1))
-			{
-				Debug.Log("Loading UI with analytics tracking...");
-				_uiService.LoadUi<BasicUiExamplePresenter>();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha2))
-			{
-				Debug.Log("Opening UI with analytics tracking...");
-				_uiService.OpenUi<BasicUiExamplePresenter>();
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha3))
-			{
-				Debug.Log("Closing UI with analytics tracking...");
-				_uiService.CloseUi<BasicUiExamplePresenter>(destroy: false);
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha4))
-			{
-				Debug.Log("Displaying performance summary...");
-				UiAnalytics.LogPerformanceSummary();
-				
-				// Get specific metrics
-				var metrics = UiAnalytics.GetMetrics(typeof(BasicUiExamplePresenter));
-				Debug.Log($"\nDetailed metrics for BasicUiExamplePresenter:");
-				Debug.Log($"  Opens: {metrics.OpenCount}, Closes: {metrics.CloseCount}");
-				Debug.Log($"  Lifetime: {metrics.TotalLifetime:F1}s");
-			}
-			else if (Input.GetKeyDown(KeyCode.Alpha5))
-			{
-				Debug.Log("Clearing all analytics data...");
-				UiAnalytics.Clear();
-			}
+			_uiService.LoadUiAsync<AnalyticsExamplePresenter>().Forget();
+			UpdateStatus("UI Loaded");
+		}
+
+		/// <summary>
+		/// Opens the UI with analytics tracking
+		/// </summary>
+		public async void OpenUi()
+		{
+			await _uiService.OpenUiAsync<AnalyticsExamplePresenter>();
+			UpdateStatus("UI Opened");
+		}
+
+		/// <summary>
+		/// Displays performance summary and detailed metrics
+		/// </summary>
+		public void ViewPerformanceSummary()
+		{
+			_analytics.LogPerformanceSummary();
+			
+			// Get specific metrics
+			var metrics = _analytics.GetMetrics(typeof(AnalyticsExamplePresenter));
+			UpdateStatus($"Metrics: Opens={metrics.OpenCount}, Closes={metrics.CloseCount}, Lifetime={metrics.TotalLifetime:F1}s");
+		}
+
+		/// <summary>
+		/// Clears all analytics data
+		/// </summary>
+		public void ClearAnalyticsData()
+		{
+			_analytics.Clear();
+			UpdateStatus("Analytics data cleared");
 		}
 
 		private void SubscribeToAnalyticsEvents()
 		{
-			UiAnalytics.OnUiLoaded.AddListener(OnUiLoadedEvent);
-			UiAnalytics.OnUiOpened.AddListener(OnUiOpenedEvent);
-			UiAnalytics.OnUiClosed.AddListener(OnUiClosedEvent);
-			UiAnalytics.OnUiUnloaded.AddListener(OnUiUnloadedEvent);
-			UiAnalytics.OnPerformanceMetricsUpdated.AddListener(OnPerformanceUpdatedEvent);
+			// Subscribe to UnityEvents from the analytics instance
+			_analytics.OnUiLoaded.AddListener(OnUiLoadedEvent);
+			_analytics.OnUiOpened.AddListener(OnUiOpenedEvent);
+			_analytics.OnUiClosed.AddListener(OnUiClosedEvent);
+			_analytics.OnUiUnloaded.AddListener(OnUiUnloadedEvent);
+			_analytics.OnPerformanceMetricsUpdated.AddListener(OnPerformanceUpdatedEvent);
 		}
 
 		private void UnsubscribeFromAnalyticsEvents()
 		{
-			UiAnalytics.OnUiLoaded.RemoveListener(OnUiLoadedEvent);
-			UiAnalytics.OnUiOpened.RemoveListener(OnUiOpenedEvent);
-			UiAnalytics.OnUiClosed.RemoveListener(OnUiClosedEvent);
-			UiAnalytics.OnUiUnloaded.RemoveListener(OnUiUnloadedEvent);
-			UiAnalytics.OnPerformanceMetricsUpdated.RemoveListener(OnPerformanceUpdatedEvent);
+			if (_analytics == null) return;
+			
+			_analytics.OnUiLoaded.RemoveListener(OnUiLoadedEvent);
+			_analytics.OnUiOpened.RemoveListener(OnUiOpenedEvent);
+			_analytics.OnUiClosed.RemoveListener(OnUiClosedEvent);
+			_analytics.OnUiUnloaded.RemoveListener(OnUiUnloadedEvent);
+			_analytics.OnPerformanceMetricsUpdated.RemoveListener(OnPerformanceUpdatedEvent);
 		}
 
 		private void OnUiLoadedEvent(UiEventData data)
@@ -186,6 +161,14 @@ namespace GameLovers.UiService.Examples
 		{
 			// This fires frequently, so we don't log every update
 			// Debug.Log($"[Event] Performance Updated: {metrics.UiName}");
+		}
+
+		private void UpdateStatus(string message)
+		{
+			if (_statusText != null)
+			{
+				_statusText.text = message;
+			}
 		}
 	}
 }
