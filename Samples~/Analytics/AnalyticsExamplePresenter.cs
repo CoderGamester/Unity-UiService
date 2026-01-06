@@ -44,7 +44,7 @@ namespace GameLovers.UiService.Examples
 		protected override void OnOpened()
 		{
 			base.OnOpened();
-			Debug.Log($"[{nameof(AnalyticsExamplePresenter)}] Closed");
+			Debug.Log($"[{nameof(AnalyticsExamplePresenter)}] Opened");
 		}
 
 		protected override void OnClosed()
