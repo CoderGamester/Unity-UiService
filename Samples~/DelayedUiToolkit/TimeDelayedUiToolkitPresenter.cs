@@ -39,10 +39,15 @@ namespace GameLovers.UiService.Examples
 			base.OnInitialized();
 			Debug.Log("TimeDelayedUiToolkitPresenter: Initialized");
 
+			// Subscribe to visual tree attachment to safely query elements
+			_toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
+		}
+
+		private void SetupUI(VisualElement root)
+		{
 			// Query UI Toolkit elements
-			var root = _toolkitFeature.Root;
 			_titleLabel = root.Q<Label>("Title");
-			_statusLabel = root.Q<Label>("Status");
+			_statusLabel = root.Q<Label>("Message");
 			_closeButton = root.Q<Button>("CloseButton");
 
 			// Setup UI elements
@@ -51,17 +56,14 @@ namespace GameLovers.UiService.Examples
 				_titleLabel.text = "Time-Delayed UI Toolkit";
 			}
 
-			if (_closeButton != null)
-			{
-				_closeButton.clicked += OnCloseButtonClicked;
-			}
+			// Set up event handlers using RegisterCallback for more control
+			_closeButton?.RegisterCallback<ClickEvent>(OnCloseButtonClicked);
 		}
 
 		/// <inheritdoc />
 		protected override void OnOpened()
 		{
 			base.OnOpened();
-			Debug.Log("TimeDelayedUiToolkitPresenter: Opened, starting delay...");
 			
 			if (_statusLabel != null && _delayFeature != null)
 			{
@@ -73,7 +75,6 @@ namespace GameLovers.UiService.Examples
 		protected override void OnOpenTransitionCompleted()
 		{
 			base.OnOpenTransitionCompleted();
-			Debug.Log("TimeDelayedUiToolkitPresenter: Opening delay completed!");
 			
 			// Update UI after delay
 			if (_statusLabel != null)
@@ -87,19 +88,15 @@ namespace GameLovers.UiService.Examples
 			}
 		}
 
-		private void OnCloseButtonClicked()
+		private void OnCloseButtonClicked(ClickEvent evt)
 		{
-			Debug.Log("Close button clicked, closing UI...");
 			OnCloseRequested.Invoke();
 			Close(destroy: false);
 		}
 
 		private void OnDestroy()
 		{
-			if (_closeButton != null)
-			{
-				_closeButton.clicked -= OnCloseButtonClicked;
-			}
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
 			OnCloseRequested.RemoveAllListeners();
 		}
 	}

@@ -326,6 +326,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _uiConfigs: {fileID: 11400000, guid: bb11223344556677889900aabbccdd04, type: 2}
   _uiDocument: {fileID: 300003}
+  _explanationText: {fileID: 0}
 --- !u!114 &300003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -335,12 +336,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 300000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f030000000000000e000000000000000, type: 3}
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: 
-  m_EditorClassIdentifier: 
-  m_VisualTreeAsset: {fileID: 9197481963319205126, guid: 1234b3c4d5e60708090a0b0c0d0e0f17, type: 3}
-  m_PanelSettings: {fileID: 0}
-  m_SortingOrder: 100
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 3e4fa34c79f7643ed96c18630892acbd, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 1234b3c4d5e60708090a0b0c0d0e0f17,
+    type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

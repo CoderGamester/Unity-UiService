@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
-using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
@@ -15,10 +14,8 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
 		[SerializeField] private UIDocument _uiDocument;
 
-		[Header("UI Elements")]
-		[SerializeField] private TMP_Text _explanationText;
-
 		private IUiServiceInit _uiService;
+		private Label _statusLabel;
 
 		private async void Start()
 		{
@@ -31,16 +28,18 @@ namespace GameLovers.UiService.Examples
 			// Setup button listeners from UIDocument
 			var root = _uiDocument.rootVisualElement;
 			
+			_statusLabel = root.Q<Label>("status-label");
+			
 			root.Q<Button>("load-button")?.RegisterCallback<ClickEvent>(_ => LoadUiToolkit());
 			root.Q<Button>("open-button")?.RegisterCallback<ClickEvent>(_ => OpenUiToolkit());
 			root.Q<Button>("close-button")?.RegisterCallback<ClickEvent>(_ => CloseUiToolkit());
 			root.Q<Button>("unload-button")?.RegisterCallback<ClickEvent>(_ => UnloadUiToolkit());
 			
-			// Pre-load presenter and subscribe to close events
+			// Pre-load the presenter and subscribe to close events
 			var presenter = await _uiService.LoadUiAsync<UiToolkitExamplePresenter>();
-			presenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			presenter.OnCloseRequested.AddListener(() => UpdateStatus("UI Closed but still in memory"));
 
-			UpdateUiVisibility(false);
+			UpdateStatus("Ready");
 		}
 
 		private void OnDestroy()
@@ -48,45 +47,46 @@ namespace GameLovers.UiService.Examples
 		}
 
 		/// <summary>
-		/// Loads the UI Toolkit presenter
+		/// Loads the UI Toolkit presenter into memory without showing it
 		/// </summary>
 		public void LoadUiToolkit()
 		{
 			_uiService.LoadUiAsync<UiToolkitExamplePresenter>().Forget();
+			UpdateStatus("UI Loaded (but not visible yet)");
 		}
 
 		/// <summary>
-		/// Opens the UI Toolkit presenter
+		/// Opens (shows) the UI Toolkit presenter
 		/// </summary>
 		public async void OpenUiToolkit()
 		{
 			await _uiService.OpenUiAsync<UiToolkitExamplePresenter>();
-			UpdateUiVisibility(true);
+			UpdateStatus("UI Opened");
 		}
 
 		/// <summary>
-		/// Closes the UI Toolkit presenter
+		/// Closes the UI Toolkit presenter but keeps it in memory
 		/// </summary>
 		public void CloseUiToolkit()
 		{
 			_uiService.CloseUi<UiToolkitExamplePresenter>(destroy: false);
-			UpdateUiVisibility(false);
+			UpdateStatus("UI Closed but still in memory");
 		}
 
 		/// <summary>
-		/// Unloads the UI Toolkit presenter
+		/// Unloads (destroys) the UI Toolkit presenter from memory
 		/// </summary>
 		public void UnloadUiToolkit()
 		{
 			_uiService.UnloadUi<UiToolkitExamplePresenter>();
-			UpdateUiVisibility(false);
+			UpdateStatus("UI Destroyed and removed from memory");
 		}
 
-		private void UpdateUiVisibility(bool isPresenterActive)
+		private void UpdateStatus(string message)
 		{
-			if (_explanationText != null)
+			if (_statusLabel != null)
 			{
-				_explanationText.gameObject.SetActive(!isPresenterActive);
+				_statusLabel.text = message;
 			}
 		}
 	}

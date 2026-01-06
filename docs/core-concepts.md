@@ -318,7 +318,20 @@ public class AnimatedPopup : UiPresenter
 
 #### UiToolkitPresenterFeature
 
-Provides UI Toolkit (UI Elements) integration:
+Provides UI Toolkit (UI Elements) integration with safe visual tree handling.
+
+> **⚠️ Important:** The `UIDocument.rootVisualElement` may not be ready when `OnInitialized()` is called. Always use `AddVisualTreeAttachedListener` to safely query elements.
+
+**Properties:**
+- `Document` - The attached `UIDocument`
+- `Root` - The root `VisualElement` (may be null before attachment)
+- `IsVisualTreeAttached` - Returns `true` when the visual tree is ready
+
+**Events:**
+- `OnVisualTreeAttached` - `UnityEvent<VisualElement>` invoked when the visual tree is ready
+
+**Methods:**
+- `AddVisualTreeAttachedListener(callback)` - Subscribes to `OnVisualTreeAttached` and invokes immediately if already attached
 
 ```csharp
 [RequireComponent(typeof(UiToolkitPresenterFeature))]
@@ -330,9 +343,19 @@ public class UIToolkitMenu : UiPresenter
     
     protected override void OnInitialized()
     {
-        var root = _toolkitFeature.Root;
+        // Use AddVisualTreeAttachedListener for safe element queries
+        _toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
+    }
+    
+    private void SetupUI(VisualElement root)
+    {
         _playButton = root.Q<Button>("play-button");
-        _playButton.clicked += OnPlayClicked;
+        _playButton?.RegisterCallback<ClickEvent>(OnPlayClicked);
+    }
+    
+    private void OnDestroy()
+    {
+        _playButton?.UnregisterCallback<ClickEvent>(OnPlayClicked);
     }
 }
 ```
@@ -348,16 +371,20 @@ public class DelayedUiToolkitPresenter : UiPresenter
 {
     [SerializeField] private UiToolkitPresenterFeature _toolkitFeature;
     
-    protected override void OnOpened()
+    protected override void OnInitialized()
     {
-        base.OnOpened();
-        _toolkitFeature.Root.SetEnabled(false);
+        base.OnInitialized();
+        // Disable UI until transition completes
+        _toolkitFeature.AddVisualTreeAttachedListener(root => root.SetEnabled(false));
     }
     
     protected override void OnOpenTransitionCompleted()
     {
         // Enable UI after delay completes
-        _toolkitFeature.Root.SetEnabled(true);
+        if (_toolkitFeature.IsVisualTreeAttached)
+        {
+            _toolkitFeature.Root.SetEnabled(true);
+        }
     }
 }
 ```

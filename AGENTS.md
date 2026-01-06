@@ -9,7 +9,7 @@
 
 This package provides a centralized UI management service that coordinates presenter **load/open/close/unload**, supports **layering**, **UI sets**, and **multi-instance** presenters, and integrates with **Addressables** + **UniTask**.
 
-For user-facing docs, treat `docs/README.md` (and linked pages) as the primary documentation set; this file is for contributors/agents working on the package itself.
+For user-facing docs, treat `docs/README.md` (and linked pages) as the primary documentation set. This file is for contributors/agents working on the package itself.
 
 ## 2. Runtime Architecture (high level)
 - **Service core**: `Runtime/UiService.cs` (`UiService : IUiServiceInit`)
@@ -23,13 +23,9 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
     - `GetLoadedPresenters() : List<UiInstance>`
   - Note: **multi-instance overloads** (explicit `instanceAddress`) exist on `UiService` (concrete type), not on `IUiService`.
 - **Configuration**: `Runtime/UiConfigs.cs` (`ScriptableObject`)
-  - Stores UI configs as `UiConfigs.UiConfigSerializable` (address + layer + type name).
-  - Stores UI sets as `UiSetConfigSerializable` containing `UiSetEntry` items.
-  - **Specialized subclasses** (each with its own `CreateAssetMenu`):
-    - `AddressablesUiConfigs` — for Addressables-based loading (default)
-    - `ResourcesUiConfigs` — for Resources folder loading
-    - `PrefabRegistryUiConfigs` — for direct prefab references (includes embedded prefab registry)
-  - **Note**: `UiConfigs` is an `abstract` class to prevent accidental direct usage. Always use one of the specialized subclasses.
+  - Stores UI configs as `UiConfigs.UiConfigSerializable` (address + layer + type name) and UI sets as `UiSetConfigSerializable` containing `UiSetEntry` items.
+  - Use the specialized subclasses (each has `CreateAssetMenu`): `AddressablesUiConfigs` (default), `ResourcesUiConfigs`, `PrefabRegistryUiConfigs` (embedded prefab registry).
+  - Note: `UiConfigs` is `abstract` to prevent accidental direct usage—always use one of the specialized subclasses.
 - **UI Sets**: `Runtime/UiSetConfig.cs`
   - `UiSetEntry` stores:
     - presenter type as `AssemblyQualifiedName` string
@@ -37,19 +33,15 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `UiSetConfig` is the runtime shape: `SetId` + `UiInstanceId[]`.
 - **Presenter pattern**: `Runtime/UiPresenter.cs`
   - Lifecycle hooks: `OnInitialized`, `OnOpened`, `OnClosed`, `OnOpenTransitionCompleted`, `OnCloseTransitionCompleted`.
-  - Typed presenters: `UiPresenter<T>` with public `Data` property that triggers `OnSetData()` on assignment.
-  - **Data assignment**: The `Data` property has a public setter. When set (either during `OpenUiAsync(type, initialData, ...)` or at any time after), it automatically calls `OnSetData()`. This enables dynamic data updates without reopening the UI.
+  - Typed presenters: `UiPresenter<T>` with a `Data` property that triggers `OnSetData()` on assignment (works during `OpenUiAsync(..., initialData, ...)` or later updates).
   - Presenter features are discovered via `GetComponents(_features)` at init time and are notified in the open/close lifecycle.
   - **Transition tasks**: `OpenTransitionTask` and `CloseTransitionTask` are public `UniTask` properties that complete when all transition features finish.
   - **Visibility control**: `UiPresenter` is the single point of responsibility for `SetActive(false)` on close; it waits for all `ITransitionFeature` tasks before hiding.
 - **Composable features**: `Runtime/Features/*`
   - `PresenterFeatureBase` allows attaching components to a presenter prefab to hook lifecycle.
   - `ITransitionFeature` interface for features that provide open/close transition delays (presenter awaits these).
-  - Built-in transition features:
-    - `TimeDelayFeature` (implements `ITransitionFeature`)
-    - `AnimationDelayFeature` (implements `ITransitionFeature`)
-  - Other built-in features:
-    - `UiToolkitPresenterFeature` (UI Toolkit support via `UIDocument`)
+  - Built-in transition features: `TimeDelayFeature`, `AnimationDelayFeature`.
+  - UI Toolkit support: `UiToolkitPresenterFeature` (via `UIDocument`) exposes `IsVisualTreeAttached` + `OnVisualTreeAttached` and provides `AddVisualTreeAttachedListener(callback)` for safe queries.
 - **Helper views**: `Runtime/Views/*` (`GameLovers.UiService.Views`)
   - `SafeAreaHelperView`: adjusts anchors/size based on safe area (notches).
   - `NonDrawingView`: raycast target without rendering (extends `Graphic`).
@@ -62,52 +54,32 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
     - `ResourcesUiAssetLoader`: uses `Resources.Load`.
   - Supports optional synchronous instantiation via `UiConfig.LoadSynchronously` (in Addressables loader).
 - **Analytics (optional)**: `Runtime/UiAnalytics.cs`
-  - `IUiAnalytics` + `UiAnalytics` track lifecycle events and simple performance timings.
-  - `UiService` defaults to `NullAnalytics` when none is provided.
-  - `UiService.CurrentAnalytics` is an **internal** static reference used by editor windows in this package.
+  - `IUiAnalytics`/`UiAnalytics` track lifecycle events + basic timings; defaults to `NullAnalytics`.
+  - `UiService.CurrentAnalytics` is an **internal** static reference used by editor windows.
 
 ## 3. Key Directories / Files
 - **Docs (user-facing)**: `docs/`
-  - `docs/README.md` — doc entry point (Getting Started, Core Concepts, API Reference, Advanced, Troubleshooting)
+  - `docs/README.md` — documentation entry point.
 - **Runtime**: `Runtime/`
-  - `Runtime/IUiService.cs` — public API surface + `IUiServiceInit`
-  - `Runtime/UiService.cs` — core implementation (multi-instance, sets, analytics hooks)
-  - `Runtime/UiPresenter.cs` — presenter base classes + feature hooks
-  - `Runtime/UiConfigs.cs` — abstract config storage/serialization (base class)
-  - `Runtime/AddressablesUiConfigs.cs` — UiConfigs for Addressables-based loading
-  - `Runtime/ResourcesUiConfigs.cs` — UiConfigs for Resources folder loading
-  - `Runtime/PrefabRegistryUiConfigs.cs` — UiConfigs for direct prefab references
-  - `Runtime/UiSetConfig.cs` — UI set + serialization helpers
-  - `Runtime/UiInstanceId.cs` — multi-instance identity (normalizes null/empty to `string.Empty`)
-  - `Runtime/Loaders/IUiAssetLoader.cs` — Asset loading abstraction
-  - `Runtime/Loaders/AddressablesUiAssetLoader.cs` — Addressables integration (+ optional sync load)
-  - `Runtime/Loaders/PrefabRegistryUiAssetLoader.cs` — Direct prefab references
-  - `Runtime/Loaders/ResourcesUiAssetLoader.cs` — Resources.Load implementation
-  - `Runtime/UiAnalytics.cs` — analytics + metrics
-  - `Runtime/UiServiceMonoComponent.cs` — emits resolution/orientation change events
-  - `Runtime/Features/PresenterFeatureBase.cs` — base class for presenter features
-  - `Runtime/Features/ITransitionFeature.cs` — interface for features providing transition delays
-  - `Runtime/Features/TimeDelayFeature.cs` — time-based transition delays
-  - `Runtime/Features/AnimationDelayFeature.cs` — animation-based transition delays
-  - `Runtime/Features/UiToolkitPresenterFeature.cs` — UI Toolkit integration
-  - `Runtime/Views/*` — helper view components (safe area, non-drawing, sizing, TMP links)
+  - Entry points: `IUiService.cs`, `UiService.cs`, `UiPresenter.cs`, `UiConfigs.cs`, `UiSetConfig.cs`, `UiInstanceId.cs`.
+  - Integrations / extension points (start here when behavior differs from expectations):
+    - `Loaders/*` — **how presenter prefabs are instantiated / released**.
+      - If UI fails to load/unload, start at `Loaders/IUiAssetLoader.cs` and the active loader (`AddressablesUiAssetLoader`, `ResourcesUiAssetLoader`, `PrefabRegistryUiAssetLoader`).
+      - Loader choice is typically driven by which `UiConfigs` subclass you use (`AddressablesUiConfigs` / `ResourcesUiConfigs` / `PrefabRegistryUiConfigs`).
+    - `Features/*` — **presenter composition** (components attached to presenter prefabs).
+      - Lifecycle hooks live in `PresenterFeatureBase`; features are discovered during presenter initialization.
+      - Transition timing issues (UI not showing/hiding when expected) usually involve `ITransitionFeature` implementations (eg `TimeDelayFeature`, `AnimationDelayFeature`).
+      - UI Toolkit presenters rely on `UiToolkitPresenterFeature`; avoid querying `UIDocument.rootVisualElement` during `OnInitialized()`—use `AddVisualTreeAttachedListener(...)`.
+    - `Views/*` — **optional helper components** used by presenter prefabs (safe area, raycasts, layout fitters, TMP link clicks).
+      - If interaction/layout is off but service bookkeeping looks correct, look here before changing `UiService`.
 - **Editor**: `Editor/` (assembly: `Editor/GameLovers.UiService.Editor.asmdef`)
-  - `Editor/UiConfigsEditorBase.cs` — abstract base for UI configs editors
-  - `Editor/AddressablesUiConfigsEditor.cs` — Addressables-specific configs editor
-  - `Editor/ResourcesUiConfigsEditor.cs` — Resources-specific configs editor
-  - `Editor/PrefabRegistryUiConfigsEditor.cs` — Prefab Registry configs editor
-  - `Editor/UiConfigsEditor.cs` — menu items for UI configs
-  - `Editor/DefaultUiConfigsEditor.cs` — default out-of-the-box `UiConfigs` editor using `DefaultUiSetId`
-  - `Editor/UiAnalyticsWindow.cs` — play-mode analytics viewer
-  - `Editor/UiServiceHierarchyWindow.cs` — play-mode hierarchy/debug window
-  - `Editor/UiPresenterEditor.cs` — quick open/close controls for a `UiPresenter` in play mode
-  - `Editor/NonDrawingViewEditor.cs` — inspector for `NonDrawingView` (raycast controls)
+  - Config editors: `UiConfigsEditorBase.cs`, `*UiConfigsEditor.cs`, `DefaultUiConfigsEditor.cs`.
+  - Debugging: `UiAnalyticsWindow.cs`, `UiServiceHierarchyWindow.cs`, `UiPresenterEditor.cs`.
 - **Samples**: `Samples~/`
   - Demonstrates basic flows, data presenters, delay features, UI Toolkit integration, analytics.
 - **Tests**: `Tests/`
   - `Tests/EditMode/*` — unit tests (configs, sets, analytics, loaders, core service behavior)
-  - `Tests/EditMode/Loaders/*` — unit tests for asset loader implementations
-  - `Tests/PlayMode/*` — integration/performance/smoke tests + fixtures/prefabs
+  - `Tests/PlayMode/*` — integration/performance/smoke tests
 
 ## 4. Important Behaviors / Gotchas
 - **Instance address normalization**
@@ -134,6 +106,9 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `UiService.Dispose()` closes all visible UI, attempts to unload all loaded instances, clears collections, and destroys the `"Ui"` root GameObject.
 - **Editor debugging tools**
   - Some editor windows toggle `presenter.gameObject.SetActive(...)` directly for convenience; this may not reflect in `IUiService.VisiblePresenters` since it bypasses `UiService` bookkeeping.
+- **UI Toolkit visual tree timing**
+  - `UIDocument.rootVisualElement` may not be ready when `OnInitialized()` is called on a presenter.
+  - When using `UiToolkitPresenterFeature`, always use `AddVisualTreeAttachedListener(callback)` instead of querying elements directly in `OnInitialized()`.
 
 ## 5. Coding Standards (Unity 6 / C# 9.0)
 - **C#**: C# 9.0 syntax; no global `using`s; keep **explicit namespaces**.
@@ -161,8 +136,7 @@ When you need third-party source/docs, prefer the locally-cached UPM packages:
   - To customize set ids, create your own enum and your own `[CustomEditor(typeof(UiConfigs))] : UiConfigsEditor<TEnum>`.
 - **Add multi-instance flows**
   - Use `UiInstanceId` (default = `string.Empty`) when you need to track instances externally.
-  - Presenters automatically know their own instance address via the internal `InstanceAddress` property.
-  - `Close(destroy: true)` from within a presenter works correctly for multi-instance scenarios.
+  - Presenters know their own instance address via the internal `InstanceAddress` property; `Close(destroy: true)` unloads the correct instance.
 - **Add a presenter feature**
   - Extend `PresenterFeatureBase` and attach it to the presenter prefab.
   - Features are discovered via `GetComponents` at init time and notified during open/close.

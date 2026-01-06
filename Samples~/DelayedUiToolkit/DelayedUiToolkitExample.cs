@@ -2,12 +2,11 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using GameLovers.UiService;
 using Cysharp.Threading.Tasks;
-using TMPro;
 
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// Example demonstrating delayed UI Toolkit presenters.
+	/// Example demonstrating delayed UI Toolkit presenters with TimeDelayFeature and AnimationDelayFeature.
 	/// Uses UI Toolkit for both the example controls and the presenters.
 	/// </summary>
 	public class DelayedUiToolkitExample : MonoBehaviour
@@ -15,10 +14,8 @@ namespace GameLovers.UiService.Examples
 		[SerializeField] private PrefabRegistryUiConfigs _uiConfigs;
 		[SerializeField] private UIDocument _uiDocument;
 
-		[Header("UI Elements")]
-		[SerializeField] private TMP_Text _explanationText;
-
 		private IUiServiceInit _uiService;
+		private Label _statusLabel;
 
 		private async void Start()
 		{
@@ -31,18 +28,19 @@ namespace GameLovers.UiService.Examples
 			// Setup button listeners from UIDocument
 			var root = _uiDocument.rootVisualElement;
 			
+			_statusLabel = root.Q<Label>("status-label");
+			
 			root.Q<Button>("open-time-delayed-button")?.RegisterCallback<ClickEvent>(_ => OpenTimeDelayedUi());
 			root.Q<Button>("open-animated-button")?.RegisterCallback<ClickEvent>(_ => OpenAnimatedUi());
-			root.Q<Button>("close-button")?.RegisterCallback<ClickEvent>(_ => CloseActiveUi());
 			
 			// Pre-load presenters and subscribe to close events
 			var timeDelayedPresenter = await _uiService.LoadUiAsync<TimeDelayedUiToolkitPresenter>();
 			var animatedPresenter = await _uiService.LoadUiAsync<AnimationDelayedUiToolkitPresenter>();
 			
-			timeDelayedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
-			animatedPresenter.OnCloseRequested.AddListener(() => UpdateUiVisibility(false));
+			timeDelayedPresenter.OnCloseRequested.AddListener(() => UpdateStatus("UI Closed but still in memory"));
+			animatedPresenter.OnCloseRequested.AddListener(() => UpdateStatus("UI Closed but still in memory"));
 
-			UpdateUiVisibility(false);
+			UpdateStatus("Ready");
 		}
 
 		private void OnDestroy()
@@ -52,33 +50,20 @@ namespace GameLovers.UiService.Examples
 		private async void OpenTimeDelayedUi()
 		{
 			await _uiService.OpenUiAsync<TimeDelayedUiToolkitPresenter>();
-			UpdateUiVisibility(true);
+			UpdateStatus("Time Delayed UI Opened");
 		}
 
 		private async void OpenAnimatedUi()
 		{
 			await _uiService.OpenUiAsync<AnimationDelayedUiToolkitPresenter>();
-			UpdateUiVisibility(true);
+			UpdateStatus("Animated UI Opened");
 		}
 
-		private void CloseActiveUi()
+		private void UpdateStatus(string message)
 		{
-			if (_uiService.IsVisible<TimeDelayedUiToolkitPresenter>())
+			if (_statusLabel != null)
 			{
-				_uiService.CloseUi<TimeDelayedUiToolkitPresenter>(destroy: false);
-			}
-			else if (_uiService.IsVisible<AnimationDelayedUiToolkitPresenter>())
-			{
-				_uiService.CloseUi<AnimationDelayedUiToolkitPresenter>(destroy: false);
-			}
-			UpdateUiVisibility(false);
-		}
-
-		private void UpdateUiVisibility(bool isPresenterActive)
-		{
-			if (_explanationText != null)
-			{
-				_explanationText.gameObject.SetActive(!isPresenterActive);
+				_statusLabel.text = message;
 			}
 		}
 	}

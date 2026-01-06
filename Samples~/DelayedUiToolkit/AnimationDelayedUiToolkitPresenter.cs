@@ -37,7 +37,6 @@ namespace GameLovers.UiService.Examples
 		private Label _titleLabel;
 		private Label _messageLabel;
 		private Label _scoreLabel;
-		private Label _statusLabel;
 		private Button _closeButton;
 
 		/// <summary>
@@ -52,26 +51,28 @@ namespace GameLovers.UiService.Examples
 			base.OnInitialized();
 			Debug.Log("AnimationDelayedUiToolkitPresenter: Initialized");
 
+			// Subscribe to visual tree attachment to safely query elements
+			_toolkitFeature.AddVisualTreeAttachedListener(SetupUI);
+		}
+
+		private void SetupUI(VisualElement root)
+		{
+			Debug.Log("AnimationDelayedUiToolkitPresenter: Visual tree ready, setting up UI elements");
+
 			// Query UI Toolkit elements
-			var root = _toolkitFeature.Root;
 			_titleLabel = root.Q<Label>("Title");
 			_messageLabel = root.Q<Label>("Message");
 			_scoreLabel = root.Q<Label>("Score");
-			_statusLabel = root.Q<Label>("Status");
 			_closeButton = root.Q<Button>("CloseButton");
 
-			// Setup button event
-			if (_closeButton != null)
-			{
-				_closeButton.clicked += OnCloseButtonClicked;
-			}
+			// Set up event handlers using RegisterCallback for more control
+			_closeButton?.RegisterCallback<ClickEvent>(OnCloseButtonClicked);
 		}
 
 		/// <inheritdoc />
 		protected override void OnSetData()
 		{
 			base.OnSetData();
-			Debug.Log($"AnimationDelayedUiToolkitPresenter: Data set - {Data.Title}");
 
 			// Update UI elements with the provided data
 			if (_titleLabel != null)
@@ -94,12 +95,11 @@ namespace GameLovers.UiService.Examples
 		protected override void OnOpened()
 		{
 			base.OnOpened();
-			Debug.Log("AnimationDelayedUiToolkitPresenter: Opened, playing intro animation...");
 			
-			if (_statusLabel != null && _animationFeature != null)
+			if (_messageLabel != null && _animationFeature != null)
 			{
 				var duration = _animationFeature.OpenDelayInSeconds;
-				_statusLabel.text = $"Playing animation ({duration:F2}s)...";
+				_messageLabel.text = $"Playing animation ({duration:F2}s)...";
 			}
 		}
 
@@ -107,33 +107,23 @@ namespace GameLovers.UiService.Examples
 		protected override void OnOpenTransitionCompleted()
 		{
 			base.OnOpenTransitionCompleted();
-			Debug.Log("AnimationDelayedUiToolkitPresenter: Opening animation completed!");
 			
 			// Update UI after animation
-			if (_statusLabel != null)
-			{
-				_statusLabel.text = "Animation Complete!";
-			}
-
 			if (_messageLabel != null)
 			{
 				_messageLabel.text = Data.Message + " (Ready)";
 			}
 		}
 
-		private void OnCloseButtonClicked()
+		private void OnCloseButtonClicked(ClickEvent evt)
 		{
-			Debug.Log("Close button clicked, closing UI with animation...");
 			OnCloseRequested.Invoke();
 			Close(destroy: false);
 		}
 
 		private void OnDestroy()
 		{
-			if (_closeButton != null)
-			{
-				_closeButton.clicked -= OnCloseButtonClicked;
-			}
+			_closeButton?.UnregisterCallback<ClickEvent>(OnCloseButtonClicked);
 			OnCloseRequested.RemoveAllListeners();
 		}
 	}
