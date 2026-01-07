@@ -20,6 +20,19 @@ namespace GameLoversEditor.UiService
 		private double _lastRefreshTime;
 		private const double RefreshInterval = 0.5; // seconds
 		
+		private const string StatsExplanation = 
+			"Stats Summary\n\n" +
+			"• Total: Number of presenter instances currently loaded in memory.\n" +
+			"• Opened: Presenters that are currently visible (tracked by UiService.VisiblePresenters).\n" +
+			"• Closed: Presenters loaded in memory but hidden (ready to reopen without reloading).";
+
+		private const string PresenterExplanation =
+			"Presenter List\n\n" +
+			"• Presenter Type: The class name of the UiPresenter component, click to ping the presenter GameObject in the scene.\n" +
+			"• Status: Green dot = visible, Red dot = loaded but hidden.\n" +
+			"• Actions: OPEN/CLOSE toggles visibility; Unload removes from memory.\n" +
+			"• Instance: Multi-instance address ('(default)' for singleton presenters).";
+		
 		private ScrollView _scrollView;
 		private Label _statsLabel;
 
@@ -58,6 +71,11 @@ namespace GameLoversEditor.UiService
 			var header = CreateHeader();
 			root.Add(header);
 			
+			// Stats explanation
+			var statsHelpBox = new HelpBox(StatsExplanation, HelpBoxMessageType.Info);
+			statsHelpBox.style.marginBottom = 5;
+			root.Add(statsHelpBox);
+			
 			// Stats bar
 			_statsLabel = new Label();
 			_statsLabel.style.paddingLeft = 10;
@@ -66,7 +84,13 @@ namespace GameLoversEditor.UiService
 			_statsLabel.style.backgroundColor = new Color(0.15f, 0.15f, 0.15f);
 			_statsLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
 			_statsLabel.enableRichText = true;
+			_statsLabel.tooltip = "Total: loaded in memory | Opened: visible | Closed: hidden but loaded";
 			root.Add(_statsLabel);
+			
+			// Presenter list explanation
+			var presenterHelpBox = new HelpBox(PresenterExplanation, HelpBoxMessageType.Info);
+			presenterHelpBox.style.marginBottom = 5;
+			root.Add(presenterHelpBox);
 			
 			// Column Headers
 			var columnHeaders = CreateColumnHeaders();
@@ -165,6 +189,14 @@ namespace GameLoversEditor.UiService
 			ApplyColumnStyle(label, columnIndex);
 			label.style.unityFontStyleAndWeight = FontStyle.Bold;
 			label.style.paddingLeft = 10;
+			label.tooltip = columnIndex switch
+			{
+				0 => "The UiPresenter component class name",
+				1 => "Green = visible, Red = hidden",
+				2 => "Open/Close toggles visibility; Unload removes from memory",
+				3 => "Instance address for multi-instance presenters",
+				_ => ""
+			};
 			return label;
 		}
 
@@ -231,11 +263,20 @@ namespace GameLoversEditor.UiService
 				row.style.backgroundColor = new Color(1, 1, 1, 0.03f);
 			}
 
-			// Type (column 0)
-			var typeLabel = new Label(instance.Type.Name);
-			ApplyColumnStyle(typeLabel, 0);
-			typeLabel.style.paddingLeft = 10;
-			row.Add(typeLabel);
+			// Type button (column 0) - clickable to select in hierarchy
+			var typeButton = new Button(() => 
+			{
+				Selection.activeGameObject = instance.Presenter.gameObject;
+				EditorGUIUtility.PingObject(instance.Presenter.gameObject);
+				if (SceneView.lastActiveSceneView != null)
+				{
+					SceneView.lastActiveSceneView.FrameSelected();
+				}
+			}) { text = instance.Type.Name };
+			ApplyColumnStyle(typeButton, 0);
+			typeButton.style.marginLeft = 5;
+			typeButton.style.marginRight = 5;
+			row.Add(typeButton);
 
 			// Status (column 1)
 			var statusContainer = new VisualElement();

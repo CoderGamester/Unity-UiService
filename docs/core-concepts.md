@@ -4,6 +4,7 @@ This document covers the fundamental concepts of the UI Service: presenters, lay
 
 ## Table of Contents
 
+- [Editor Windows](#editor-windows)
 - [Service Interfaces](#service-interfaces)
 - [UI Presenter](#ui-presenter)
 - [Presenter Features](#presenter-features)
@@ -11,7 +12,37 @@ This document covers the fundamental concepts of the UI Service: presenters, lay
 - [UI Sets](#ui-sets)
 - [Multi-Instance Support](#multi-instance-support)
 - [UI Configuration](#ui-configuration)
-- [Editor Windows](#editor-windows)
+
+---
+
+## Editor Windows
+
+The package includes unified tools for development and debugging.
+
+### Presenter Manager Window
+
+**Menu:** `Tools → UI Service → Presenter Manager`
+
+![UiConfigs Inspector](presenter-manager.png)
+
+Manage active and loaded UI presenters in real-time during play mode:
+- View all loaded presenters and their current status (Open/Closed)
+- Quick Open/Close/Unload actions per instance
+- Bulk operations: Close All, Unload All
+- Status indicators: 🟢 Open, 🔴 Closed
+
+### UiConfigs Inspector
+
+**Menu:** `Tools → UI Service → Select Ui Configs`
+
+![UiConfigs Inspector](uiconfigs-inspector.gif)
+
+Select any `UiConfigs` asset to see the enhanced inspector:
+- Visual layer hierarchy
+- Color-coded layers
+- Drag & drop reordering
+- Statistics panel
+- UI set management
 
 ---
 
@@ -649,31 +680,4 @@ _uiService.AddUiSet(setConfig);
 var dynamicUi = Instantiate(uiPrefab);
 _uiService.AddUi(dynamicUi, layer: 3, openAfter: true);
 ```
-
----
-
-## Editor Windows
-
-The package includes unified tools for development and debugging.
-
-### Presenter Manager Window
-
-**Menu:** `Tools → UI Service → Presenter Manager`
-
-Manage active and loaded UI presenters in real-time during play mode:
-- View all loaded presenters and their current status (Open/Closed)
-- Quick Open/Close/Unload actions per instance
-- Bulk operations: Close All, Unload All
-- Status indicators: 🟢 Open, 🔴 Closed
-
-### UiConfigs Inspector
-
-![UiConfigs Inspector](uiconfigs-inspector.gif)
-
-Select any `UiConfigs` asset to see the enhanced inspector:
-- Visual layer hierarchy
-- Color-coded layers
-- Drag & drop reordering
-- Statistics panel
-- UI set management
 

@@ -2,19 +2,11 @@
 
 [![Unity Version](https://img.shields.io/badge/Unity-6000.0%2B-blue.svg)](https://unity3d.com/get-unity/download)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-green.svg)](CHANGELOG.md)
 
 > **Quick Links**: [Installation](#installation) | [Quick Start](#quick-start) | [Documentation](docs/README.md) | [Examples](#examples) | [Troubleshooting](docs/troubleshooting.md)
 
-<!-- TODO: Add a demo GIF or video showing the UiService in action -->
-<!-- Recommended content:
-     - Opening/closing UI presenters with animations
-     - Layer management demonstration
-     - Editor windows (Analytics Window, Hierarchy Window)
-     - UI Sets batch operations
--->
-
-![UiService Demo](docs/images/demo.gif)
+![UiService Demo](docs/demo.gif)
 
 ## Why Use This Package?
 
