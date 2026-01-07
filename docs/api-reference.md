@@ -436,10 +436,9 @@ Initialize the service with configuration.
 IUiServiceInit uiService = new UiService();
 uiService.Init(uiConfigs);
 
-// Or with custom loader and analytics
+// Or with custom loader
 var loader = new AddressablesUiAssetLoader();
-var analytics = new UiAnalytics();
-IUiServiceInit uiService = new UiService(loader, analytics);
+IUiServiceInit uiService = new UiService(loader);
 uiService.Init(uiConfigs);
 
 // Using other built-in loaders

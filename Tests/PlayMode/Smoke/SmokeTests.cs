@@ -204,29 +204,6 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest, Timeout(2000)]
-		public IEnumerator Smoke_Analytics()
-		{
-			// Arrange
-			var analytics = new MockAnalytics();
-			_service = new UiService(_mockLoader, analytics);
-			_service.Init(TestHelpers.CreateTestConfigs(
-				TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "test_presenter", 0)
-			));
-		
-			// Act
-			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
-			yield return task.ToCoroutine();
-			var presenter = task.GetAwaiter().GetResult();
-			
-			_service.CloseUi(typeof(TestUiPresenter));
-			yield return presenter.CloseTransitionTask.ToCoroutine();
-		
-			// Assert
-			// Verification via Substitute is done in integration tests, here we just check it doesn't crash
-			Assert.Pass();
-		}
-
-		[UnityTest, Timeout(2000)]
 		public IEnumerator Smoke_Dispose()
 		{
 			// Arrange

@@ -84,20 +84,6 @@ public class GameInitializer : MonoBehaviour
 }
 ```
 
-### With Analytics (Optional)
-
-```csharp
-void Start()
-{
-    // Create analytics instance for performance tracking
-    var analytics = new UiAnalytics();
-    
-    // Inject into UI service
-    _uiService = new UiService(new AddressablesUiAssetLoader(), analytics);
-    _uiService.Init(_uiConfigs);
-}
-```
-
 ### Choosing an Asset Loader
 
 The UI Service supports multiple asset loading strategies out of the box:
@@ -269,7 +255,7 @@ await _uiService.OpenUiAsync<PlayerProfilePresenter, PlayerProfileData>(profileD
 
 - [Core Concepts](core-concepts.md) - Learn about layers, sets, and features
 - [API Reference](api-reference.md) - Complete API documentation
-- [Advanced Topics](advanced.md) - Analytics, performance optimization
+- [Advanced Topics](advanced.md) - Performance optimization
 
 ---
 
@@ -287,5 +273,4 @@ Available samples:
 - **DataPresenter** - Data-driven UI
 - **DelayedPresenter** - Time and animation delays
 - **UiToolkit** - UI Toolkit integration
-- **Analytics** - Performance tracking
 

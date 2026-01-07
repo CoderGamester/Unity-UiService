@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 19101, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: UiToolkit Panel Settings
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.PanelSettings
-  themeUss: {fileID: -4733365628477956816, guid: 2b6dcf9b137af46409aa2ae389b8f462,
+  themeUss: {fileID: -4733365628477956816, guid: d964eef61dcfc4d68887aa8b6577de71,
     type: 3}
   m_DisableNoThemeWarning: 0
   m_TargetTexture: {fileID: 0}

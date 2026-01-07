@@ -229,43 +229,5 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			yield return null;
 		}
-
-		[UnityTest, Performance]
-		public IEnumerator Perf_AnalyticsTracking_Overhead()
-		{
-			var configs = TestHelpers.CreateTestConfigs(
-				TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "test_presenter", 0)
-			);
-			
-			using var mockService = new UiService(_mockLoader, new MockAnalytics());
-			mockService.Init(configs);
-			var loadTask1 = mockService.LoadUiAsync(typeof(TestUiPresenter));
-			yield return loadTask1.ToCoroutine();
-
-			Measure.Method(() =>
-			{
-				mockService.OpenUiAsync(typeof(TestUiPresenter)).GetAwaiter().GetResult();
-				mockService.CloseUi(typeof(TestUiPresenter));
-			})
-			.SampleGroup("MockAnalytics")
-			.WarmupCount(2)
-			.MeasurementCount(20)
-			.Run();
-
-			using var nullService = new UiService(_mockLoader, new NullAnalytics());
-			nullService.Init(configs);
-			var loadTask2 = nullService.LoadUiAsync(typeof(TestUiPresenter));
-			yield return loadTask2.ToCoroutine();
-
-			Measure.Method(() =>
-			{
-				nullService.OpenUiAsync(typeof(TestUiPresenter)).GetAwaiter().GetResult();
-				nullService.CloseUi(typeof(TestUiPresenter));
-			})
-			.SampleGroup("NullAnalytics")
-			.WarmupCount(2)
-			.MeasurementCount(20)
-			.Run();
-		}
 	}
 }

@@ -654,37 +654,17 @@ _uiService.AddUi(dynamicUi, layer: 3, openAfter: true);
 
 ## Editor Windows
 
-The package includes three editor windows for development and debugging.
+The package includes unified tools for development and debugging.
 
-### Analytics Window
+### Presenter Manager Window
 
-**Menu:** `Tools → UI Service → Analytics`
+**Menu:** `Tools → UI Service → Presenter Manager`
 
-<!-- TODO: Add screenshot of Analytics Window -->
-![Analytics Window](docs/analytics-window.png)
-
-Monitor UI performance metrics in real-time during play mode:
-- Load, open, close durations
-- Open/close counts
-- Color-coded performance indicators
-- Timeline information
-
-**Performance Thresholds:**
-- Load: <0.1s green, <0.5s yellow, ≥0.5s red
-- Open/Close: <0.05s green, <0.2s yellow, ≥0.2s red
-
-### Hierarchy Window
-
-**Menu:** `Tools → UI Service → Hierarchy Window`
-
-<!-- TODO: Add screenshot of Hierarchy Window -->
-![Hierarchy Window](docs/hierarchy-window.png)
-
-View and control active presenters:
-- Live hierarchy grouped by layer
-- Open (🟢) / closed (🔴) status
-- Quick open/close buttons
-- GameObject navigation
+Manage active and loaded UI presenters in real-time during play mode:
+- View all loaded presenters and their current status (Open/Closed)
+- Quick Open/Close/Unload actions per instance
+- Bulk operations: Close All, Unload All
+- Status indicators: 🟢 Open, 🔴 Closed
 
 ### UiConfigs Inspector
 

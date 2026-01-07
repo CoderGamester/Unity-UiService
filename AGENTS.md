@@ -16,6 +16,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - Owns configs, loaded presenter instances, visible list, and UI set configs.
   - Creates a `DontDestroyOnLoad` parent GameObject named `"Ui"` and attaches `UiServiceMonoComponent` for resolution/orientation tracking.
   - Tracks presenters as **instances**: `Dictionary<Type, IList<UiInstance>>` where each `UiInstance` stores `(Type, Address, UiPresenter)`.
+  - **Editor support**: `UiService.CurrentService` is an **internal** static reference used by editor windows to access the active service in play mode.
 - **Public API surface**: `Runtime/IUiService.cs`
   - Exposes lifecycle operations (load/open/close/unload) and readonly views:
     - `VisiblePresenters : IReadOnlyList<UiInstanceId>`
@@ -53,9 +54,6 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
     - `PrefabRegistryUiAssetLoader`: uses direct prefab references (useful for samples/testing). Can be initialized with a `PrefabRegistryUiConfigs` in its constructor.
     - `ResourcesUiAssetLoader`: uses `Resources.Load`.
   - Supports optional synchronous instantiation via `UiConfig.LoadSynchronously` (in Addressables loader).
-- **Analytics (optional)**: `Runtime/UiAnalytics.cs`
-  - `IUiAnalytics`/`UiAnalytics` track lifecycle events + basic timings; defaults to `NullAnalytics`.
-  - `UiService.CurrentAnalytics` is an **internal** static reference used by editor windows.
 
 ## 3. Key Directories / Files
 - **Docs (user-facing)**: `docs/`
@@ -74,11 +72,11 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
       - If interaction/layout is off but service bookkeeping looks correct, look here before changing `UiService`.
 - **Editor**: `Editor/` (assembly: `Editor/GameLovers.UiService.Editor.asmdef`)
   - Config editors: `UiConfigsEditorBase.cs`, `*UiConfigsEditor.cs`, `DefaultUiConfigsEditor.cs`.
-  - Debugging: `UiAnalyticsWindow.cs`, `UiServiceHierarchyWindow.cs`, `UiPresenterEditor.cs`.
+  - Debugging: `UiPresenterManagerWindow.cs`, `UiPresenterEditor.cs`.
 - **Samples**: `Samples~/`
-  - Demonstrates basic flows, data presenters, delay features, UI Toolkit integration, analytics.
+  - Demonstrates basic flows, data presenters, delay features, UI Toolkit integration.
 - **Tests**: `Tests/`
-  - `Tests/EditMode/*` — unit tests (configs, sets, analytics, loaders, core service behavior)
+  - `Tests/EditMode/*` — unit tests (configs, sets, loaders, core service behavior)
   - `Tests/PlayMode/*` — integration/performance/smoke tests
 
 ## 4. Important Behaviors / Gotchas
@@ -150,5 +148,5 @@ When you need third-party source/docs, prefer the locally-cached UPM packages:
 ## 8. Update Policy
 Update this file when:
 - Public API changes (`IUiService`, `IUiServiceInit`, presenter lifecycle, config formats)
-- Core runtime systems/features are introduced/removed (features, views, analytics, multi-instance)
+- Core runtime systems/features are introduced/removed (features, views, multi-instance)
 - Editor tooling changes how configs or sets are generated/serialized
