@@ -46,17 +46,6 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
-        public void Constructor_WithNullAnalytics_UsesNullAnalytics()
-        {
-            // Act
-            _service = new UiService(_mockLoader, null);
-
-            // Assert
-            // Analytics is not public in IUiService, but it is in UiService implementation for testing
-            Assert.IsInstanceOf<NullAnalytics>(_service.Analytics);
-        }
-
-        [Test]
         public void Init_WithNullConfigs_ThrowsArgumentNullException()
         {
             // Arrange

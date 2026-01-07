@@ -18,14 +18,13 @@ namespace GameLovers.UiService
 		public static readonly UnityEvent<Vector2, Vector2> OnResolutionChanged = new ();
 
 		/// <summary>
-		/// Internal static reference to the current analytics instance for editor tools only.
-		/// This is set when a UiService instance is created and cleared when disposed.
+		/// Internal static reference to the most recently created UiService instance.
+		/// Used by editor tools to access the active service during play mode.
 		/// Only accessible to editor code within this package.
 		/// </summary>
-		internal static IUiAnalytics CurrentAnalytics { get; private set; }
+		internal static UiService CurrentService { get; private set; }
 		
 		private readonly IUiAssetLoader _assetLoader;
-		private readonly IUiAnalytics _analytics;
 		private readonly IDictionary<Type, UiConfig> _uiConfigs = new Dictionary<Type, UiConfig>();
 		private readonly IList<UiInstanceId> _visibleUiList = new List<UiInstanceId>();
 		private readonly IDictionary<int, UiSetConfig> _uiSets = new Dictionary<int, UiSetConfig>();
@@ -43,22 +42,14 @@ namespace GameLovers.UiService
 		/// <inheritdoc />
 		public IReadOnlyList<UiInstanceId> VisiblePresenters => _visiblePresentersReadOnly;
 
-		/// <summary>
-		/// Gets the analytics instance being used by this service
-		/// </summary>
-		public IUiAnalytics Analytics => _analytics;
+		public UiService() : this(new AddressablesUiAssetLoader()) { }
 
-		public UiService() : this(new AddressablesUiAssetLoader(), null) { }
-
-		public UiService(IUiAssetLoader assetLoader) : this(assetLoader, null) { }
-
-		public UiService(IUiAssetLoader assetLoader, IUiAnalytics analytics)
+		public UiService(IUiAssetLoader assetLoader)
 		{
 			_assetLoader = assetLoader;
-			_analytics = analytics ?? new NullAnalytics();
 			
 			// Set static reference for editor/debugging access
-			CurrentAnalytics = _analytics;
+			CurrentService = this;
 			
 			// Initialize readonly wrappers to avoid allocations on property access
 			_uiSetsReadOnly = new ReadOnlyDictionary<int, UiSetConfig>(_uiSets);
@@ -343,8 +334,6 @@ namespace GameLovers.UiService
 				return existingUi;
 			}
 
-			_analytics.TrackLoadStart(type);
-
 			// Parent directly to _uiParent - no layer GameObjects needed
 			var gameObject = await _assetLoader.InstantiatePrefab(config, _uiParent, cancellationToken);
 
@@ -360,8 +349,6 @@ namespace GameLovers.UiService
 
 			gameObject.SetActive(false);
 			AddUi(uiPresenter, config.Layer, instanceAddress, openAfter);
-			
-			_analytics.TrackLoadComplete(type, config.Layer);
 
 			return uiPresenter;
 		}
@@ -424,7 +411,6 @@ namespace GameLovers.UiService
 			RemoveUi(type, instanceAddress);
 
 			_assetLoader.UnloadAsset(ui.gameObject);
-			_analytics.TrackUnload(type, config.Layer);
 		}
 
 		/// <inheritdoc />
@@ -553,16 +539,11 @@ namespace GameLovers.UiService
 				return;
 			}
 
-			_analytics.TrackCloseStart(type);
-			
 			_visibleUiList.Remove(instanceId);
 			
 			if (TryFindPresenter(type, instanceAddress, out var presenter))
 			{
 				presenter.InternalClose(destroy);
-				
-				var config = _uiConfigs[type];
-				_analytics.TrackCloseComplete(type, config.Layer, destroy);
 			}
 		}
 
@@ -640,9 +621,9 @@ namespace GameLovers.UiService
 			_disposed = true;
 
 			// Clear static reference
-			if (CurrentAnalytics == _analytics)
+			if (CurrentService == this)
 			{
-				CurrentAnalytics = null;
+				CurrentService = null;
 			}
 
 			// Close all visible UI
@@ -733,15 +714,10 @@ namespace GameLovers.UiService
 				return;
 			}
 
-			_analytics.TrackOpenStart(instanceId.PresenterType);
-			
 			if (TryFindPresenter(instanceId.PresenterType, instanceId.InstanceAddress, out var presenter))
 			{
 				presenter.InternalOpen();
 				_visibleUiList.Add(instanceId);
-				
-				var config = _uiConfigs[instanceId.PresenterType];
-				_analytics.TrackOpenComplete(instanceId.PresenterType, config.Layer);
 			}
 		}
 

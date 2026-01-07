@@ -9,7 +9,6 @@ namespace GameLovers.UiService.Tests.PlayMode
 	public class UiServiceOpenCloseTests
 	{
 		private MockAssetLoader _mockLoader;
-		private MockAnalytics _mockAnalytics;
 		private UiService _service;
 
 		[SetUp]
@@ -19,8 +18,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			_mockLoader.RegisterPrefab<TestUiPresenter>("test_presenter");
 			_mockLoader.RegisterPrefab<TestDataUiPresenter>("data_presenter");
 			
-			_mockAnalytics = new MockAnalytics();
-			_service = new UiService(_mockLoader, _mockAnalytics);
+			_service = new UiService(_mockLoader);
 			
 			var configs = TestHelpers.CreateTestConfigs(
 				TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "test_presenter", 0),
@@ -181,27 +179,6 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.AreEqual(0, _service.VisiblePresenters.Count);
 		}
 
-		[UnityTest]
-		public IEnumerator Analytics_TracksLifecycleEvents()
-		{
-			// Act
-			var task = _service.OpenUiAsync(typeof(TestUiPresenter));
-			yield return task.ToCoroutine();
-			var presenter = task.GetAwaiter().GetResult();
-			yield return presenter.OpenTransitionTask.ToCoroutine();
-			
-			_service.CloseUi(typeof(TestUiPresenter));
-			yield return presenter.CloseTransitionTask.ToCoroutine();
-
-			// Assert - Check events were tracked via MockAnalytics verification
-			_mockAnalytics.VerifyLoadStartCalled(typeof(TestUiPresenter), times: 1);
-			_mockAnalytics.VerifyLoadCompleteCalled(typeof(TestUiPresenter), times: 1);
-			_mockAnalytics.VerifyOpenStartCalled(typeof(TestUiPresenter), times: 1);
-			_mockAnalytics.VerifyOpenCompleteCalled(typeof(TestUiPresenter), times: 1);
-			_mockAnalytics.VerifyCloseStartCalled(typeof(TestUiPresenter), times: 1);
-			_mockAnalytics.VerifyCloseCompleteCalled(typeof(TestUiPresenter), times: 1);
-		}
-		
 		[UnityTest]
 		public IEnumerator OpenUiAsync_Twice_ReturnsSamePresenter()
 		{

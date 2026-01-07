@@ -4,6 +4,15 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
+## [1.2.0] - 2026-01-07
+
+**New**:
+- Added `UiPresenterManagerWindow` unified editor tool for managing UI presenters in play mode.
+
+**Changed**:
+- **BREAKING**: Removed `IUiAnalytics`, `UiAnalytics`, `NullAnalytics`, and all related analytics types.
+- Removed legacy `UiAnalyticsWindow` and `UiServiceHierarchyWindow` editor tools.
+
 ## [1.1.0] - 2026-01-06
 
 **New**:
