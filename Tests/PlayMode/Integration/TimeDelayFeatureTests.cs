@@ -99,7 +99,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert - Presenter should have deactivated the GameObject after transition
-			Assert.IsFalse(presenter.gameObject.activeSelf);
+			Assert.IsFalse(presenter.IsOpen);
 		}
 
 		[UnityTest]

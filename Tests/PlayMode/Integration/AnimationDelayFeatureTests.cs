@@ -94,7 +94,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
-			Assert.IsFalse(presenter.gameObject.activeSelf);
+			Assert.IsFalse(presenter.IsOpen);
 		}
 
 		[UnityTest]

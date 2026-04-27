@@ -157,7 +157,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Assert
 			Assert.AreEqual(2, presenters.Length);
 			Assert.AreEqual(2, _service.VisiblePresenters.Count);
-			Assert.IsTrue(presenters.All(p => p.gameObject.activeSelf));
+			Assert.IsTrue(presenters.All(p => p.IsOpen));
 		}
 
 		[UnityTest]

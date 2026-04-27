@@ -43,10 +43,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			ToolkitFeature = gameObject.AddComponent<UiToolkitPresenterFeature>();
 		}
 
-		// Set document reference via reflection
-		var docField = typeof(UiToolkitPresenterFeature).GetField("_document",
-			System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-		docField?.SetValue(ToolkitFeature, document);
+		ToolkitFeature.SetDocument(document);
 	}
 
 		protected override void OnInitialized()

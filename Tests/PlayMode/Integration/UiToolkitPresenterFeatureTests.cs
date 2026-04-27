@@ -5,9 +5,6 @@ using UnityEngine.TestTools;
 
 namespace GameLovers.UiService.Tests.PlayMode
 {
-	/// <summary>
-	/// Tests for UiToolkitPresenterFeature functionality.
-	/// </summary>
 	[TestFixture]
 	public class UiToolkitPresenterFeatureTests
 	{
@@ -19,9 +16,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		{
 			_mockLoader = new MockAssetLoader();
 			_mockLoader.RegisterPrefab<TestUiToolkitPresenter>("uitoolkit_presenter");
-			
+
 			_service = new UiService(_mockLoader);
-			
+
 			var configs = TestHelpers.CreateTestConfigs(
 				TestHelpers.CreateTestConfig(typeof(TestUiToolkitPresenter), "uitoolkit_presenter", 0)
 			);
@@ -38,12 +35,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator UiToolkitFeature_Document_IsAssigned()
 		{
-			// Act
 			var task = _service.LoadUiAsync(typeof(TestUiToolkitPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
 
-			// Assert
 			Assert.IsNotNull(presenter);
 			Assert.IsNotNull(presenter.ToolkitFeature);
 			Assert.IsNotNull(presenter.ToolkitFeature.Document);
@@ -52,13 +47,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator UiToolkitFeature_Root_ReturnsRootVisualElement()
 		{
-			// Act
 			var task = _service.LoadUiAsync(typeof(TestUiToolkitPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
 
-			// Assert - Root is the document's rootVisualElement
-			// Note: May be null if no panel is assigned, but should not throw
 			Assert.IsNotNull(presenter);
 			Assert.DoesNotThrow(() => { var _ = presenter.ToolkitFeature.Root; });
 		}
@@ -66,12 +58,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator UiToolkitFeature_LifecycleHooks_AreCalled()
 		{
-			// Arrange
 			var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
 
-			// Assert - Feature lifecycle should have been invoked
 			Assert.IsNotNull(presenter);
 			Assert.IsTrue(presenter.WasOpened);
 		}
@@ -79,77 +69,83 @@ namespace GameLovers.UiService.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator UiToolkitFeature_WithMultipleFeatures_AllFeaturesWork()
 		{
-			// Arrange - Register presenter with multiple features
 			_mockLoader.RegisterPrefab<TestMultiFeatureToolkitPresenter>("multi_feature");
 			_service.AddUiConfig(TestHelpers.CreateTestConfig(typeof(TestMultiFeatureToolkitPresenter), "multi_feature", 0));
 
-			// Act
 			var task = _service.OpenUiAsync(typeof(TestMultiFeatureToolkitPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestMultiFeatureToolkitPresenter;
 
-			// Assert
 			Assert.IsNotNull(presenter);
 			Assert.IsNotNull(presenter.ToolkitFeature);
 			Assert.IsNotNull(presenter.DelayFeature);
 		}
 
-	[UnityTest]
-	public IEnumerator UiToolkitFeature_ListenerInvokedOnEachOpen()
-	{
-		// Arrange
-		var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
-		yield return task.ToCoroutine();
-		var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
+		[UnityTest]
+		public IEnumerator UiToolkitFeature_ListenerInvokedOnEachOpen()
+		{
+			var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
 
-		// Wait for UI Toolkit panel attachment
-		yield return TestHelpers.WaitForPanelAttachment(presenter);
+			yield return TestHelpers.WaitForPanelAttachment(presenter);
 
-		var initialCallbackCount = presenter.SetupCallbackCount;
+			var initialCallbackCount = presenter.SetupCallbackCount;
 
-		// Act - Close and reopen
-		_service.CloseUi<TestUiToolkitPresenter>();
-		yield return null; // Wait a frame
+			_service.CloseUi<TestUiToolkitPresenter>();
+			yield return null;
 
-		var reopenTask = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
-		yield return reopenTask.ToCoroutine();
+			var reopenTask = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
+			yield return reopenTask.ToCoroutine();
 
-		// Wait for panel reattachment after reopen
-		yield return TestHelpers.WaitForPanelAttachment(presenter);
+			yield return TestHelpers.WaitForPanelAttachment(presenter);
 
-		// Assert - Callback should have been invoked again
-		Assert.Greater(presenter.SetupCallbackCount, initialCallbackCount, 
-			"Callback should be invoked on each open");
-	}
+			Assert.Greater(presenter.SetupCallbackCount, initialCallbackCount);
+		}
 
-	[UnityTest]
-	public IEnumerator UiToolkitFeature_RemoveListener_StopsInvocation()
-	{
-		// Arrange
-		var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
-		yield return task.ToCoroutine();
-		var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
+		[UnityTest]
+		public IEnumerator UiToolkitFeature_RemoveListener_StopsInvocation()
+		{
+			var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
 
-		// Wait for UI Toolkit panel attachment
-		yield return TestHelpers.WaitForPanelAttachment(presenter);
+			yield return TestHelpers.WaitForPanelAttachment(presenter);
 
-		// Remove the listener
-		presenter.RemoveSetupListener();
-		var countAfterRemove = presenter.SetupCallbackCount;
+			presenter.RemoveSetupListener();
+			var countAfterRemove = presenter.SetupCallbackCount;
 
-		// Act - Close and reopen
-		_service.CloseUi<TestUiToolkitPresenter>();
-		yield return null;
+			_service.CloseUi<TestUiToolkitPresenter>();
+			yield return null;
 
-		var reopenTask = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
-		yield return reopenTask.ToCoroutine();
+			var reopenTask = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
+			yield return reopenTask.ToCoroutine();
 
-		// Wait for panel reattachment after reopen
-		yield return TestHelpers.WaitForPanelAttachment(presenter);
+			yield return TestHelpers.WaitForPanelAttachment(presenter);
 
-		// Assert - Callback count should not have changed
-		Assert.AreEqual(countAfterRemove, presenter.SetupCallbackCount, 
-			"Callback should not be invoked after removal");
-	}
+			Assert.AreEqual(countAfterRemove, presenter.SetupCallbackCount);
+		}
+
+		[UnityTest]
+		public IEnumerator AddVisualTreeAttachedListener_NullCallback_NoOpsInsteadOfThrowing()
+		{
+			var task = _service.LoadUiAsync(typeof(TestUiToolkitPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
+			Assert.IsNotNull(presenter?.ToolkitFeature);
+
+			Assert.DoesNotThrow(() => presenter.ToolkitFeature.AddVisualTreeAttachedListener(null));
+		}
+
+		[UnityTest]
+		public IEnumerator RemoveVisualTreeAttachedListener_NullCallback_NoOpsInsteadOfThrowing()
+		{
+			var task = _service.LoadUiAsync(typeof(TestUiToolkitPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
+			Assert.IsNotNull(presenter?.ToolkitFeature);
+
+			Assert.DoesNotThrow(() => presenter.ToolkitFeature.RemoveVisualTreeAttachedListener(null));
+		}
 	}
 }

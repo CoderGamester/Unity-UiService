@@ -1,6 +1,10 @@
 using NUnit.Framework;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.TestTools;
 
 namespace GameLovers.UiService.Tests.PlayMode
@@ -15,6 +19,8 @@ namespace GameLovers.UiService.Tests.PlayMode
     {
         private MockAssetLoader _mockLoader;
         private UiService _service;
+        private UnityAction<Vector2, Vector2> _resolutionListener;
+        private UnityAction<DeviceOrientation, DeviceOrientation> _orientationListener;
 
         [SetUp]
         public void Setup()
@@ -25,6 +31,16 @@ namespace GameLovers.UiService.Tests.PlayMode
         [TearDown]
         public void TearDown()
         {
+            if (_resolutionListener != null)
+            {
+                UiService.OnResolutionChanged.RemoveListener(_resolutionListener);
+                _resolutionListener = null;
+            }
+            if (_orientationListener != null)
+            {
+                UiService.OnOrientationChanged.RemoveListener(_orientationListener);
+                _orientationListener = null;
+            }
             _service?.Dispose();
             _mockLoader?.Cleanup();
         }
@@ -186,6 +202,120 @@ namespace GameLovers.UiService.Tests.PlayMode
 
             // Assert
             Assert.IsFalse(result);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator OnResolutionChanged_OnResolutionShift_FiresWithNewResolution()
+        {
+            var fired = 0;
+            Vector2 receivedFrom = Vector2.zero;
+            Vector2 receivedTo = Vector2.zero;
+
+            _resolutionListener = (from, to) =>
+            {
+                fired++;
+                receivedFrom = from;
+                receivedTo = to;
+            };
+            UiService.OnResolutionChanged.AddListener(_resolutionListener);
+
+            var prev = new Vector2(1280, 720);
+            var next = new Vector2(1920, 1080);
+            UiService.OnResolutionChanged.Invoke(prev, next);
+
+            Assert.AreEqual(1, fired);
+            Assert.AreEqual(prev, receivedFrom);
+            Assert.AreEqual(next, receivedTo);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator OnOrientationChanged_OnOrientationShift_FiresWithNewOrientation()
+        {
+            var fired = 0;
+            DeviceOrientation receivedFrom = DeviceOrientation.Unknown;
+            DeviceOrientation receivedTo = DeviceOrientation.Unknown;
+
+            _orientationListener = (from, to) =>
+            {
+                fired++;
+                receivedFrom = from;
+                receivedTo = to;
+            };
+            UiService.OnOrientationChanged.AddListener(_orientationListener);
+
+            UiService.OnOrientationChanged.Invoke(DeviceOrientation.Portrait, DeviceOrientation.LandscapeLeft);
+
+            Assert.AreEqual(1, fired);
+            Assert.AreEqual(DeviceOrientation.Portrait, receivedFrom);
+            Assert.AreEqual(DeviceOrientation.LandscapeLeft, receivedTo);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator IsOpen_ReflectsActiveSelfState_AcrossOpenClose()
+        {
+            _mockLoader.RegisterPrefab<TestUiPresenter>("isopen_target");
+            _service = new UiService(_mockLoader);
+            _service.Init(TestHelpers.CreateTestConfigs(
+                TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "isopen_target", 0)));
+
+            var loadTask = _service.LoadUiAsync(typeof(TestUiPresenter), openAfter: false);
+            yield return loadTask.ToCoroutine();
+            var presenter = loadTask.GetAwaiter().GetResult() as TestUiPresenter;
+            Assert.IsFalse(presenter.IsOpen);
+
+            var openTask = _service.OpenUiAsync(typeof(TestUiPresenter));
+            yield return openTask.ToCoroutine();
+            yield return presenter.OpenTransitionTask.ToCoroutine();
+            Assert.IsTrue(presenter.IsOpen);
+
+            _service.CloseUi(typeof(TestUiPresenter));
+            yield return presenter.CloseTransitionTask.ToCoroutine();
+            Assert.IsFalse(presenter.IsOpen);
+        }
+
+        [UnityTest]
+        public IEnumerator AddUi_RegistersInstance_AppearsInGetUi()
+        {
+            _service = new UiService(_mockLoader);
+            _service.Init(TestHelpers.CreateTestConfigs(
+                TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "addui_target", 0)));
+
+            var prefab = TestHelpers.CreateTestPresenterPrefab<TestUiPresenter>();
+            var presenter = prefab.GetComponent<TestUiPresenter>();
+
+            _service.AddUi(presenter, 0);
+
+            Assert.AreSame(presenter, _service.GetUi<TestUiPresenter>());
+            Assert.IsFalse(_service.IsVisible<TestUiPresenter>());
+
+            UnityEngine.Object.DestroyImmediate(prefab);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator AddUi_MultiInstanceWithAddress_RegistersUnderInstanceId()
+        {
+            _service = new UiService(_mockLoader);
+            _service.Init(TestHelpers.CreateTestConfigs(
+                TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "multi_addui", 0)));
+
+            var prefabA = TestHelpers.CreateTestPresenterPrefab<TestUiPresenter>("instA");
+            var prefabB = TestHelpers.CreateTestPresenterPrefab<TestUiPresenter>("instB");
+            var presenterA = prefabA.GetComponent<TestUiPresenter>();
+            var presenterB = prefabB.GetComponent<TestUiPresenter>();
+
+            _service.AddUi(presenterA, 0, "instance_a");
+            _service.AddUi(presenterB, 0, "instance_b");
+
+            Assert.AreSame(presenterA, _service.GetUi<TestUiPresenter>("instance_a"));
+            Assert.AreSame(presenterB, _service.GetUi<TestUiPresenter>("instance_b"));
+            Assert.AreNotSame(presenterA, presenterB);
+
+            UnityEngine.Object.DestroyImmediate(prefabA);
+            UnityEngine.Object.DestroyImmediate(prefabB);
             yield return null;
         }
     }

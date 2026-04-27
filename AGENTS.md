@@ -103,8 +103,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
 - **UI Sets store types, not addresses**
   - UI sets are serialized as `UiSetEntry` (type name + instance address). The default editor populates `InstanceAddress` with the **addressable address** for uniqueness.
 - **`LoadSynchronously` persistence**
-  - `UiConfig.LoadSynchronously` exists and is respected by `AddressablesUiAssetLoader`.
-  - **However**: `UiConfigs.UiConfigSerializable` currently does **not** serialize `LoadSynchronously`, so configs loaded from a `UiConfigs` asset will produce `LoadSynchronously = false` in `UiConfigs.Configs`.
+  - `UiConfig.LoadSynchronously` is serialized through `UiConfigs.UiConfigSerializable` and round-trips correctly. It is respected by `AddressablesUiAssetLoader` for synchronous instantiation.
 - **Static events**
   - `UiService.OnResolutionChanged` / `UiService.OnOrientationChanged` are static `UnityEvent`s raised by `UiServiceMonoComponent`.
   - The service does not clear listeners; consumers must unsubscribe appropriately.

@@ -17,6 +17,12 @@ namespace GameLovers.UiService
 		private UniTaskCompletionSource _openTransitionCompletion;
 		private UniTaskCompletionSource _closeTransitionCompletion;
 
+		internal void SetDelays(float openSeconds, float closeSeconds)
+		{
+			_openDelayInSeconds = openSeconds;
+			_closeDelayInSeconds = closeSeconds;
+		}
+
 		/// <summary>
 		/// Gets the delay in seconds before opening the presenter
 		/// </summary>

@@ -97,6 +97,26 @@ namespace GameLovers.UiService.Tests
             Assert.IsTrue(result.Contains("TestUiPresenter"));
             Assert.IsTrue(result.Contains("my_instance"));
         }
+
+        [Test]
+        public void Default_ProducesIsDefaultTrueAndEmptyAddress()
+        {
+            var instanceId = UiInstanceId.Default(typeof(TestUiPresenter));
+
+            Assert.AreEqual(typeof(TestUiPresenter), instanceId.PresenterType);
+            Assert.AreEqual(string.Empty, instanceId.InstanceAddress);
+            Assert.IsTrue(instanceId.IsDefault);
+        }
+
+        [Test]
+        public void Named_NonEmptyAddress_ProducesIsDefaultFalse()
+        {
+            var instanceId = UiInstanceId.Named(typeof(TestUiPresenter), "popup_1");
+
+            Assert.AreEqual(typeof(TestUiPresenter), instanceId.PresenterType);
+            Assert.AreEqual("popup_1", instanceId.InstanceAddress);
+            Assert.IsFalse(instanceId.IsDefault);
+        }
     }
 }
 

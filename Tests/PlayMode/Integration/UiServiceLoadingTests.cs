@@ -49,7 +49,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Assert
 			Assert.IsNotNull(presenter);
 			Assert.IsInstanceOf<TestUiPresenter>(presenter);
-			Assert.That(presenter.gameObject.activeSelf, Is.False);
+			Assert.That(presenter.IsOpen, Is.False);
 		}
 
 		[UnityTest]
@@ -62,7 +62,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			// Assert
 			Assert.IsNotNull(presenter);
-			Assert.That(presenter.gameObject.activeSelf, Is.True);
+			Assert.That(presenter.IsOpen, Is.True);
 			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
 		}
 	
@@ -180,7 +180,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return presenter.OpenTransitionTask.ToCoroutine();
 
 			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
-			Assert.That(presenter.gameObject.activeSelf, Is.True);
+			Assert.That(presenter.IsOpen, Is.True);
 
 			// Expected: LoadUiAsync on an already-loaded presenter logs a warning by design
 			LogAssert.Expect(LogType.Warning, new Regex("was already loaded"));
@@ -191,7 +191,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			// Assert - Presenter should remain visible (LoadUiAsync doesn't manage visibility of already-loaded presenters)
 			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
-			Assert.That(presenter.gameObject.activeSelf, Is.True);
+			Assert.That(presenter.IsOpen, Is.True);
 		}
 
 		/// <summary>
@@ -217,7 +217,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			// Assert - Presenter should remain visible (no state change)
 			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
-			Assert.That(presenter.gameObject.activeSelf, Is.True);
+			Assert.That(presenter.IsOpen, Is.True);
 		}
 
 		/// <summary>
@@ -247,7 +247,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			// Assert - Presenter should open successfully
 			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
-			Assert.That(reopenedPresenter.gameObject.activeSelf, Is.True);
+			Assert.That(reopenedPresenter.IsOpen, Is.True);
 			Assert.AreEqual(presenter, reopenedPresenter); // Same instance
 		}
 
@@ -332,5 +332,48 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		#endregion
+
+		[UnityTest]
+		public IEnumerator LoadUiAsync_TypeAddressOverload_LoadsAtExplicitAddress()
+		{
+			var task = _service.LoadUiAsync(typeof(TestUiPresenter), "explicit_addr", openAfter: false);
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
+
+			Assert.IsNotNull(presenter);
+			var loaded = _service.GetLoadedPresenters();
+			Assert.AreEqual(1, loaded.Count);
+			Assert.AreEqual("explicit_addr", loaded[0].Address);
+			Assert.AreSame(presenter, loaded[0].Presenter);
+		}
+
+		[UnityTest]
+		public IEnumerator LoadUiAsync_CancellationRequestedMidLoad_AbortsBeforeAddRegistration()
+		{
+			_mockLoader.SimulatedDelayMs = 1000;
+			var cts = new CancellationTokenSource();
+
+			var task = _service.LoadUiAsync(typeof(TestUiPresenter), "cancel_target", openAfter: false, cts.Token);
+			yield return null;
+			cts.Cancel();
+
+			while (!task.Status.IsCompleted())
+			{
+				yield return null;
+			}
+
+			System.OperationCanceledException caught = null;
+			try
+			{
+				task.GetAwaiter().GetResult();
+			}
+			catch (System.OperationCanceledException ex)
+			{
+				caught = ex;
+			}
+
+			Assert.IsNotNull(caught);
+			Assert.AreEqual(0, _service.GetLoadedPresenters().Count);
+		}
 	}
 }

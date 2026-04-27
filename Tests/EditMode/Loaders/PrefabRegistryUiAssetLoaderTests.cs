@@ -151,6 +151,27 @@ namespace GameLovers.UiService.Tests
 			// Act & Assert - should not throw
 			Assert.DoesNotThrow(() => _loader.UnloadAsset(null));
 		}
+
+		[Test]
+		public void Constructor_WithConfigsAsset_PrePopulatesRegistryFromEntries()
+		{
+			var configsAsset = ScriptableObject.CreateInstance<PrefabRegistryUiConfigs>();
+			configsAsset.SetPrefabEntries(new List<PrefabRegistryUiConfigs.PrefabEntry>
+			{
+				new PrefabRegistryUiConfigs.PrefabEntry { Address = "ctor/prefab", Prefab = _testPrefab }
+			});
+
+			var loader = new PrefabRegistryUiAssetLoader(configsAsset);
+
+			var config = TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "ctor/prefab");
+			var instance = loader.InstantiatePrefab(config, _parentTransform).GetAwaiter().GetResult();
+			_createdObjects.Add(instance);
+
+			Assert.IsNotNull(instance);
+			Assert.AreNotSame(_testPrefab, instance);
+
+			ScriptableObject.DestroyImmediate(configsAsset);
+		}
 	}
 }
 

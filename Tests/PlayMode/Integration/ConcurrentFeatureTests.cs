@@ -231,7 +231,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return null;
 
 			// GameObject should still be active (waiting for transitions)
-			Assert.IsTrue(presenter.gameObject.activeSelf);
+			Assert.IsTrue(presenter.IsOpen);
 			
 			// Complete both transitions
 			presenter.FeatureA.SimulateCloseTransitionComplete();
@@ -239,7 +239,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Now GameObject should be hidden
-			Assert.IsFalse(presenter.gameObject.activeSelf);
+			Assert.IsFalse(presenter.IsOpen);
 		}
 	}
 }

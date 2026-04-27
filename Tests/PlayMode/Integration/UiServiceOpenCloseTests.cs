@@ -49,7 +49,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var presenter = openTask.GetAwaiter().GetResult();
 
 			// Assert
-			Assert.That(presenter.gameObject.activeSelf, Is.True);
+			Assert.That(presenter.IsOpen, Is.True);
 			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
 		}
 
@@ -63,7 +63,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			// Assert
 			Assert.IsNotNull(presenter);
-			Assert.That(presenter.gameObject.activeSelf, Is.True);
+			Assert.That(presenter.IsOpen, Is.True);
 			Assert.AreEqual(1, _mockLoader.InstantiateCallCount);
 		}
 
@@ -99,7 +99,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert
-			Assert.That(presenter.gameObject.activeSelf, Is.False);
+			Assert.That(presenter.IsOpen, Is.False);
 			Assert.AreEqual(0, _service.VisiblePresenters.Count);
 		}
 
@@ -354,5 +354,44 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		#endregion
+
+		[UnityTest]
+		public IEnumerator OpenUiAsync_TypeAddressOverload_OpensInstanceAtAddress()
+		{
+			var task = _service.OpenUiAsync(typeof(TestUiPresenter), "addr_a");
+			yield return task.ToCoroutine();
+			var presenterA = task.GetAwaiter().GetResult();
+			yield return presenterA.OpenTransitionTask.ToCoroutine();
+
+			Assert.IsNotNull(presenterA);
+			Assert.That(presenterA.IsOpen, Is.True);
+			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
+
+			var loaded = _service.GetLoadedPresenters();
+			Assert.AreEqual(1, loaded.Count);
+			Assert.AreEqual("addr_a", loaded[0].Address);
+
+			Assert.IsFalse(_service.IsVisible<TestUiPresenter>(string.Empty));
+			Assert.IsTrue(_service.IsVisible<TestUiPresenter>("addr_a"));
+		}
+
+		[UnityTest]
+		public IEnumerator OpenUiAsync_TypeAddressDataOverload_PassesDataToPresenter()
+		{
+			var data = new TestPresenterData { Id = 7, Name = "Address" };
+
+			var task = _service.OpenUiAsync(typeof(TestDataUiPresenter), "data_addr", data);
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestDataUiPresenter;
+
+			Assert.IsNotNull(presenter);
+			Assert.IsTrue(presenter.WasDataSet);
+			Assert.AreEqual(7, presenter.ReceivedData.Id);
+			Assert.AreEqual("Address", presenter.ReceivedData.Name);
+
+			var loaded = _service.GetLoadedPresenters();
+			Assert.AreEqual(1, loaded.Count);
+			Assert.AreEqual("data_addr", loaded[0].Address);
+		}
 	}
 }

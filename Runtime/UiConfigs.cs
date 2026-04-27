@@ -52,6 +52,15 @@ namespace GameLovers.UiService
 		/// </summary>
 		public List<UiSetConfig> Sets => _sets.ConvertAll(element => UiSetConfigSerializable.ToUiSetConfig(element));
 
+		internal void SetSets(IEnumerable<UiSetConfig> sets)
+		{
+			_sets.Clear();
+			foreach (var set in sets)
+			{
+				_sets.Add(UiSetConfigSerializable.FromUiSetConfig(set));
+			}
+		}
+
 		/// <summary>
 		/// Sets the new size of this scriptable object <seealso cref="UiSetConfig"/> list.
 		/// The UiConfigSets have the same id value that the index in the list.
@@ -99,6 +108,7 @@ namespace GameLovers.UiService
 			public string Address;
 			public int Layer;
 			public string UiType;
+			public bool LoadSynchronously;
 
 			public static implicit operator UiConfig(UiConfigSerializable serializable)
 			{
@@ -107,7 +117,7 @@ namespace GameLovers.UiService
 					Address = serializable.Address,
 					Layer = serializable.Layer,
 					UiType = Type.GetType(serializable.UiType),
-					LoadSynchronously = false
+					LoadSynchronously = serializable.LoadSynchronously
 				};
 			}
 
@@ -117,7 +127,8 @@ namespace GameLovers.UiService
 				{
 					Address = config.Address,
 					Layer = config.Layer,
-					UiType = config.UiType.AssemblyQualifiedName
+					UiType = config.UiType.AssemblyQualifiedName,
+					LoadSynchronously = config.LoadSynchronously
 				};
 			}
 		}

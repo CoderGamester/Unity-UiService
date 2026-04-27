@@ -29,6 +29,12 @@ namespace GameLovers.UiService
 		/// Gets the list of prefab entries for use with <see cref="PrefabRegistryUiAssetLoader"/>.
 		/// </summary>
 		public IReadOnlyList<PrefabEntry> PrefabEntries => _prefabEntries;
+
+		internal void SetPrefabEntries(IEnumerable<PrefabEntry> entries)
+		{
+			_prefabEntries.Clear();
+			_prefabEntries.AddRange(entries);
+		}
 	}
 }
 
