@@ -91,7 +91,6 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
-		[Ignore("Body is wired but the fixture is missing — once Tests/EditMode/Loaders/Resources/UiServiceTestPrefab.prefab (+ .meta) is created in Unity Editor, simply remove this [Ignore] attribute. See package AGENTS.md §3 Tests for the fixture-creation steps.")]
 		public void InstantiatePrefab_ValidResourceAddress_LoadsCachesAndInstantiatesInactive()
 		{
 			const string resourceAddress = "UiServiceTestPrefab";
