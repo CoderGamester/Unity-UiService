@@ -140,5 +140,27 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.IsNotNull(transitionFeature.OpenTransitionTask);
 			Assert.IsNotNull(transitionFeature.CloseTransitionTask);
 		}
+
+		[UnityTest]
+		public IEnumerator AnimationDelayFeature_LifecycleHooks_FireInOrderForOpenAndClose()
+		{
+			_mockLoader.RegisterPrefab<TestTrackingAnimationDelayPresenter>("tracking_animation_presenter");
+			_service.AddUiConfig(TestHelpers.CreateTestConfig(typeof(TestTrackingAnimationDelayPresenter), "tracking_animation_presenter", 0));
+
+			var openTask = _service.OpenUiAsync(typeof(TestTrackingAnimationDelayPresenter));
+			yield return openTask.ToCoroutine();
+			var presenter = openTask.GetAwaiter().GetResult() as TestTrackingAnimationDelayPresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+
+			_service.CloseUi(typeof(TestTrackingAnimationDelayPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
+
+			var hooks = presenter.AnimationFeature.RecordedHookOrder;
+			Assert.AreEqual(4, hooks.Count, "Expected all 4 lifecycle hooks to fire across open + close");
+			CollectionAssert.AreEqual(
+				new[] { "OnOpenStarted", "OnOpenedCompleted", "OnCloseStarted", "OnClosedCompleted" },
+				hooks,
+				"Open hooks must fire in order before close hooks; close hooks must fire after CloseTransitionTask completes");
+		}
 	}
 }

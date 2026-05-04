@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 **Fixed**:
 - `UiConfigs.UiConfigSerializable` now serializes `LoadSynchronously`. Configs round-tripped through a `UiConfigs` asset preserve the value (was previously hardcoded to `false` on deserialization)
+- `Tests/PlayMode/GameLovers.UiService.Tests.PlayMode.asmdef` now references `Unity.TextMeshPro` and `UnityEngine.UI` directly (asmdef references are not transitive; required when extending tests that touch the `TMPro` / `UnityEngine.UI` namespaces — e.g. `InteractableTextView` link-click, `NonDrawingView.OnPopulateMesh`)
+
+**New**:
+- Expanded test coverage: all generic-typed `IUiService` overloads (`LoadUiAsync<T>`, `UnloadUi<T>`, `UnloadUi<T>(T)`, `OpenUiAsync<T>`, `OpenUiAsync<T, TData>`, `RemoveUi<T>`, `RemoveUi<T>(T)`, `RemoveUi(Type, string)`); `TimeDelayFeature` / `AnimationDelayFeature` protected-lifecycle-hook fire order; `InteractableTextView.OnPointerClick` link detection; `NonDrawingView.OnPopulateMesh`; and `UiConfigs.SetSetsSize` shrink/grow + stale-entry filtering
 
 ## [1.2.1] - 2026-04-26
 

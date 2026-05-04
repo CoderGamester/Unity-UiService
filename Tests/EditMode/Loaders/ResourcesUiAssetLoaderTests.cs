@@ -91,6 +91,18 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		[Ignore("Requires a packaged Resources/UiServiceTestPrefab.prefab fixture (and corresponding .meta) that the Unity Editor must generate; un-ignore once the fixture is checked into Tests/EditMode/Loaders/Resources/.")]
+		public void InstantiatePrefab_ValidResourceAddress_ReturnsInstance()
+		{
+			// When the fixture is added, this test should:
+			//   var config = TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "UiServiceTestPrefab");
+			//   var go = _loader.InstantiatePrefab(config, _parentTransform).GetAwaiter().GetResult();
+			//   Assert.IsNotNull(go);
+			//   Assert.AreEqual(_parentTransform, go.transform.parent);
+			//   _createdObjects.Add(go);
+		}
+
+		[Test]
 		public void MultipleInstances_CanBeCreated()
 		{
 			// This test verifies the loader doesn't have singleton restrictions

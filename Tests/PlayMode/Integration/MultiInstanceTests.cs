@@ -165,5 +165,57 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Assert - Default instance address should be the config's address
 			Assert.AreEqual("test_presenter", presenter.InstanceAddress);
 		}
+
+		[UnityTest]
+		public IEnumerator RemoveUiGeneric_LoadedSingleton_RemovesAndReturnsTrue()
+		{
+			var loadTask = _service.LoadUiAsync<TestUiPresenter>();
+			yield return loadTask.ToCoroutine();
+			var presenter = loadTask.GetAwaiter().GetResult();
+			Assume.That(presenter, Is.Not.Null);
+			Assume.That(_service.GetLoadedPresenters().Count, Is.EqualTo(1));
+
+			var removed = _service.RemoveUi<TestUiPresenter>();
+
+			Assert.IsTrue(removed);
+			Assert.AreEqual(0, _service.GetLoadedPresenters().Count);
+		}
+
+		[UnityTest]
+		public IEnumerator RemoveUiGenericInstance_WithExplicitPresenter_RemovesAtItsAddress()
+		{
+			var task1 = _service.LoadUiAsync(typeof(TestUiPresenter), "instA");
+			yield return task1.ToCoroutine();
+			var task2 = _service.LoadUiAsync(typeof(TestUiPresenter), "instB");
+			yield return task2.ToCoroutine();
+			var presenterB = (TestUiPresenter) task2.GetAwaiter().GetResult();
+
+			var removed = _service.RemoveUi<TestUiPresenter>(presenterB);
+
+			Assert.IsTrue(removed);
+			var loaded = _service.GetLoadedPresenters();
+			Assert.AreEqual(1, loaded.Count);
+			Assert.AreEqual("instA", loaded[0].Address);
+		}
+
+		[UnityTest]
+		public IEnumerator RemoveUiTypeAddress_WithExplicitAddress_RemovesOnlyThatInstance()
+		{
+			var task1 = _service.LoadUiAsync(typeof(TestUiPresenter), "instA");
+			yield return task1.ToCoroutine();
+			var task2 = _service.LoadUiAsync(typeof(TestUiPresenter), "instB");
+			yield return task2.ToCoroutine();
+
+			var firstRemoval = _service.RemoveUi(typeof(TestUiPresenter), "instB");
+
+			Assert.IsTrue(firstRemoval);
+			var loaded = _service.GetLoadedPresenters();
+			Assert.AreEqual(1, loaded.Count);
+			Assert.AreEqual("instA", loaded[0].Address);
+
+			var secondRemoval = _service.RemoveUi(typeof(TestUiPresenter), "instB");
+
+			Assert.IsFalse(secondRemoval);
+		}
 	}
 }

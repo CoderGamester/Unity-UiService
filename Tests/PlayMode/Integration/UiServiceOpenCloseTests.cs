@@ -376,6 +376,37 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		public IEnumerator OpenUiAsyncGeneric_LoadedPresenter_OpensSuccessfully()
+		{
+			var task = _service.OpenUiAsync<TestUiPresenter>();
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+
+			Assert.IsNotNull(presenter);
+			Assert.IsInstanceOf<TestUiPresenter>(presenter);
+			Assert.That(presenter.IsOpen, Is.True);
+			Assert.That(_service.IsVisible<TestUiPresenter>(), Is.True);
+			Assert.That(_service.VisiblePresenters.Count, Is.EqualTo(1));
+		}
+
+		[UnityTest]
+		public IEnumerator OpenUiAsyncGenericWithData_LoadedPresenter_OpensAndPassesData()
+		{
+			var data = new TestPresenterData { Id = 123, Name = "GenericData" };
+
+			var task = _service.OpenUiAsync<TestDataUiPresenter, TestPresenterData>(data);
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
+
+			Assert.IsNotNull(presenter);
+			Assert.IsInstanceOf<TestDataUiPresenter>(presenter);
+			Assert.That(presenter.WasDataSet, Is.True);
+			Assert.AreEqual(123, presenter.ReceivedData.Id);
+			Assert.AreEqual("GenericData", presenter.ReceivedData.Name);
+		}
+
+		[UnityTest]
 		public IEnumerator OpenUiAsync_TypeAddressDataOverload_PassesDataToPresenter()
 		{
 			var data = new TestPresenterData { Id = 7, Name = "Address" };

@@ -158,5 +158,27 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Assert - Presenter's transition completed after feature
 			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
 		}
+
+		[UnityTest]
+		public IEnumerator TimeDelayFeature_LifecycleHooks_FireInOrderForOpenAndClose()
+		{
+			_mockLoader.RegisterPrefab<TestTrackingTimeDelayPresenter>("tracking_time_delay_presenter");
+			_service.AddUiConfig(TestHelpers.CreateTestConfig(typeof(TestTrackingTimeDelayPresenter), "tracking_time_delay_presenter", 0));
+
+			var openTask = _service.OpenUiAsync(typeof(TestTrackingTimeDelayPresenter));
+			yield return openTask.ToCoroutine();
+			var presenter = openTask.GetAwaiter().GetResult() as TestTrackingTimeDelayPresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+
+			_service.CloseUi(typeof(TestTrackingTimeDelayPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
+
+			var hooks = presenter.DelayFeature.RecordedHookOrder;
+			Assert.AreEqual(4, hooks.Count, "Expected all 4 lifecycle hooks to fire across open + close");
+			CollectionAssert.AreEqual(
+				new[] { "OnOpenStarted", "OnOpenedCompleted", "OnCloseStarted", "OnClosedCompleted" },
+				hooks,
+				"Open hooks must fire in order before close hooks; close hooks must fire after CloseTransitionTask completes");
+		}
 	}
 }

@@ -348,6 +348,52 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		public IEnumerator LoadUiAsyncGeneric_ValidConfig_ReturnsTypedPresenter()
+		{
+			var task = _service.LoadUiAsync<TestUiPresenter>();
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
+
+			Assert.IsNotNull(presenter);
+			Assert.IsInstanceOf<TestUiPresenter>(presenter);
+			Assert.That(presenter.IsOpen, Is.False);
+			var loaded = _service.GetLoadedPresenters();
+			Assert.AreEqual(1, loaded.Count);
+			Assert.AreSame(presenter, loaded[0].Presenter);
+		}
+
+		[UnityTest]
+		public IEnumerator UnloadUiGeneric_LoadedSingleton_UnloadsCorrectly()
+		{
+			var loadTask = _service.LoadUiAsync<TestUiPresenter>();
+			yield return loadTask.ToCoroutine();
+			Assume.That(_service.GetLoadedPresenters().Count, Is.EqualTo(1));
+			var unloadCallsBefore = _mockLoader.UnloadCallCount;
+
+			_service.UnloadUi<TestUiPresenter>();
+
+			Assert.AreEqual(0, _service.GetLoadedPresenters().Count);
+			Assert.AreEqual(unloadCallsBefore + 1, _mockLoader.UnloadCallCount);
+		}
+
+		[UnityTest]
+		public IEnumerator UnloadUiGenericInstance_WithExplicitPresenter_UnloadsAtItsAddress()
+		{
+			var task1 = _service.LoadUiAsync(typeof(TestUiPresenter), "instA");
+			yield return task1.ToCoroutine();
+			var task2 = _service.LoadUiAsync(typeof(TestUiPresenter), "instB");
+			yield return task2.ToCoroutine();
+			var presenterB = (TestUiPresenter) task2.GetAwaiter().GetResult();
+			Assume.That(_service.GetLoadedPresenters().Count, Is.EqualTo(2));
+
+			_service.UnloadUi<TestUiPresenter>(presenterB);
+
+			var loaded = _service.GetLoadedPresenters();
+			Assert.AreEqual(1, loaded.Count);
+			Assert.AreEqual("instA", loaded[0].Address);
+		}
+
+		[UnityTest]
 		public IEnumerator LoadUiAsync_CancellationRequestedMidLoad_AbortsBeforeAddRegistration()
 		{
 			_mockLoader.SimulatedDelayMs = 1000;
