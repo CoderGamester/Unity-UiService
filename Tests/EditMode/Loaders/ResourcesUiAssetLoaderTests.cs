@@ -91,15 +91,26 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
-		[Ignore("Requires a packaged Resources/UiServiceTestPrefab.prefab fixture (and corresponding .meta) that the Unity Editor must generate; un-ignore once the fixture is checked into Tests/EditMode/Loaders/Resources/.")]
-		public void InstantiatePrefab_ValidResourceAddress_ReturnsInstance()
+		[Ignore("Body is wired but the fixture is missing — once Tests/EditMode/Loaders/Resources/UiServiceTestPrefab.prefab (+ .meta) is created in Unity Editor, simply remove this [Ignore] attribute. See package AGENTS.md §3 Tests for the fixture-creation steps.")]
+		public void InstantiatePrefab_ValidResourceAddress_LoadsCachesAndInstantiatesInactive()
 		{
-			// When the fixture is added, this test should:
-			//   var config = TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "UiServiceTestPrefab");
-			//   var go = _loader.InstantiatePrefab(config, _parentTransform).GetAwaiter().GetResult();
-			//   Assert.IsNotNull(go);
-			//   Assert.AreEqual(_parentTransform, go.transform.parent);
-			//   _createdObjects.Add(go);
+			const string resourceAddress = "UiServiceTestPrefab";
+			var config = TestHelpers.CreateTestConfig(typeof(TestUiPresenter), resourceAddress);
+
+			var firstInstance = _loader.InstantiatePrefab(config, _parentTransform).GetAwaiter().GetResult();
+			_createdObjects.Add(firstInstance);
+
+			Assert.IsNotNull(firstInstance);
+			Assert.AreEqual(_parentTransform, firstInstance.transform.parent);
+			Assert.IsFalse(firstInstance.activeSelf,
+				"ResourcesUiAssetLoader.InstantiatePrefab must SetActive(false) on the new instance — UiService relies on this to control visibility before the open lifecycle starts");
+
+			var secondInstance = _loader.InstantiatePrefab(config, _parentTransform).GetAwaiter().GetResult();
+			_createdObjects.Add(secondInstance);
+
+			Assert.IsNotNull(secondInstance);
+			Assert.AreNotSame(firstInstance, secondInstance,
+				"Each call must return a distinct instance — the cache stores the prefab, not the instance");
 		}
 
 		[Test]
