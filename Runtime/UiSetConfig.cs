@@ -11,7 +11,6 @@ namespace GameLovers.UiService
 	/// This can be helpful for a UI combo set that are always visible together (ex: player Hud with currency & settings)
 	/// Supports multiple instances of the same UI type via UiInstanceId
 	/// </summary>
-	[Serializable]
 	public struct UiSetConfig
 	{
 		public int SetId;
