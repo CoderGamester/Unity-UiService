@@ -4,23 +4,19 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
-## [1.2.3] - 2026-07-04
+## [1.2.2] - 2026-07-04
 
-**Fixed**:
-- `ResourcesUiAssetLoaderTests` Resources happy-path test no longer ignored (ships test prefab under `Tests/EditMode/Loaders/Resources/`).
-- Removed redundant `[Serializable]` from `UiConfig` and `UiSetConfig` structs.
+**New**:
+- Expanded test coverage: all generic-typed `IUiService` overloads
 
 **Changed**:
 - Pruned dead `[Ignore]` Addressables PlayMode tests; expanded Resources loader happy-path coverage.
 
-## [1.2.2] - 2026-04-28
-
 **Fixed**:
-- `UiConfigs.UiConfigSerializable` now serializes `LoadSynchronously`. Configs round-tripped through a `UiConfigs` asset preserve the value (was previously hardcoded to `false` on deserialization)
-- `Tests/PlayMode/GameLovers.UiService.Tests.PlayMode.asmdef` now references `Unity.TextMeshPro` and `UnityEngine.UI` directly (asmdef references are not transitive; required when extending tests that touch the `TMPro` / `UnityEngine.UI` namespaces — e.g. `InteractableTextView` link-click, `NonDrawingView.OnPopulateMesh`)
-
-**New**:
-- Expanded test coverage: all generic-typed `IUiService` overloads (`LoadUiAsync<T>`, `UnloadUi<T>`, `UnloadUi<T>(T)`, `OpenUiAsync<T>`, `OpenUiAsync<T, TData>`, `RemoveUi<T>`, `RemoveUi<T>(T)`, `RemoveUi(Type, string)`); `TimeDelayFeature` / `AnimationDelayFeature` protected-lifecycle-hook fire order; `InteractableTextView.OnPointerClick` link detection; `NonDrawingView.OnPopulateMesh`; and `UiConfigs.SetSetsSize` shrink/grow + stale-entry filtering
+- `UiConfigs.UiConfigSerializable` now serializes `LoadSynchronously`
+- `Tests/PlayMode/GameLovers.UiService.Tests.PlayMode.asmdef` now references `Unity.TextMeshPro` and `UnityEngine.UI` directly
+- Tests fixed.
+- Removed redundant `[Serializable]` from `UiConfig` and `UiSetConfig` structs.
 
 ## [1.2.1] - 2026-04-26
 
@@ -155,7 +151,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 **Changed**:
 - Renamed *AdjustScreenSizeFitter* to *AdjustScreenSizeFitterView* to mark it as a View in the architecture conventions
-- Moved *AdjustScreenSizeFitterView* and *NonDrawingView*, *SafeAreaHelperView* to the Views folder and namespace to organize the codebase accordingly 
+- Moved *AdjustScreenSizeFitterView* and *NonDrawingView*, *SafeAreaHelperView* to the Views folder and namespace to organize the codebase accordingly
 
 ## [0.11.0] - 2025-01-05
 
@@ -227,7 +223,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added *SafeAreaHelperView* to add the possibility for the *RectTransform* to adjust himself to the screen notches
 - Added *AnimatedUiPresenter* to play animation on enter or closing
 - Added the possibility to add *Layers* externally into the *UiService*
-  
+
 **Changed**:
 - Now *Canvas* are single *GameObjects* that can be controlled outside of the *UiService*
 
@@ -242,7 +238,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [0.6.0] - 2020-09-24
 
 ***New**:
-- Added the possibility for the *IUiService* to allow to open/close already opened/closed *UiPresenters*, and throw an exception if not. 
+- Added the possibility for the *IUiService* to allow to open/close already opened/closed *UiPresenters*, and throw an exception if not.
 - Added the visible property to UiPresenter of its current visual status Added *IUiServiceInit* to give a new contract interface for the *UiService" initialisation
 
 **Fixed**:
