@@ -42,6 +42,7 @@ Managing UI in Unity games often becomes a tangled mess of direct references, sc
 - **[Unity](https://unity.com/download)** (v6.0+) - To run the package
 - **[Unity Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@latest)** (v2.6.0+) - For async asset loading
 - **[UniTask](https://github.com/Cysharp/UniTask)** (v2.5.10+) - For efficient async operations
+- **[Universal Render Pipeline](https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@latest)** (v17.0.1+) - Required by the camera-stacking, render-texture, and backdrop-blur presenter features (`Runtime/Rendering/`)
 
 Dependencies are automatically resolved when installing via Unity Package Manager.
 
@@ -49,7 +50,8 @@ Dependencies are automatically resolved when installing via Unity Package Manage
 
 | Unity Version | Status | Notes |
 |---------------|--------|-------|
-| 6000.3.x (Unity 6) | ✅ Fully Tested | Primary development target |
+| 6000.5.x (Unity 6) | ✅ Fully Tested | Primary development target |
+| 6000.3.x (Unity 6) | ✅ Fully Tested | |
 | 6000.0.x (Unity 6) | ✅ Fully Tested | Fully supported |
 | 2022.3 LTS | ⚠️ Untested | May require minor adaptations |
 

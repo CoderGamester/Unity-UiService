@@ -8,9 +8,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 **New**:
 - Expanded test coverage: all generic-typed `IUiService` overloads
+- Added `com.unity.render-pipelines.universal` as a package dependency (17.0.1 floor) and a second assembly, `GameLovers.UiService.Urp` (`Runtime/Rendering/`, namespace `GameLovers.UiService.Rendering`), quarantining URP-referencing code away from the core assembly
+- Added `UiPanelSettingsFeature`: clones a presenter's `PanelSettings` per-instance (policy: `UseSharedAsset` / `CloneWhenOverridden` / `CloneAlways`) instead of mutating the shared asset every `UIDocument` in a project may reference; mirrors `UIDocument.sortingOrder` onto the clone so `UiConfig.Layer` layering keeps working
+- Added `UiCameraStackFeature`: switches a presenter's `Canvas` to Screen Space - Camera and stacks its overlay camera onto a base camera via `UniversalAdditionalCameraData.cameraStack`, so UI can layer over 3D content. Base-camera resolution goes through a swappable `IUiBaseCameraProvider` (default `Camera.main`, cached and invalidated on scene load); multi-camera ordering is delegated to `UiCameraStackRegistry`, a pure insert-index function with zero engine references
+- Added `UiRenderTextureFeature`: renders a presenter's Canvas or UI Toolkit `UIDocument` into a `RenderTexture` (uGUI path switches Screen Space - Overlay to Screen Space - Camera with a dedicated render camera; UI Toolkit path routes through `UiPanelSettingsFeature.SetTargetTexture`). Defaults to a pre-authored `RenderTexture` asset; dynamic allocation is the escape hatch, tracked via an explicit ownership flag
+- Added `UiBackdropBlurFeature` + `UiBackdropBlurPresenterFeature`: a `ScriptableRendererFeature` (add to the project's URP Renderer asset) that blurs everything behind a presenter's UI while it is open. Injection is gated by `UiBackdropBlurInjection.ShouldInject`, a pure predicate that skips Scene/Preview cameras, URP overlay cameras stacked by `UiCameraStackFeature`, and cameras targeting a `RenderTexture` via `UiRenderTextureFeature`
 
 **Changed**:
 - Pruned dead `[Ignore]` Addressables PlayMode tests; expanded Resources loader happy-path coverage.
+- `InteractableTextView` now resolves the correct event camera for TMP link hit-testing (matching `UnityEngine.UI.GraphicRaycaster`'s own rule) instead of hardcoding `null` -- was only correct because every canvas in this package was Screen Space - Overlay, which stopped being universally true once `UiCameraStackFeature` and `UiRenderTextureFeature` landed
+- Converted all 9 sample scenes (`BasicUiFlow`, `DataPresenter`, `DelayedPresenter`, `MultiInstance`, `CustomFeatures`, `UiSets`, `AssetLoadingStrategies`, `UiToolkit`, `DelayedUiToolkit`) to URP: each Main Camera now carries `UniversalAdditionalCameraData`. Every sample Canvas stays Screen Space - Overlay (pipeline-independent), so this was the only change each scene needed. BiRP/HDRP consumers who import a sample will see a missing-script warning on the camera -- accepted, since it only affects consumers who both stay off URP and import a sample
 
 **Fixed**:
 - `UiConfigs.UiConfigSerializable` now serializes `LoadSynchronously`

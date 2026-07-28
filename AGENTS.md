@@ -8,6 +8,7 @@
 - **Dependencies** (see `package.json`)
   - `com.unity.addressables` (2.6.0)
   - `com.cysharp.unitask` (2.5.10)
+  - `com.unity.render-pipelines.universal` (17.0.1) — required by the `Runtime/Rendering/` presenter features (camera stacking, render-texture targets, backdrop blur); floor version matches this package's `unity: 6000.0` (declaring the 17.5.0 bundled with newer editors would silently raise the effective Unity requirement — UPM resolves upward regardless of the floor)
 
 This package provides a centralized UI management service that coordinates presenter **load/open/close/unload**, supports **layering**, **UI sets**, and **multi-instance** presenters, and integrates with **Addressables** + **UniTask**.
 
@@ -45,6 +46,11 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `ITransitionFeature` interface for features that provide open/close transition delays (presenter awaits these).
   - Built-in transition features: `TimeDelayFeature`, `AnimationDelayFeature`.
   - UI Toolkit support: `UiToolkitPresenterFeature` (via `UIDocument`) provides `AddVisualTreeAttachedListener(callback)` for safe element queries. Callback is invoked on each open because UI Toolkit recreates elements when the presenter is deactivated/reactivated.
+  - `Runtime/Features/UiPanelSettingsFeature.cs` (core assembly, no URP dependency): clones a presenter's `PanelSettings` per-instance instead of mutating the shared asset every `UIDocument` referencing it would otherwise see. `SetTargetTexture(RenderTexture)` is the seam `UiRenderTextureFeature`'s UI Toolkit path uses — never assign `PanelSettings.targetTexture` directly.
+- **URP presenter features**: `Runtime/Rendering/*` (second assembly `GameLovers.UiService.Urp`, namespace `GameLovers.UiService.Rendering`, references `Unity.RenderPipelines.Universal.Runtime` + `Unity.RenderPipelines.Core.Runtime`) — quarantines the URP dependency to one folder so the core assembly stays URP-free; a future retreat from the hard dependency becomes a folder move.
+  - `UiCameraStackFeature`: Screen Space - Camera + URP `cameraStack` insertion for a prefab-child overlay camera. Base camera resolved via swappable `IUiBaseCameraProvider` (default `UiBaseCameraProvider`, wraps `Camera.main`). Ordering math lives in the URP-free `UiCameraStackRegistry.InsertIndex`; per-camera priority is tracked via a `UiCameraStackPriorityMarker` component on the overlay camera itself (no separate static registry to leak).
+  - `UiRenderTextureFeature`: routes to `UiRenderTextureMode.Canvas` (Screen Space - Camera + dedicated render `Camera`) or `.UiToolkit` (via `UiPanelSettingsFeature.SetTargetTexture`); `Auto` resolves from whichever companion feature/component is present.
+  - `UiBackdropBlurFeature` (`ScriptableRendererFeature`, added to the consumer's URP Renderer asset) + `UiBackdropBlurPresenterFeature` (registers/unregisters a blur request while open). Injection is gated by the URP-free `UiBackdropBlurInjection.ShouldInject` predicate and resolved by `UiBackdropBlurRequests` (static, refcounted, highest-`sortKey`-wins).
 - **Helper views**: `Runtime/Views/*` (`GameLovers.UiService.Views`)
   - `SafeAreaHelperView`: adjusts anchors/size based on safe area (notches).
   - `NonDrawingView`: raycast target without rendering (extends `Graphic`).
@@ -72,6 +78,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
       - UI Toolkit presenters rely on `UiToolkitPresenterFeature`; avoid querying `UIDocument.rootVisualElement` during `OnInitialized()`—use `AddVisualTreeAttachedListener(...)`.
     - `Views/*` — **optional helper components** used by presenter prefabs (safe area, raycasts, layout fitters, TMP link clicks).
       - If interaction/layout is off but service bookkeeping looks correct, look here before changing `UiService`.
+    - `Rendering/*` — **URP presenter features** (camera stacking, render-texture targets, backdrop blur). Own assembly (`GameLovers.UiService.Urp.asmdef`) so the URP dependency stays out of the core assembly. See §2 for the per-type breakdown.
 - **Editor**: `Editor/` (assembly: `Editor/GameLovers.UiService.Editor.asmdef`)
   - Config editors: `UiConfigsEditorBase.cs`, `*UiConfigsEditor.cs`, `DefaultUiConfigsEditor.cs`.
   - Debugging: `UiPresenterManagerWindow.cs`, `UiPresenterEditor.cs`.
@@ -101,6 +108,11 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
 - **Layering**
   - `UiService` enforces sorting by setting `Canvas.sortingOrder` or `UIDocument.sortingOrder` to the config layer when adding/loading.
   - Loaded presenters are instantiated under the `"Ui"` root directly (no per-layer container GameObjects).
+- **`UiConfig.Layer` is not a total order once render modes mix**
+  - Screen Space - Overlay canvases composite after ALL URP rendering, straight to the backbuffer. A `UiCameraStackFeature` presenter (Screen Space - Camera, URP-stacked) at a high `Layer` still draws underneath an Overlay presenter at `Layer` 0 the moment both exist in the same scene. This is a fundamental property of how the two render modes composite, not a bug — there is no runtime fix. Keep Overlay and camera-stacked presenters visually separated (e.g. HUD as Overlay, world-anchored UI as stacked), or accept the fixed relative order.
+  - `UiCameraStackFeature` + `UiRenderTextureFeature` are mutually exclusive on the same presenter: URP requires a stacked overlay camera to share the base camera's render target, but a render-texture-target camera by definition renders to its own texture. Do not combine them on one presenter.
+- **`UiPanelSettingsFeature` cloning changes what drives layering for UI Toolkit presenters**
+  - N `UIDocument`s sharing one `PanelSettings` share one panel, ordered via `UIDocument.sortingOrder` (what `UiService` sets from `UiConfig.Layer`). The moment a presenter clones its `PanelSettings` (any policy other than `UseSharedAsset`), it gets its own panel, and cross-presenter ordering for *that* presenter switches to `PanelSettings.sortingOrder`. `UiPanelSettingsFeature` mirrors `Document.sortingOrder` onto the clone automatically, so this is handled — but do not add a third sorting-order branch to `UiService.EnsureCanvasSortingOrder` to "fix" it further; the mirroring belongs in the feature, not the service.
 - **UI Sets store types, not addresses**
   - UI sets are serialized as `UiSetEntry` (type name + instance address). The default editor populates `InstanceAddress` with the **addressable address** for uniqueness.
 - **`LoadSynchronously` persistence**
