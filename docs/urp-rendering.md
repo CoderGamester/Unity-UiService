@@ -1,43 +1,34 @@
 # URP Rendering Features
 
-Four presenter features for Universal Render Pipeline projects, all living under `Runtime/Rendering/` in a
-dedicated assembly (`GameLovers.UiService.Urp`, namespace `GameLovers.UiService.Rendering`). This package
-depends on `com.unity.render-pipelines.universal` (17.0.1+) for exactly these features — nothing else in the
-package touches URP.
+Three presenter features for Universal Render Pipeline projects, living under `Runtime/Rendering/`
+(namespace `GameLovers.UiService.Rendering`). This package depends on
+`com.unity.render-pipelines.universal` (17.0.1+) — it is a **URP-only package**, and these types compile into
+the main `GameLovers.UiService` assembly along with everything else.
 
 Add any of these as components on a presenter prefab alongside its `UiPresenter` subclass, the same way you'd
 add `TimeDelayFeature` or `UiToolkitPresenterFeature` — see [Core Concepts](core-concepts.md) for the general
 feature-composition pattern.
 
-## `UiPanelSettingsFeature`
+## UI Toolkit presenters: use `PanelSettings`, don't script it
 
-Gives a UI Toolkit presenter (one with `UiToolkitPresenterFeature`) safe, per-instance control over its
-`PanelSettings` — render mode, clear color, resolution — without mutating the shared asset other presenters
-may reference.
+There is deliberately **no** feature here for per-presenter `PanelSettings`. UI Toolkit already solves this at
+authoring time, and better than a runtime component could.
 
-```csharp
-[RequireComponent(typeof(UiToolkitPresenterFeature))]
-```
+A `PanelSettings` asset *is* a panel. Every `UIDocument` pointing at the same asset shares one panel — which is
+exactly what makes cross-presenter ordering via `UIDocument.sortingOrder` (set by `UiService` from
+`UiConfig.Layer`) work. So:
 
-`PanelSettings` is a plain `ScriptableObject` asset, commonly shared across every UI Toolkit presenter in a
-project. Writing directly to a shared asset's fields mutates it for every consumer, and in the Editor persists
-that mutation to disk. This feature clones per-presenter instead, controlled by `UiPanelSettingsClonePolicy`:
-
-| Policy | Behavior |
-|---|---|
-| `UseSharedAsset` | Never clones. Overrides are ignored (logged) since applying them would mutate the shared asset. |
-| `CloneWhenOverridden` (default) | Clones only if at least one `UiPanelSettingsOverrides` field is set, or `SetTargetTexture` is called. |
-| `CloneAlways` | Always clones on init. |
-
-`ActivePanelSettings` returns whichever is currently in effect (clone or shared asset); `IsClone` reports which.
-`SetTargetTexture(RenderTexture)` is the seam `UiRenderTextureFeature`'s UI Toolkit path uses — call it directly
-only if you're not also using that feature.
-
-**Layering note**: multiple `UIDocument`s sharing one `PanelSettings` share one panel, ordered via
-`UIDocument.sortingOrder` (what `UiService` sets from `UiConfig.Layer`). Once a presenter clones its
-`PanelSettings`, it gets its own panel, and its ordering switches to `PanelSettings.sortingOrder`. This feature
-mirrors `Document.sortingOrder` onto the clone automatically — you don't need to do anything, but if you're
-debugging a layering issue on a UI Toolkit presenter, check `IsClone` first.
+- **Never mutate `PanelSettings` at runtime.** It is a shared `ScriptableObject`; writing to it reconfigures
+  every other presenter using it, and in the Editor persists that change to disk.
+  `UiToolkitPresenterFeature.PanelSettings` is exposed read-only for inspection, with that contract documented
+  on the property.
+- **If a presenter needs different settings, author a second `PanelSettings` asset** and point that presenter's
+  `UIDocument` at it. Group presenters by panel configuration, not one asset per presenter — you want as few
+  panels as possible for batching.
+- **For world-space UI, set `PanelSettings.renderMode = PanelRenderMode.WorldSpace`** on that asset, then
+  position each document via `UIDocument.position`, `pivot`, `pivotReferenceSize`, `worldSpaceSize`, and
+  `worldSpaceSizeMode`. Unity 6 renders the panel in world space natively — no render texture, no intermediate
+  quad, no cloning. This is why `UiRenderTextureFeature` (below) is uGUI-only.
 
 ## `UiCameraStackFeature`
 
@@ -68,31 +59,29 @@ Overlay, world-anchored UI as stacked), or accept the fixed relative order betwe
 
 ## `UiRenderTextureFeature`
 
-Renders a presenter's UI into a `RenderTexture` instead of the screen — for 3D-in-world UI, portals, or
-minimap-style composition.
+Renders a presenter's **uGUI `Canvas`** into a `RenderTexture` instead of the screen — for 3D-in-world UI,
+portals, or minimap-style composition.
 
-Resolves `UiRenderTextureMode.Auto` from the presenter's own components (`UiPanelSettingsFeature` present →
-`.UiToolkit`, otherwise → `.Canvas`), or set the mode explicitly.
+**uGUI only, deliberately.** For UI Toolkit, use `PanelRenderMode.WorldSpace` (see above) — it renders a
+`UIDocument` in world space natively, with no texture round-trip and no shared-asset mutation. Adding this
+feature to a presenter that has a `UIDocument` and no `Canvas` logs an error naming that alternative.
 
-- **Canvas mode**: Screen Space - Overlay canvases cannot render into a `RenderTexture`. This feature switches
-  to Screen Space - Camera and points a dedicated render `Camera` (assign one in the Inspector) at the texture.
-  Without that camera assigned, it logs an error rather than silently doing nothing.
-- **UiToolkit mode**: routes through `UiPanelSettingsFeature.SetTargetTexture(...)` — requires that feature on
-  the same GameObject. Never assign `PanelSettings.targetTexture` directly; there must be exactly one owner of
-  the clone.
+Screen Space - Overlay canvases cannot render into a `RenderTexture`, so this feature switches the canvas to
+Screen Space - Camera and points a dedicated render `Camera` (assign one in the Inspector) at the texture.
+Without that camera assigned, it logs an error rather than silently doing nothing.
 
 Defaults to a pre-authored `RenderTexture` asset (assign one in the Inspector) — no lifetime or
 resolution-change problem. Dynamic allocation is the escape hatch (`_matchScreenSize` reallocates on
 `UiService.OnResolutionChanged`), tracked via an ownership flag so a preset asset is never released or
 destroyed by this feature.
 
-**Depth/stencil is not optional**: both uGUI `Mask`/`RectMask2D` and UI Toolkit masking need a stencil buffer.
-The default depth bits (24) allocates depth+stencil.
+**Depth/stencil is not optional**: uGUI `Mask`/`RectMask2D` needs a stencil buffer. The default depth bits (24)
+allocates depth+stencil.
 
 **Color space is an open question, not a settled one**: in a Linear project, UI rendered to a texture and then
-sampled by a world-space material can double-apply or drop the sRGB transform, and the correct combination is
-expected to differ between the uGUI and UI Toolkit paths. This has not been verified against a real rendered
-frame — check visually before shipping a world-space consumer of this feature's output.
+sampled by a world-space material can double-apply or drop the sRGB transform, depending on the sampling
+material's own handling. This has not been verified against a real rendered frame — check visually before
+shipping a world-space consumer of this feature's output.
 
 ### ⚠️ Mutually exclusive with `UiCameraStackFeature`
 

@@ -82,14 +82,13 @@ Runtime/
 ├── Features/              # Composable features
 │   ├── TimeDelayFeature.cs
 │   ├── AnimationDelayFeature.cs
-│   ├── UiToolkitPresenterFeature.cs
-│   └── UiPanelSettingsFeature.cs
+│   └── UiToolkitPresenterFeature.cs
 ├── Views/                 # Helper components
 │   ├── SafeAreaHelperView.cs
 │   ├── NonDrawingView.cs
 │   ├── AdjustScreenSizeFitterView.cs
 │   └── InteractableTextView.cs
-└── Rendering/             # URP presenter features (own assembly, GameLovers.UiService.Urp)
+└── Rendering/             # URP presenter features
     ├── UiCameraStackFeature.cs
     ├── UiRenderTextureFeature.cs
     └── UiBackdropBlurFeature.cs + UiBackdropBlurPresenterFeature.cs

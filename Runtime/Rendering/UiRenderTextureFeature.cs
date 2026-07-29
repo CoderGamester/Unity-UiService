@@ -3,50 +3,41 @@ using UnityEngine.Events;
 
 namespace GameLovers.UiService.Rendering
 {
-	/// <summary>Which presentation path <see cref="UiRenderTextureFeature"/> should route through.</summary>
-	public enum UiRenderTextureMode
-	{
-		/// <summary>Resolve from the presenter's own components: <see cref="UiPanelSettingsFeature"/> if present, otherwise Canvas.</summary>
-		Auto,
-
-		/// <summary>uGUI path: switches the Canvas to Screen Space - Camera and targets a dedicated render Camera at the texture.</summary>
-		Canvas,
-
-		/// <summary>UI Toolkit path: routes through <see cref="UiPanelSettingsFeature.SetTargetTexture"/>.</summary>
-		UiToolkit
-	}
-
 	/// <summary>
-	/// Renders a presenter's UI (uGUI Canvas or UI Toolkit <see cref="UnityEngine.UIElements.UIDocument"/>)
-	/// into a <see cref="RenderTexture"/> instead of the screen -- for 3D-in-world UI, portals, or
-	/// minimap-style composition.
+	/// Renders a presenter's <b>uGUI <see cref="Canvas"/></b> into a <see cref="RenderTexture"/> instead
+	/// of the screen -- for 3D-in-world UI, portals, or minimap-style composition.
 	/// </summary>
 	/// <remarks>
 	/// <para>
+	/// <b>uGUI only, deliberately.</b> There is no UI Toolkit path here. UI Toolkit's own
+	/// <c>PanelSettings.renderMode = PanelRenderMode.WorldSpace</c> renders a <c>UIDocument</c> directly
+	/// in world space -- positioned per-document via <c>UIDocument.position</c> / <c>pivot</c> /
+	/// <c>worldSpaceSize</c> -- with no render texture, no intermediate quad, and no per-presenter
+	/// <c>PanelSettings</c> mutation. Use that instead; routing UI Toolkit through a texture here would
+	/// be strictly worse. See <c>docs/urp-rendering.md</c>.
+	/// </para>
+	/// <para>
 	/// <b>Screen Space - Overlay cannot render into a RenderTexture.</b> Every sample canvas in this
-	/// package ships as Overlay, so the Canvas path here is net-new: it switches the canvas to
+	/// package ships as Overlay, so this path is net-new: it switches the canvas to
 	/// Screen Space - Camera and points a dedicated render <see cref="Camera"/> (a prefab child,
 	/// assigned via the inspector) at the texture. Without that camera assigned, this feature logs
 	/// an error rather than silently doing nothing.
 	/// </para>
 	/// <para>
-	/// <b>Depth/stencil is not optional.</b> uGUI <c>Mask</c>/<c>RectMask2D</c> and UI Toolkit masking
-	/// both need a stencil buffer; a texture created without one renders masks as no-ops or garbage.
-	/// The default depth bits (24) allocates depth+stencil via the legacy <see cref="RenderTexture"/>
-	/// constructor.
+	/// <b>Depth/stencil is not optional.</b> uGUI <c>Mask</c>/<c>RectMask2D</c> needs a stencil buffer;
+	/// a texture created without one renders masks as no-ops or garbage. The default depth bits (24)
+	/// allocates depth+stencil via the legacy <see cref="RenderTexture"/> constructor.
 	/// </para>
 	/// <para>
 	/// <b>Color space is a known open question.</b> In a Linear project, UI rendered to a texture and
-	/// then sampled by a world-space material can double-apply or drop the sRGB transform, and the
-	/// correct combination differs between the uGUI and UI Toolkit paths depending on the sampling
-	/// material's own color space handling. This has not been verified against a real rendered frame
-	/// -- treat it as a known gap to check visually before shipping a world-space consumer of this
-	/// feature's output, not as settled behaviour.
+	/// then sampled by a world-space material can double-apply or drop the sRGB transform, depending on
+	/// the sampling material's own color space handling. This has not been verified against a real
+	/// rendered frame -- treat it as a known gap to check visually before shipping a world-space
+	/// consumer of this feature's output, not as settled behaviour.
 	/// </para>
 	/// </remarks>
 	public class UiRenderTextureFeature : PresenterFeatureBase
 	{
-		[SerializeField] private UiRenderTextureMode _mode = UiRenderTextureMode.Auto;
 		[SerializeField] private RenderTexture _presetTexture;
 		[SerializeField] private bool _matchScreenSize;
 		[SerializeField] private Vector2Int _size = new(1280, 720);
@@ -54,8 +45,6 @@ namespace GameLovers.UiService.Rendering
 		[SerializeField] private Camera _renderCamera;
 
 		private Canvas _canvas;
-		private UiPanelSettingsFeature _panelSettingsFeature;
-		private UiRenderTextureMode _resolvedMode;
 		private RenderTexture _activeTexture;
 		private bool _ownsTexture;
 		private bool _resolutionListenerRegistered;
@@ -75,25 +64,18 @@ namespace GameLovers.UiService.Rendering
 			base.OnPresenterInitialized(presenter);
 
 			_canvas = GetComponent<Canvas>();
-			_panelSettingsFeature = GetComponent<UiPanelSettingsFeature>();
-			_resolvedMode = _mode == UiRenderTextureMode.Auto ? ResolveAutoMode() : _mode;
 
-			if (_resolvedMode == UiRenderTextureMode.Canvas && _renderCamera == null)
+			if (_renderCamera == null)
 			{
-				Debug.LogError($"{nameof(UiRenderTextureFeature)} on '{name}': Canvas mode requires a" +
-					" render Camera to be assigned -- Screen Space - Overlay canvases cannot render" +
-					" into a RenderTexture.", this);
+				Debug.LogError($"{nameof(UiRenderTextureFeature)} on '{name}': requires a render Camera to" +
+					" be assigned -- Screen Space - Overlay canvases cannot render into a RenderTexture.", this);
 			}
-			else if (_resolvedMode == UiRenderTextureMode.UiToolkit && _panelSettingsFeature == null)
+			else if (_canvas == null)
 			{
-				Debug.LogError($"{nameof(UiRenderTextureFeature)} on '{name}': UiToolkit mode requires a" +
-					$" {nameof(UiPanelSettingsFeature)} on the same GameObject.", this);
+				Debug.LogError($"{nameof(UiRenderTextureFeature)} on '{name}': requires a {nameof(Canvas)} on" +
+					" the same GameObject. For UI Toolkit presenters use" +
+					" PanelSettings.renderMode = PanelRenderMode.WorldSpace instead.", this);
 			}
-		}
-
-		private UiRenderTextureMode ResolveAutoMode()
-		{
-			return _panelSettingsFeature != null ? UiRenderTextureMode.UiToolkit : UiRenderTextureMode.Canvas;
 		}
 
 		/// <inheritdoc />
@@ -141,29 +123,14 @@ namespace GameLovers.UiService.Rendering
 
 		private void ApplyTarget()
 		{
-			switch (_resolvedMode)
+			if (_canvas != null && _renderCamera != null)
 			{
-				case UiRenderTextureMode.Canvas:
-					ApplyCanvasTarget();
-					break;
-				case UiRenderTextureMode.UiToolkit:
-					_panelSettingsFeature?.SetTargetTexture(_activeTexture);
-					break;
+				_canvas.renderMode = RenderMode.ScreenSpaceCamera;
+				_canvas.worldCamera = _renderCamera;
+				_renderCamera.targetTexture = _activeTexture;
 			}
 
 			TargetChanged.Invoke(_activeTexture);
-		}
-
-		private void ApplyCanvasTarget()
-		{
-			if (_canvas == null || _renderCamera == null)
-			{
-				return;
-			}
-
-			_canvas.renderMode = RenderMode.ScreenSpaceCamera;
-			_canvas.worldCamera = _renderCamera;
-			_renderCamera.targetTexture = _activeTexture;
 		}
 
 		private void OnResolutionChanged(Vector2 previous, Vector2 current)
@@ -215,10 +182,9 @@ namespace GameLovers.UiService.Rendering
 		}
 
 		/// <summary>Test-only configuration hook (package tests have InternalsVisibleTo access).</summary>
-		internal void ConfigureForTest(UiRenderTextureMode mode, RenderTexture presetTexture = null,
+		internal void ConfigureForTest(RenderTexture presetTexture = null,
 			bool matchScreenSize = false, Vector2Int? size = null, int depthBits = 24, Camera renderCamera = null)
 		{
-			_mode = mode;
 			_presetTexture = presetTexture;
 			_matchScreenSize = matchScreenSize;
 			_size = size ?? new Vector2Int(1280, 720);

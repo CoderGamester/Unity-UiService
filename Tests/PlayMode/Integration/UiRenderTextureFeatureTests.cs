@@ -11,8 +11,13 @@ namespace GameLovers.UiService.Tests.PlayMode
 	/// <summary>
 	/// Isolated feature tests construct the presenter GameObject directly and invoke
 	/// OnPresenterInitialized/OnPresenterOpening explicitly, matching the pattern used for
-	/// UiPanelSettingsFeature and UiCameraStackFeature.
+	/// UiCameraStackFeature.
 	/// </summary>
+	/// <remarks>
+	/// This feature is uGUI-only by design -- UI Toolkit world-space UI goes through
+	/// PanelSettings.renderMode = PanelRenderMode.WorldSpace, not a render texture. The
+	/// UiToolkitPresenter_LogsError test pins that boundary.
+	/// </remarks>
 	[TestFixture]
 	public class UiRenderTextureFeatureTests
 	{
@@ -42,9 +47,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator CanvasMode_WithoutRenderCamera_LogsError_DoesNotThrow()
+		public IEnumerator WithoutRenderCamera_LogsError_DoesNotThrow()
 		{
-			_feature.ConfigureForTest(UiRenderTextureMode.Canvas);
+			_feature.ConfigureForTest();
 
 			LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(".*requires a render Camera.*"));
 			Assert.DoesNotThrow(() => _feature.OnPresenterInitialized(null));
@@ -52,10 +57,29 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator CanvasMode_AllocatesTexture_AndTargetsRenderCamera()
+		public IEnumerator UiToolkitPresenter_LogsError_PointingAtWorldSpaceRenderMode()
 		{
-			_feature.ConfigureForTest(UiRenderTextureMode.Canvas, renderCamera: _renderCamera,
-				size: new Vector2Int(128, 128));
+			// A UI Toolkit presenter has a UIDocument and no Canvas -- this feature must refuse it and
+			// name the supported alternative rather than silently doing nothing.
+			var toolkitGo = new GameObject("ToolkitPresenter");
+			var document = toolkitGo.AddComponent<UIDocument>();
+			var toolkitFeature = toolkitGo.AddComponent<UiToolkitPresenterFeature>();
+			toolkitFeature.SetDocument(document);
+
+			var feature = toolkitGo.AddComponent<UiRenderTextureFeature>();
+			feature.ConfigureForTest(renderCamera: _renderCamera);
+
+			LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(".*requires a Canvas.*WorldSpace.*"));
+			feature.OnPresenterInitialized(null);
+
+			Object.DestroyImmediate(toolkitGo);
+			yield return null;
+		}
+
+		[UnityTest]
+		public IEnumerator AllocatesTexture_AndTargetsRenderCamera()
+		{
+			_feature.ConfigureForTest(renderCamera: _renderCamera, size: new Vector2Int(128, 128));
 
 			_feature.OnPresenterInitialized(null);
 			_feature.OnPresenterOpening();
@@ -70,10 +94,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator CanvasMode_AllocatedTexture_HasStencil()
+		public IEnumerator AllocatedTexture_HasStencil()
 		{
-			_feature.ConfigureForTest(UiRenderTextureMode.Canvas, renderCamera: _renderCamera,
-				size: new Vector2Int(128, 128), depthBits: 24);
+			_feature.ConfigureForTest(renderCamera: _renderCamera, size: new Vector2Int(128, 128), depthBits: 24);
 
 			_feature.OnPresenterInitialized(null);
 			_feature.OnPresenterOpening();
@@ -89,7 +112,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var preset = new RenderTexture(64, 64, 24) { name = "Preset" };
 			preset.Create();
 
-			_feature.ConfigureForTest(UiRenderTextureMode.Canvas, presetTexture: preset, renderCamera: _renderCamera);
+			_feature.ConfigureForTest(presetTexture: preset, renderCamera: _renderCamera);
 			_feature.OnPresenterInitialized(null);
 			_feature.OnPresenterOpening();
 
@@ -108,8 +131,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator OwnedTexture_IsReleased_OnDestroy()
 		{
-			_feature.ConfigureForTest(UiRenderTextureMode.Canvas, renderCamera: _renderCamera,
-				size: new Vector2Int(64, 64));
+			_feature.ConfigureForTest(renderCamera: _renderCamera, size: new Vector2Int(64, 64));
 			_feature.OnPresenterInitialized(null);
 			_feature.OnPresenterOpening();
 
@@ -123,82 +145,12 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator ToolkitMode_WithoutPanelSettingsFeature_LogsError()
-		{
-			var document = _go.AddComponent<UIDocument>();
-			var toolkitFeature = _go.AddComponent<UiToolkitPresenterFeature>();
-			toolkitFeature.SetDocument(document);
-
-			_feature.ConfigureForTest(UiRenderTextureMode.UiToolkit);
-
-			LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(".*requires a.*UiPanelSettingsFeature.*"));
-			_feature.OnPresenterInitialized(null);
-			yield return null;
-		}
-
-		[UnityTest]
-		public IEnumerator ToolkitMode_RoutesThroughPanelSettingsFeature_NeverTouchesSharedAssetDirectly()
-		{
-			var document = _go.AddComponent<UIDocument>();
-			var sharedAsset = ScriptableObject.CreateInstance<PanelSettings>();
-			sharedAsset.themeStyleSheet = ScriptableObject.CreateInstance<ThemeStyleSheet>();
-			document.panelSettings = sharedAsset;
-
-			var toolkitFeature = _go.AddComponent<UiToolkitPresenterFeature>();
-			toolkitFeature.SetDocument(document);
-
-			var panelSettingsFeature = _go.AddComponent<UiPanelSettingsFeature>();
-			panelSettingsFeature.OnPresenterInitialized(null);
-
-			_feature.ConfigureForTest(UiRenderTextureMode.UiToolkit, size: new Vector2Int(64, 64));
-			_feature.OnPresenterInitialized(null);
-			_feature.OnPresenterOpening();
-
-			Assert.IsNotNull(_feature.Target);
-			Assert.AreEqual(_feature.Target, panelSettingsFeature.ActivePanelSettings.targetTexture);
-			Assert.IsNull(sharedAsset.targetTexture, "Shared PanelSettings asset must never receive the target texture directly.");
-			Assert.IsTrue(panelSettingsFeature.IsClone);
-			yield return null;
-		}
-
-		[UnityTest]
-		public IEnumerator AutoMode_ResolvesToUiToolkit_WhenPanelSettingsFeaturePresent()
-		{
-			var document = _go.AddComponent<UIDocument>();
-			var sharedAsset = ScriptableObject.CreateInstance<PanelSettings>();
-			sharedAsset.themeStyleSheet = ScriptableObject.CreateInstance<ThemeStyleSheet>();
-			document.panelSettings = sharedAsset;
-
-			var toolkitFeature = _go.AddComponent<UiToolkitPresenterFeature>();
-			toolkitFeature.SetDocument(document);
-			_go.AddComponent<UiPanelSettingsFeature>().OnPresenterInitialized(null);
-
-			_feature.ConfigureForTest(UiRenderTextureMode.Auto, size: new Vector2Int(64, 64));
-			_feature.OnPresenterInitialized(null);
-			_feature.OnPresenterOpening();
-
-			Assert.IsNotNull(_feature.Target, "Auto mode should have resolved to UiToolkit and produced a texture.");
-			yield return null;
-		}
-
-		[UnityTest]
-		public IEnumerator AutoMode_ResolvesToCanvas_WhenNoPanelSettingsFeature()
-		{
-			_feature.ConfigureForTest(UiRenderTextureMode.Auto, renderCamera: _renderCamera, size: new Vector2Int(64, 64));
-			_feature.OnPresenterInitialized(null);
-			_feature.OnPresenterOpening();
-
-			Assert.AreSame(_feature.Target, _renderCamera.targetTexture);
-			yield return null;
-		}
-
-		[UnityTest]
 		public IEnumerator TargetChanged_InvokedOnApply()
 		{
 			RenderTexture received = null;
 			_feature.TargetChanged.AddListener(t => received = t);
 
-			_feature.ConfigureForTest(UiRenderTextureMode.Canvas, renderCamera: _renderCamera, size: new Vector2Int(64, 64));
+			_feature.ConfigureForTest(renderCamera: _renderCamera, size: new Vector2Int(64, 64));
 			_feature.OnPresenterInitialized(null);
 			_feature.OnPresenterOpening();
 
