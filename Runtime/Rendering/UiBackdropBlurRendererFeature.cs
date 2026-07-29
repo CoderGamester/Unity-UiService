@@ -13,7 +13,7 @@ namespace GameLovers.UiService.Rendering
 	/// lookup so it resolves through Graphics Settings as a real build dependency with correctly
 	/// compiled variants; the alternatives render pink in a player unless always-included.
 	/// </remarks>
-	public class UiBackdropBlurFeature : ScriptableRendererFeature
+	public class UiBackdropBlurRendererFeature : ScriptableRendererFeature
 	{
 		private const string ShaderPath = "Packages/com.gamelovers.uiservice/Runtime/Rendering/Shaders/UiBackdropBlur.shader";
 
@@ -29,7 +29,7 @@ namespace GameLovers.UiService.Rendering
 
 			if (_blurShader == null)
 			{
-				Debug.LogError($"{nameof(UiBackdropBlurFeature)} '{name}': no blur shader assigned." +
+				Debug.LogError($"{nameof(UiBackdropBlurRendererFeature)} '{name}': no blur shader assigned." +
 					" Assign Shaders/UiBackdropBlur.shader in the Inspector.", this);
 				return;
 			}

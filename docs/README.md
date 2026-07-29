@@ -90,7 +90,7 @@ Runtime/
 │   └── InteractableTextView.cs
 └── Rendering/             # URP presenter features
     ├── UiCameraStackFeature.cs
-    └── UiBackdropBlurFeature.cs + UiBackdropBlurPresenterFeature.cs
+    └── UiBackdropBlurRendererFeature.cs + UiBackdropBlurPresenterFeature.cs
 
 Editor/
 ├── UiConfigsEditorBase.cs        # Base config inspector

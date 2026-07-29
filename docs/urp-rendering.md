@@ -20,14 +20,14 @@ multiple cameras, no "MainCamera" tag, split-screen.
 camera in the scene. Presenters are instantiated from prefabs at runtime, so they cannot be pre-authored into
 that list — the feature inserts on open and removes on disable.
 
-## `UiBackdropBlurFeature` + `UiBackdropBlurPresenterFeature`
+## `UiBackdropBlurRendererFeature` + `UiBackdropBlurPresenterFeature`
 
 Blurs everything behind a presenter's UI while it's open.
 
-> ### ⚠️ Required setup: add `UiBackdropBlurFeature` to your URP Renderer asset
+> ### ⚠️ Required setup: add `UiBackdropBlurRendererFeature` to your URP Renderer asset
 >
 > Select your Universal Renderer asset (e.g. `Assets/Settings/URP-Mobile_Renderer.asset`) → **Add Renderer
-> Feature** → `UiBackdropBlurFeature`. **Until you do this, the blur silently does nothing** — nothing in the
+> Feature** → `UiBackdropBlurRendererFeature`. **Until you do this, the blur silently does nothing** — nothing in the
 > API or Inspector will tell you it's missing. This is the single most common reason the blur "doesn't work".
 
 Then add `UiBackdropBlurPresenterFeature` to any presenter that wants a blurred backdrop. Configurable:

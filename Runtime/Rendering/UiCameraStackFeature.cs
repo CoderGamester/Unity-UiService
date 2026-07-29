@@ -37,6 +37,25 @@ namespace GameLovers.UiService.Rendering
 		/// <summary>The priority this presenter's overlay camera is ordered by within the stack.</summary>
 		public int StackPriority => _useCanvasSortingOrder && _canvas != null ? _canvas.sortingOrder : _stackPriority;
 
+		/// <summary>
+		/// Returns the ascending insert position for <paramref name="priority"/>, ties placed after
+		/// existing entries.
+		/// </summary>
+		public static int InsertIndex(IReadOnlyList<int> existingPriorities, int priority)
+		{
+			var index = 0;
+
+			for (; index < existingPriorities.Count; index++)
+			{
+				if (existingPriorities[index] > priority)
+				{
+					break;
+				}
+			}
+
+			return index;
+		}
+
 		/// <summary>Resolves the base camera to stack onto. Assign before the presenter opens; null restores <see cref="Camera.main"/>.</summary>
 		public Func<Camera> BaseCameraResolver
 		{
@@ -129,7 +148,7 @@ namespace GameLovers.UiService.Rendering
 			}
 
 			var priority = StackPriority;
-			stack.Insert(UiCameraStackRegistry.InsertIndex(priorities, priority), _overlayCamera);
+			stack.Insert(InsertIndex(priorities, priority), _overlayCamera);
 			_stackPriorities[_overlayCamera] = priority;
 			_isStacked = true;
 		}

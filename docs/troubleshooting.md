@@ -206,7 +206,7 @@ catch (OperationCanceledException)
 
 **Symptom:** A presenter has `UiBackdropBlurPresenterFeature` attached, it opens normally, and nothing behind it is blurred. **No error, warning, or log line appears.**
 
-**Cause:** `UiBackdropBlurFeature` has not been added to the project's active URP Renderer asset. The presenter-side component only registers a *request*; the renderer feature is what actually renders the blur, and without it the request has no consumer.
+**Cause:** `UiBackdropBlurRendererFeature` has not been added to the project's active URP Renderer asset. The presenter-side component only registers a *request*; the renderer feature is what actually renders the blur, and without it the request has no consumer.
 
 ### Solution
 

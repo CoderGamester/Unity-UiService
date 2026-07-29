@@ -4,7 +4,7 @@ namespace GameLovers.UiService.Rendering
 {
 	/// <summary>
 	/// Requests a blurred backdrop behind this presenter while it is open, served by a
-	/// <see cref="UiBackdropBlurFeature"/> on the project's active URP Renderer asset.
+	/// <see cref="UiBackdropBlurRendererFeature"/> on the project's active URP Renderer asset.
 	/// </summary>
 	public class UiBackdropBlurPresenterFeature : PresenterFeatureBase
 	{

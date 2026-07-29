@@ -9,40 +9,40 @@ namespace GameLovers.UiService.Tests
 	/// this type lives in (GameLovers.UiService.Urp) references URP.
 	/// </summary>
 	[TestFixture]
-	public class UiCameraStackRegistryTests
+	public class UiCameraStackInsertIndexTests
 	{
 		[Test]
 		public void InsertIndex_EmptyList_ReturnsZero()
 		{
-			Assert.AreEqual(0, UiCameraStackRegistry.InsertIndex(new List<int>(), 5));
+			Assert.AreEqual(0, UiCameraStackFeature.InsertIndex(new List<int>(), 5));
 		}
 
 		[Test]
 		public void InsertIndex_LowerPriority_InsertsAtStart()
 		{
 			var existing = new List<int> { 10, 20, 30 };
-			Assert.AreEqual(0, UiCameraStackRegistry.InsertIndex(existing, 5));
+			Assert.AreEqual(0, UiCameraStackFeature.InsertIndex(existing, 5));
 		}
 
 		[Test]
 		public void InsertIndex_HigherPriority_InsertsAtEnd()
 		{
 			var existing = new List<int> { 10, 20, 30 };
-			Assert.AreEqual(3, UiCameraStackRegistry.InsertIndex(existing, 40));
+			Assert.AreEqual(3, UiCameraStackFeature.InsertIndex(existing, 40));
 		}
 
 		[Test]
 		public void InsertIndex_MiddlePriority_InsertsBetween()
 		{
 			var existing = new List<int> { 10, 20, 30 };
-			Assert.AreEqual(2, UiCameraStackRegistry.InsertIndex(existing, 25));
+			Assert.AreEqual(2, UiCameraStackFeature.InsertIndex(existing, 25));
 		}
 
 		[Test]
 		public void InsertIndex_EqualPriority_InsertsAfterExisting()
 		{
 			var existing = new List<int> { 10, 20, 20, 30 };
-			Assert.AreEqual(3, UiCameraStackRegistry.InsertIndex(existing, 20));
+			Assert.AreEqual(3, UiCameraStackFeature.InsertIndex(existing, 20));
 		}
 
 		[Test]
@@ -52,7 +52,7 @@ namespace GameLovers.UiService.Tests
 
 			void InsertAndTrack(int priority)
 			{
-				var index = UiCameraStackRegistry.InsertIndex(priorities, priority);
+				var index = UiCameraStackFeature.InsertIndex(priorities, priority);
 				priorities.Insert(index, priority);
 			}
 
