@@ -34,7 +34,7 @@ Then add `UiBackdropBlurPresenterFeature` to any presenter that wants a blurred 
 downsample factor, iterations, spread, tint, and a sort key resolving which request wins when several
 presenters request a blur at once (highest sort key, first-registered breaks ties).
 
-The pass injects only when all of these hold (`UiBackdropBlurInjection.ShouldInject`):
+The pass injects only when all of these hold (`UiBackdropBlurRequests.ShouldInject`):
 
 - the camera is a **Game** camera — otherwise the Editor's Scene view and material preview thumbnails would
   get blurred too

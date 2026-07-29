@@ -133,19 +133,19 @@ namespace GameLovers.UiService.Tests
 	}
 
 	[TestFixture]
-	public class UiBackdropBlurInjectionTests
+	public class UiBackdropBlurShouldInjectTests
 	{
 		[Test]
 		public void ShouldInject_AllConditionsMet_ReturnsTrue()
 		{
-			Assert.IsTrue(UiBackdropBlurInjection.ShouldInject(
+			Assert.IsTrue(UiBackdropBlurRequests.ShouldInject(
 				isGameCamera: true, isOverlayCamera: false, hasTargetTexture: false, anyActiveRequests: true));
 		}
 
 		[Test]
 		public void ShouldInject_NotGameCamera_ReturnsFalse()
 		{
-			Assert.IsFalse(UiBackdropBlurInjection.ShouldInject(
+			Assert.IsFalse(UiBackdropBlurRequests.ShouldInject(
 				isGameCamera: false, isOverlayCamera: false, hasTargetTexture: false, anyActiveRequests: true));
 		}
 
@@ -154,7 +154,7 @@ namespace GameLovers.UiService.Tests
 		{
 			// Hazard: renderer features run per camera in a stack -- injecting on the UI
 			// overlay camera itself would blur the UI, not the world behind it.
-			Assert.IsFalse(UiBackdropBlurInjection.ShouldInject(
+			Assert.IsFalse(UiBackdropBlurRequests.ShouldInject(
 				isGameCamera: true, isOverlayCamera: true, hasTargetTexture: false, anyActiveRequests: true));
 		}
 
@@ -163,21 +163,21 @@ namespace GameLovers.UiService.Tests
 		{
 			// Hazard: a render-texture-target camera blurring its own output would blur the UI
 			// being captured, not the world behind it.
-			Assert.IsFalse(UiBackdropBlurInjection.ShouldInject(
+			Assert.IsFalse(UiBackdropBlurRequests.ShouldInject(
 				isGameCamera: true, isOverlayCamera: false, hasTargetTexture: true, anyActiveRequests: true));
 		}
 
 		[Test]
 		public void ShouldInject_NoActiveRequests_ReturnsFalse()
 		{
-			Assert.IsFalse(UiBackdropBlurInjection.ShouldInject(
+			Assert.IsFalse(UiBackdropBlurRequests.ShouldInject(
 				isGameCamera: true, isOverlayCamera: false, hasTargetTexture: false, anyActiveRequests: false));
 		}
 
 		[Test]
 		public void ShouldInject_BothHazardsAndNoRequests_ReturnsFalse()
 		{
-			Assert.IsFalse(UiBackdropBlurInjection.ShouldInject(
+			Assert.IsFalse(UiBackdropBlurRequests.ShouldInject(
 				isGameCamera: false, isOverlayCamera: true, hasTargetTexture: true, anyActiveRequests: false));
 		}
 	}

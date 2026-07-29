@@ -5,19 +5,13 @@ using UnityEngine.Rendering.Universal;
 namespace GameLovers.UiService.Rendering
 {
 	/// <summary>
-	/// Add this to the project's active Universal Renderer asset (Inspector: the Renderer Features
-	/// list) to enable <see cref="UiBackdropBlurPresenterFeature"/> requests. One instance affects
-	/// every camera using that renderer; <see cref="UiBackdropBlurInjection.ShouldInject"/> decides
-	/// per-camera, per-frame whether this actually runs.
+	/// Enables <see cref="UiBackdropBlurPresenterFeature"/> requests for every camera using the
+	/// Universal Renderer asset this is added to.
 	/// </summary>
 	/// <remarks>
-	/// Ships its own shader (<c>Shaders/UiBackdropBlur.shader</c>) via a serialized
-	/// <see cref="Shader"/> reference rather than <c>Resources.Load</c> (unstrippable, forces the
-	/// shader into every build) or <c>Shader.Find</c> (silently renders pink in a build unless the
-	/// shader happens to be in Always Included Shaders) -- a direct reference makes it a real,
-	/// correctly variant-compiled build dependency through Graphics Settings -> Renderer asset ->
-	/// this feature -> the shader. The Editor-only fallback in <see cref="Create"/> auto-loads it
-	/// by path so a fresh drag-and-drop isn't required for the common case.
+	/// The shader is a serialized reference rather than a <c>Resources.Load</c> or <c>Shader.Find</c>
+	/// lookup so it resolves through Graphics Settings as a real build dependency with correctly
+	/// compiled variants; the alternatives render pink in a player unless always-included.
 	/// </remarks>
 	public class UiBackdropBlurFeature : ScriptableRendererFeature
 	{
@@ -28,24 +22,10 @@ namespace GameLovers.UiService.Rendering
 		private Material _blurMaterial;
 		private UiBackdropBlurPass _pass;
 
-#if UNITY_EDITOR
-		private void Reset()
-		{
-			if (_blurShader == null)
-			{
-				_blurShader = UnityEditor.AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
-			}
-		}
-#endif
-
+		/// <inheritdoc />
 		public override void Create()
 		{
-#if UNITY_EDITOR
-			if (_blurShader == null)
-			{
-				_blurShader = UnityEditor.AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
-			}
-#endif
+			TryLoadShaderInEditor();
 
 			if (_blurShader == null)
 			{
@@ -62,6 +42,7 @@ namespace GameLovers.UiService.Rendering
 			};
 		}
 
+		/// <inheritdoc />
 		public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 		{
 			if (_pass == null || _blurMaterial == null)
@@ -72,10 +53,27 @@ namespace GameLovers.UiService.Rendering
 			renderer.EnqueuePass(_pass);
 		}
 
+		/// <inheritdoc />
 		protected override void Dispose(bool disposing)
 		{
+			// The feature asset outlives play mode, so the material leaks without this.
 			CoreUtils.Destroy(_blurMaterial);
 			_blurMaterial = null;
+		}
+
+		private void Reset()
+		{
+			TryLoadShaderInEditor();
+		}
+
+		private void TryLoadShaderInEditor()
+		{
+#if UNITY_EDITOR
+			if (_blurShader == null)
+			{
+				_blurShader = UnityEditor.AssetDatabase.LoadAssetAtPath<Shader>(ShaderPath);
+			}
+#endif
 		}
 	}
 }

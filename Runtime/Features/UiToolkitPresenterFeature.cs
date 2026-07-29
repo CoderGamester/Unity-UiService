@@ -28,27 +28,11 @@ namespace GameLovers.UiService
 		/// </summary>
 		public VisualElement Root => _document?.rootVisualElement;
 
-		/// <summary>
-		/// The <see cref="PanelSettings"/> driving this document's panel. <b>Read-only by contract: never
-		/// mutate it at runtime.</b>
-		/// </summary>
+		/// <summary>The shared <see cref="PanelSettings"/> driving this document's panel. Inspect only; never mutate at runtime.</summary>
 		/// <remarks>
-		/// <para>
-		/// A <see cref="PanelSettings"/> asset <i>is</i> a panel. Every <see cref="UIDocument"/> pointing at
-		/// the same asset shares one panel -- which is what makes cross-presenter ordering via
-		/// <see cref="UIDocument.sortingOrder"/> (set by <see cref="UiService"/> from <c>UiConfig.Layer</c>)
-		/// work at all. Writing to this asset therefore reconfigures every other presenter sharing it, and in
-		/// the Editor persists that change to disk.
-		/// </para>
-		/// <para>
-		/// If a presenter needs different panel settings -- a different render mode, reference resolution, or
-		/// clear behaviour -- <b>author a second <see cref="PanelSettings"/> asset</b> and point this
-		/// presenter's <see cref="UIDocument"/> at it. That is a designer-time decision, and it is how UI
-		/// Toolkit is meant to be used. For world-space UI specifically, set
-		/// <see cref="PanelSettings.renderMode"/> to <see cref="PanelRenderMode.WorldSpace"/> on that asset
-		/// and position per-document via <see cref="UIDocument.position"/> / <c>pivot</c> /
-		/// <c>worldSpaceSize</c>.
-		/// </para>
+		/// Every <see cref="UIDocument"/> sharing this asset shares one panel, which is what makes ordering
+		/// by <see cref="UIDocument.sortingOrder"/> work; writing to it reconfigures every other presenter
+		/// using it. A presenter needing different settings gets a second authored asset instead.
 		/// </remarks>
 		public PanelSettings PanelSettings => _document?.panelSettings;
 

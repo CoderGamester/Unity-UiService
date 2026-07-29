@@ -7,24 +7,19 @@ using UnityEngine.Rendering.Universal;
 namespace GameLovers.UiService.Rendering
 {
 	/// <summary>
-	/// Downsamples the active camera color, applies N iterations of a box blur, then blits the
-	/// result back over the full-resolution color target -- blurring everything behind whatever
-	/// UI composites after this pass (every sample canvas in this package is Screen Space -
-	/// Overlay, which composites after all URP rendering, so this needs zero canvas changes to
-	/// produce a blurred backdrop).
+	/// Downsamples the camera colour, blurs it, and blits the result back over the full-resolution
+	/// target, so any UI compositing after this pass sits on a blurred backdrop.
 	/// </summary>
 	internal class UiBackdropBlurPass : ScriptableRenderPass
 	{
-		// _BlitTexture / _BlitScaleBias match Core RP's own Blit.hlsl conventions (see
-		// Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl); the cached
-		// UnityEngine.Rendering.Universal.ShaderPropertyId equivalents are internal to URP's own
-		// assembly and not visible from here, so these are defined locally.
-		private static readonly int BlitTextureId = Shader.PropertyToID("_BlitTexture");
-		private static readonly int BlitScaleBiasId = Shader.PropertyToID("_BlitScaleBias");
-		private static readonly int SpreadId = Shader.PropertyToID("_Spread");
-		private static readonly int TintId = Shader.PropertyToID("_Tint");
+		// URP's own cached ShaderPropertyId equivalents are internal to its assembly; these names
+		// match Core RP's Blit.hlsl conventions.
+		private static readonly int _blitTextureId = Shader.PropertyToID("_BlitTexture");
+		private static readonly int _blitScaleBiasId = Shader.PropertyToID("_BlitScaleBias");
+		private static readonly int _spreadId = Shader.PropertyToID("_Spread");
+		private static readonly int _tintId = Shader.PropertyToID("_Tint");
 
-		private static readonly MaterialPropertyBlock s_PropertyBlock = new();
+		private static readonly MaterialPropertyBlock _propertyBlock = new();
 
 		private readonly Material _material;
 
@@ -34,6 +29,7 @@ namespace GameLovers.UiService.Rendering
 			profilingSampler = new ProfilingSampler(nameof(UiBackdropBlurPass));
 		}
 
+		/// <inheritdoc />
 		public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
 		{
 			if (_material == null)
@@ -43,11 +39,11 @@ namespace GameLovers.UiService.Rendering
 
 			var resourceData = frameData.Get<UniversalResourceData>();
 			var cameraData = frameData.Get<UniversalCameraData>();
-
 			var isOverlay = cameraData.renderType == CameraRenderType.Overlay;
 			var hasTargetTexture = cameraData.camera != null && cameraData.camera.targetTexture != null;
 
-			if (!UiBackdropBlurInjection.ShouldInject(cameraData.isGameCamera, isOverlay, hasTargetTexture, UiBackdropBlurRequests.ActiveCount > 0))
+			if (!UiBackdropBlurRequests.ShouldInject(cameraData.isGameCamera, isOverlay, hasTargetTexture,
+				    UiBackdropBlurRequests.ActiveCount > 0))
 			{
 				return;
 			}
@@ -57,7 +53,7 @@ namespace GameLovers.UiService.Rendering
 				return;
 			}
 
-			// The backbuffer cannot be sampled as a texture -- there is nothing to blur into it from.
+			// The backbuffer cannot be sampled as a texture, so there is nothing to blur from.
 			if (resourceData.isActiveTargetBackBuffer)
 			{
 				return;
@@ -83,19 +79,18 @@ namespace GameLovers.UiService.Rendering
 			for (var i = 0; i < settings.Iterations; i++)
 			{
 				var next = renderGraph.CreateTexture(descriptor);
-				// Tint only on the final iteration -- the same pass runs Iterations times, so
-				// applying it every time would compound it multiplicatively (invisible at the
-				// default white tint, but wrong the moment a consumer sets a real one).
+				// Tinting every iteration would compound the tint multiplicatively.
 				var isLastIteration = i == settings.Iterations - 1;
-				var tint = isLastIteration ? settings.Tint : Color.white;
-				AddBlurIterationPass(renderGraph, current, next, settings.Spread, tint);
+				AddBlurIterationPass(renderGraph, current, next, settings.Spread,
+					isLastIteration ? settings.Tint : Color.white);
 				current = next;
 			}
 
 			renderGraph.AddBlitPass(current, source, Vector2.one, Vector2.zero, passName: "UiBackdropBlur_Composite");
 		}
 
-		private void AddBlurIterationPass(RenderGraph renderGraph, TextureHandle source, TextureHandle destination, float spread, Color tint)
+		private void AddBlurIterationPass(RenderGraph renderGraph, TextureHandle source, TextureHandle destination,
+			float spread, Color tint)
 		{
 			using var builder = renderGraph.AddRasterRenderPass<PassData>("UiBackdropBlur_Iteration", out var passData, profilingSampler);
 
@@ -109,13 +104,13 @@ namespace GameLovers.UiService.Rendering
 
 			builder.SetRenderFunc(static (PassData data, RasterGraphContext context) =>
 			{
-				s_PropertyBlock.Clear();
-				s_PropertyBlock.SetTexture(BlitTextureId, data.source);
-				s_PropertyBlock.SetVector(BlitScaleBiasId, new Vector4(1f, 1f, 0f, 0f));
-				s_PropertyBlock.SetFloat(SpreadId, data.spread);
-				s_PropertyBlock.SetColor(TintId, data.tint);
+				_propertyBlock.Clear();
+				_propertyBlock.SetTexture(_blitTextureId, data.source);
+				_propertyBlock.SetVector(_blitScaleBiasId, new Vector4(1f, 1f, 0f, 0f));
+				_propertyBlock.SetFloat(_spreadId, data.spread);
+				_propertyBlock.SetColor(_tintId, data.tint);
 
-				context.cmd.DrawProcedural(Matrix4x4.identity, data.material, 0, MeshTopology.Triangles, 3, 1, s_PropertyBlock);
+				context.cmd.DrawProcedural(Matrix4x4.identity, data.material, 0, MeshTopology.Triangles, 3, 1, _propertyBlock);
 			});
 		}
 

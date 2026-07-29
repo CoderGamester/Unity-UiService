@@ -11,7 +11,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 	/// appear/disappear at the right moments. Does NOT attempt to force an actual GPU render:
 	/// this environment runs Unity in -nographics batchmode (no on-screen surface to render to),
 	/// and a RenderTexture-target camera is excluded from injection by design (see
-	/// UiBackdropBlurInjectionTests), so neither path would exercise or prove anything about the
+	/// UiBackdropBlurShouldInjectTests), so neither path would exercise or prove anything about the
 	/// real shader execution. Whether the blur actually looks right is an explicitly documented
 	/// coverage gap -- see docs/urp-rendering.md.
 	/// </summary>

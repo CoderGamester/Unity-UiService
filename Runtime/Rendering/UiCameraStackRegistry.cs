@@ -3,16 +3,17 @@ using System.Collections.Generic;
 namespace GameLovers.UiService.Rendering
 {
 	/// <summary>
-	/// Pure ordering logic for stacking N overlay cameras by priority. Deliberately has zero
-	/// engine/URP references so its insert-position math stays testable in isolation -- the
-	/// URP-typed caller (<see cref="UiCameraStackFeature"/>) reduces to one Insert call.
+	/// Ordering maths for stacking overlay cameras by priority.
 	/// </summary>
+	/// <remarks>
+	/// Kept separate from <see cref="UiCameraStackFeature"/> and free of URP types so it stays testable
+	/// in EditMode, where no URP reference is available.
+	/// </remarks>
 	public static class UiCameraStackRegistry
 	{
 		/// <summary>
-		/// Returns the index at which an entry with <paramref name="priority"/> should be inserted
-		/// into <paramref name="existingPriorities"/> (ascending order; ties insert after existing
-		/// entries with the same priority, i.e. first-registered-wins for equal priorities).
+		/// Returns the ascending insert position for <paramref name="priority"/>, placing ties after
+		/// existing entries so the first registered stays lower in the stack.
 		/// </summary>
 		public static int InsertIndex(IReadOnlyList<int> existingPriorities, int priority)
 		{
