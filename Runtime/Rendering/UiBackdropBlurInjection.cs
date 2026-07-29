@@ -13,9 +13,9 @@ namespace GameLovers.UiService.Rendering
 		/// <param name="isOverlayCamera">True for a URP camera-stack Overlay camera (see
 		/// <see cref="UiCameraStackFeature"/>) -- post-processing-style passes run per camera in a
 		/// stack, so injecting here would blur the UI overlay itself, not the world behind it.</param>
-		/// <param name="hasTargetTexture">True if the camera renders into a RenderTexture (see
-		/// <see cref="UiRenderTextureFeature"/>) -- blurring that blurs the UI being captured, not
-		/// the world behind it, and costs a full blur chain per frame for no visual benefit.</param>
+		/// <param name="hasTargetTexture">True if the camera renders into a RenderTexture -- a UI camera
+		/// authored to capture its Canvas into a texture, for example. Blurring that blurs the UI being
+		/// captured, not the world behind it, and costs a full blur chain per frame for no visual benefit.</param>
 		/// <param name="anyActiveRequests">True if at least one <see cref="UiBackdropBlurPresenterFeature"/> is currently requesting a blur.</param>
 		public static bool ShouldInject(bool isGameCamera, bool isOverlayCamera, bool hasTargetTexture, bool anyActiveRequests)
 		{
