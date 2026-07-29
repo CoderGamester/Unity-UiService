@@ -3,23 +3,11 @@ using UnityEngine;
 
 namespace GameLovers.UiService.Tests.PlayMode
 {
-	/// <summary>Fixed-camera IUiBaseCameraProvider test double -- avoids depending on Camera.main / tags in the test scene.</summary>
-	public class FixedBaseCameraProvider : IUiBaseCameraProvider
-	{
-		public Camera Camera;
-
-		public FixedBaseCameraProvider(Camera camera)
-		{
-			Camera = camera;
-		}
-
-		public Camera GetBaseCamera() => Camera;
-	}
-
 	/// <summary>
 	/// Test presenter pairing a Canvas with a UiCameraStackFeature and a child overlay Camera.
 	/// Caller must call ConfigureBaseCamera(...) before OnPresenterInitialized runs (i.e. before
-	/// loading through UiService) to inject a FixedBaseCameraProvider instead of relying on Camera.main.
+	/// loading through UiService) to pin the base camera instead of relying on Camera.main, which
+	/// finds nothing in the test scene.
 	/// </summary>
 	[RequireComponent(typeof(Canvas))]
 	[RequireComponent(typeof(UiCameraStackFeature))]
@@ -68,7 +56,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 		/// <summary>Must be called before the presenter is loaded/opened through UiService.</summary>
 		public void ConfigureBaseCamera(Camera baseCamera, bool useCanvasSortingOrder = true, int stackPriority = 0)
 		{
-			StackFeature.ConfigureForTest(OverlayCamera, Canvas, new FixedBaseCameraProvider(baseCamera),
+			StackFeature.ConfigureForTest(OverlayCamera, Canvas, () => baseCamera,
 				useCanvasSortingOrder, stackPriority);
 		}
 	}

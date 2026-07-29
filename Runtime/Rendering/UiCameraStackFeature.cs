@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -34,30 +35,51 @@ namespace GameLovers.UiService.Rendering
 		[SerializeField] private bool _useCanvasSortingOrder = true;
 		[SerializeField] private int _stackPriority;
 
-		private IUiBaseCameraProvider _baseCameraProvider = UiBaseCameraProvider.Default;
+		// Priority of every camera this feature currently has stacked. URP's cameraStack is a plain
+		// List<Camera> with no priority of its own, so ordering a new camera against already-stacked
+		// ones needs it recorded somewhere. Deliberately keyed by Camera rather than derived from the
+		// hierarchy: the serialized _overlayCamera is not required to be a child of the presenter, so
+		// walking up from it (GetComponentInParent) silently returns priority 0 for a camera assigned
+		// anywhere else. Mirrors UiBackdropBlurRequests' static-registry pattern, reset included.
+		private static readonly Dictionary<Camera, int> s_StackPriorities = new();
+
+		private Func<Camera> _baseCameraResolver = DefaultBaseCameraResolver;
 		private bool _isStacked;
 
 		/// <summary>True while this presenter's overlay camera is inserted in the base camera's stack.</summary>
 		public bool IsStacked => _isStacked;
 
 		/// <summary>
-		/// Swaps the base-camera resolution strategy (default: <see cref="UiBaseCameraProvider.Default"/>,
-		/// i.e. <see cref="Camera.main"/>). Call before the presenter opens.
+		/// The stacking priority this presenter's overlay camera was inserted with. Read by sibling
+		/// features to order themselves against an already-stacked camera.
 		/// </summary>
-		public void SetBaseCameraProvider(IUiBaseCameraProvider provider)
+		public int StackPriority => _useCanvasSortingOrder && _canvas != null ? _canvas.sortingOrder : _stackPriority;
+
+		/// <summary>
+		/// Swaps the base-camera resolution strategy. Defaults to <see cref="Camera.main"/>, which is the
+		/// wrong answer in plenty of games (multiple cameras, no "MainCamera" tag, split-screen). Assign
+		/// before the presenter opens; a null value restores the default.
+		/// </summary>
+		public Func<Camera> BaseCameraResolver
 		{
-			_baseCameraProvider = provider ?? UiBaseCameraProvider.Default;
+			get => _baseCameraResolver;
+			set => _baseCameraResolver = value ?? DefaultBaseCameraResolver;
 		}
 
+		// Camera.main is a cached tag lookup (measured at ~16ns/call) and this resolves twice per
+		// open/close, so there is nothing here worth caching -- an earlier caching provider bought
+		// no measurable time and leaked a static SceneManager.sceneLoaded subscription to do it.
+		private static Camera DefaultBaseCameraResolver() => Camera.main;
+
 		/// <summary>Test-only configuration hook (package tests have InternalsVisibleTo access).</summary>
-		internal void ConfigureForTest(Camera overlayCamera, Canvas canvas, IUiBaseCameraProvider provider = null,
+		internal void ConfigureForTest(Camera overlayCamera, Canvas canvas, Func<Camera> baseCameraResolver = null,
 			bool useCanvasSortingOrder = true, int stackPriority = 0)
 		{
 			_overlayCamera = overlayCamera;
 			_canvas = canvas;
 			_useCanvasSortingOrder = useCanvasSortingOrder;
 			_stackPriority = stackPriority;
-			_baseCameraProvider = provider ?? UiBaseCameraProvider.Default;
+			_baseCameraResolver = baseCameraResolver ?? DefaultBaseCameraResolver;
 		}
 
 		/// <inheritdoc />
@@ -103,7 +125,7 @@ namespace GameLovers.UiService.Rendering
 				return;
 			}
 
-			var baseCamera = _baseCameraProvider?.GetBaseCamera();
+			var baseCamera = _baseCameraResolver?.Invoke();
 			if (baseCamera == null || baseCamera == _overlayCamera)
 			{
 				return;
@@ -118,22 +140,17 @@ namespace GameLovers.UiService.Rendering
 				return;
 			}
 
-			var priority = _useCanvasSortingOrder ? _canvas.sortingOrder : _stackPriority;
+			// A camera stacked by anything other than this feature sorts as priority 0.
 			var priorities = new List<int>(stack.Count);
 			foreach (var camera in stack)
 			{
-				var marker = camera != null ? camera.GetComponent<UiCameraStackPriorityMarker>() : null;
-				priorities.Add(marker != null ? marker.Priority : 0);
+				priorities.Add(camera != null && s_StackPriorities.TryGetValue(camera, out var known) ? known : 0);
 			}
 
+			var priority = StackPriority;
 			var index = UiCameraStackRegistry.InsertIndex(priorities, priority);
 			stack.Insert(index, _overlayCamera);
-
-			if (!_overlayCamera.TryGetComponent<UiCameraStackPriorityMarker>(out var ownMarker))
-			{
-				ownMarker = _overlayCamera.gameObject.AddComponent<UiCameraStackPriorityMarker>();
-			}
-			ownMarker.Priority = priority;
+			s_StackPriorities[_overlayCamera] = priority;
 
 			_isStacked = true;
 		}
@@ -151,14 +168,23 @@ namespace GameLovers.UiService.Rendering
 				return;
 			}
 
-			var baseCamera = _baseCameraProvider?.GetBaseCamera();
+			var baseCamera = _baseCameraResolver?.Invoke();
 			if (baseCamera != null)
 			{
 				var baseData = baseCamera.GetUniversalAdditionalCameraData();
 				baseData.cameraStack.Remove(_overlayCamera);
 			}
 
+			s_StackPriorities.Remove(_overlayCamera);
 			_isStacked = false;
+		}
+
+		// With Domain Reload disabled, statics survive between play sessions -- without this a
+		// second session would start with priorities recorded for destroyed cameras.
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+		private static void ResetOnLoad()
+		{
+			s_StackPriorities.Clear();
 		}
 	}
 }

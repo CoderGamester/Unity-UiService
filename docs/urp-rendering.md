@@ -12,9 +12,9 @@ the hazards. For the general feature-composition pattern see [Core Concepts](cor
 Renders a presenter's `Canvas` as Screen Space - Camera and inserts its overlay camera into a base camera's
 URP stack, so UI can layer over 3D content instead of always compositing on top.
 
-Assign the overlay **Camera** (a prefab child) and the presenter's **Canvas** in the Inspector. Base-camera
-resolution goes through `IUiBaseCameraProvider` — swap it via `SetBaseCameraProvider(...)` if `Camera.main`
-isn't right for your game (multiple cameras, no "MainCamera" tag, split-screen).
+Assign the overlay **Camera** (a prefab child) and the presenter's **Canvas** in the Inspector. The base camera
+defaults to `Camera.main`; assign `BaseCameraResolver` (a `Func<Camera>`) if that's not right for your game —
+multiple cameras, no "MainCamera" tag, split-screen.
 
 **Why this is a runtime feature and not authoring**: URP's camera stack is an Inspector list on the *base*
 camera in the scene. Presenters are instantiated from prefabs at runtime, so they cannot be pre-authored into

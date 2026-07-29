@@ -12,7 +12,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 	/// Isolated feature tests construct the presenter GameObject directly (not through
 	/// UiService/MockAssetLoader) and invoke OnPresenterInitialized/OnPresenterOpening
 	/// explicitly -- the same public entry points UiPresenter calls -- so a
-	/// FixedBaseCameraProvider can be injected before initialization runs.
+	/// a pinned base camera can be injected before initialization runs.
 	/// </summary>
 	[TestFixture]
 	public class UiCameraStackFeatureTests
@@ -38,7 +38,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			_baseCamera = _baseCameraGo.AddComponent<Camera>();
 
 			_feature = _presenterGo.AddComponent<UiCameraStackFeature>();
-			_feature.ConfigureForTest(_overlayCamera, _canvas, new FixedBaseCameraProvider(_baseCamera));
+			_feature.ConfigureForTest(_overlayCamera, _canvas, () => _baseCamera);
 		}
 
 		[TearDown]
@@ -143,7 +143,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var secondCameraGo = new GameObject("SecondOverlayCamera");
 			var secondCamera = secondCameraGo.AddComponent<Camera>();
 			var secondFeature = secondGo.AddComponent<UiCameraStackFeature>();
-			secondFeature.ConfigureForTest(secondCamera, secondCanvas, new FixedBaseCameraProvider(_baseCamera));
+			secondFeature.ConfigureForTest(secondCamera, secondCanvas, () => _baseCamera);
 
 			secondFeature.OnPresenterInitialized(null);
 			secondFeature.OnPresenterOpening();
@@ -175,7 +175,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 		[UnityTest]
 		public IEnumerator NullBaseCamera_OnPresenterOpening_DoesNotThrow_AndDoesNotStack()
 		{
-			_feature.ConfigureForTest(_overlayCamera, _canvas, new FixedBaseCameraProvider(null));
+			_feature.ConfigureForTest(_overlayCamera, _canvas, () => null);
 			_feature.OnPresenterInitialized(null);
 
 			Assert.DoesNotThrow(() => _feature.OnPresenterOpening());
@@ -187,7 +187,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 	/// <summary>
 	/// Light integration smoke test through the real UiService + MockAssetLoader pipeline,
 	/// confirming the feature initializes without throwing when the default
-	/// IUiBaseCameraProvider (Camera.main) finds nothing in the test scene.
+	/// the default resolver (Camera.main) finds nothing in the test scene.
 	/// </summary>
 	[TestFixture]
 	public class UiCameraStackFeatureIntegrationTests
