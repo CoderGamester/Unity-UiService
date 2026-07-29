@@ -17,10 +17,10 @@ namespace GameLovers.UiService.Views
             IntersectingLink,
             NearestLink
         }
-        
+
         public UnityEvent<TMP_LinkInfo> OnLinkedInfoClicked;
         public InteractableTextType InteractableType;
-        
+
         [SerializeField] private TMP_Text _text;
 
         public TMP_Text Text => _text;
@@ -50,12 +50,6 @@ namespace GameLovers.UiService.Views
             }
         }
 
-        /// <summary>
-        /// Resolves the camera to hit-test against, matching <see cref="UnityEngine.UI.GraphicRaycaster"/>'s own
-        /// rule: null for Screen Space - Overlay (and camera-less Screen Space - Camera), the canvas' worldCamera
-        /// otherwise. Re-resolved per click rather than cached, since a presenter feature (e.g. camera stacking,
-        /// render-texture targets) can change the canvas' render mode after this view is enabled.
-        /// </summary>
         private Camera ResolveEventCamera()
         {
             var canvas = GetComponentInParent<Canvas>();
