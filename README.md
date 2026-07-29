@@ -46,6 +46,8 @@ Managing UI in Unity games often becomes a tangled mess of direct references, sc
 
 Dependencies are automatically resolved when installing via Unity Package Manager.
 
+> **Using the backdrop blur needs one manual step**: add `UiBackdropBlurFeature` to your Universal **Renderer** asset (**Add Renderer Feature**), not just the presenter component. Without it the blur silently does nothing. See [URP Rendering Features](docs/urp-rendering.md).
+
 ### Compatibility Matrix
 
 | Unity Version | Status | Notes |
@@ -101,6 +103,7 @@ openupm add com.gamelovers.uiservice
 | [Core Concepts](docs/core-concepts.md) | Presenters, layers, sets, features |
 | [API Reference](docs/api-reference.md) | Complete API documentation |
 | [Advanced Topics](docs/advanced.md) | Analytics, performance, helper views |
+| [URP Rendering Features](docs/urp-rendering.md) | Camera stacking, backdrop blur, render-texture authoring, layering hazards |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
 
 ## Key Components
