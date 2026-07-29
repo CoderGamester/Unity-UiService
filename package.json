@@ -58,6 +58,11 @@
       "displayName": "Asset Loading Strategies",
       "description": "Compare PrefabRegistry, Addressables, and Resources loading strategies.",
       "path": "Samples~/AssetLoadingStrategies"
+    },
+    {
+      "displayName": "URP Rendering",
+      "description": "URP camera stacking and backdrop blur presenter features, plus the layer-ordering hazard between Screen Space - Overlay and Screen Space - Camera. Requires URP; auto-installs UiBackdropBlurRendererFeature onto your Renderer asset on import.",
+      "path": "Samples~/UrpRendering"
     }
   ]
 }

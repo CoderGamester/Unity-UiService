@@ -85,6 +85,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - Debugging: `UiPresenterManagerWindow.cs`, `UiPresenterEditor.cs`.
 - **Samples**: `Samples~/`
   - Demonstrates basic flows, data presenters, delay features, UI Toolkit integration.
+  - `Samples~/UrpRendering/` is the only sample that requires URP. It ships sample-scoped editor automation (`Editor/UrpRenderingSampleSetup.cs` + its own asmdef) that installs `UiBackdropBlurRendererFeature` onto every Renderer asset the active URP pipeline uses, because the blur is otherwise a silent no-op. It replicates URP's internal `ScriptableRendererDataEditor.AddComponent`: the feature must be added as a sub-asset **and** registered in `m_RendererFeatureMap` by local file id, or the list deserializes with a null entry. Idempotent, with an `[InitializeOnLoadMethod]` safety net for the UPM first-import ordering problem.
 - **Tests**: `Tests/`
   - `Tests/EditMode/*` — unit tests (configs, sets, loaders, core service behavior). Owned by `GameLovers.UiService.Tests.asmdef` which is **editor-only** (`includePlatforms: ["Editor"]`).
   - `Tests/PlayMode/*` — integration/performance/smoke tests and unit tests that require PlayMode (e.g. `DontDestroyOnLoad`). Owned by `GameLovers.UiService.Tests.PlayMode.asmdef` (runtime-compatible).

@@ -80,6 +80,7 @@ void Start()
 | 7 | [MultiInstance](#7-multiinstance) | Popup stacking |
 | 8 | [CustomFeatures](#8-customfeatures) | Create your own features |
 | 9 | [AssetLoadingStrategies](#9-assetloadingstrategies) | Compare loading strategies |
+| 10 | [UrpRendering](#10-urprendering) | URP camera stacking & backdrop blur |
 
 ---
 
@@ -548,6 +549,31 @@ public class MyPresenter : UiPresenter { }
 5. Set the address to `ExamplePresenter` (must match the config)
 6. For testing: **Window > Asset Management > Addressables > Groups > Play Mode Script** → select **Use Asset Database (fastest)**
 7. For builds: Build the Addressables catalog before building the player
+
+---
+
+### 10. UrpRendering
+
+**Files:**
+- `UrpRenderingExample.cs` - Driver: opens each presenter, spins the 3D content
+- `UrpRenderingConfigs.asset` - PrefabRegistryUiConfigs (no Addressables needed)
+- `BlurredModalPresenter.cs/.prefab` - Carries `UiBackdropBlurPresenterFeature`
+- `StackedWorldPresenter.cs/.prefab` - Carries `UiCameraStackFeature` + a child overlay Camera
+- `OverlayHudPresenter.cs/.prefab` - Plain Overlay at Layer 0, for the hazard demo
+- `Editor/UrpRenderingSampleSetup.cs` - Installs the renderer feature on import
+
+**Demonstrates:**
+- `UiBackdropBlurPresenterFeature` blurring the world behind a modal
+- `UiCameraStackFeature` stacking a Screen Space - Camera presenter into the URP frame
+- **The layer-ordering hazard**: the Overlay HUD at Layer **0** still draws over the stacked presenter at
+  Layer **20**, because Overlay composites after all URP rendering. No runtime fix exists.
+- Blur look authored on the Renderer asset (one project-wide art decision), not per presenter
+
+**Requires URP.** The sample auto-installs `UiBackdropBlurRendererFeature` onto every Renderer asset the
+active URP pipeline uses; without it the blur silently does nothing. Manual fallback:
+**Tools > GameLovers > Samples > Urp Rendering > Add Backdrop Blur Renderer Feature**.
+
+See [UrpRendering/README.md](UrpRendering/README.md) for the full walkthrough.
 
 **Pattern:**
 ```csharp

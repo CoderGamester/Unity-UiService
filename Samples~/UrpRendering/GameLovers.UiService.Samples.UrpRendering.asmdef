@@ -1,0 +1,20 @@
+{
+    "name": "GameLovers.UiService.Samples.UrpRendering",
+    "rootNamespace": "GameLovers.UiService.Examples",
+    "references": [
+        "GameLovers.UiService",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "UniTask",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 416e2c34e79374be08d174fe87531a7a, type: 3}
+  m_Name: UrpRenderingConfigs
+  m_EditorClassIdentifier: GameLovers.UiService::GameLovers.UiService.PrefabRegistryUiConfigs
+  _configs:
+  - Address: BlurredModalPresenter
+    Layer: 10
+    UiType: GameLovers.UiService.Examples.BlurredModalPresenter, GameLovers.UiService.Samples.UrpRendering,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    LoadSynchronously: 0
+  - Address: StackedWorldPresenter
+    Layer: 20
+    UiType: GameLovers.UiService.Examples.StackedWorldPresenter, GameLovers.UiService.Samples.UrpRendering,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    LoadSynchronously: 0
+  - Address: OverlayHudPresenter
+    Layer: 0
+    UiType: GameLovers.UiService.Examples.OverlayHudPresenter, GameLovers.UiService.Samples.UrpRendering,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    LoadSynchronously: 0
+  _sets: []
+  _prefabEntries:
+  - Address: BlurredModalPresenter
+    Prefab: {fileID: 5348507449103467780, guid: 1ca8efca56ae3411abd956d1f3300a0a,
+      type: 3}
+  - Address: StackedWorldPresenter
+    Prefab: {fileID: 8993420367354368955, guid: cf27be18a5a744982a16ca6b9ec277c3,
+      type: 3}
+  - Address: OverlayHudPresenter
+    Prefab: {fileID: 7311166644861009984, guid: 888ca220b80224cf29e5f0e7ef815c3f,
+      type: 3}
