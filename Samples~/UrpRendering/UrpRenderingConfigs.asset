@@ -31,11 +31,10 @@ MonoBehaviour:
   _sets: []
   _prefabEntries:
   - Address: BlurredModalPresenter
-    Prefab: {fileID: 5348507449103467780, guid: 1ca8efca56ae3411abd956d1f3300a0a,
-      type: 3}
+    Prefab: {fileID: 5491284849036078, guid: ffb4b12faaaeb4ea3ab14882a5be93e3, type: 3}
   - Address: StackedWorldPresenter
-    Prefab: {fileID: 8993420367354368955, guid: cf27be18a5a744982a16ca6b9ec277c3,
+    Prefab: {fileID: 2059032277165035904, guid: d15648d07233f445a8777d20b6044912,
       type: 3}
   - Address: OverlayHudPresenter
-    Prefab: {fileID: 7311166644861009984, guid: 888ca220b80224cf29e5f0e7ef815c3f,
+    Prefab: {fileID: 8015683366265215481, guid: 99141623a753c452bb7897b90c10a15b,
       type: 3}
