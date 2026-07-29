@@ -19,7 +19,14 @@ namespace GameLovers.UiService.Rendering
 	{
 		private const string ShaderPath = "Packages/com.gamelovers.uiservice/Runtime/Rendering/Shaders/UiBackdropBlur.shader";
 
+		/// <summary>Inclusive bounds for <see cref="IterationsOverride"/>, matching the authored field's range.</summary>
+		public const int MinIterations = 1;
+
+		public const int MaxIterations = 8;
+
 		private static bool _isInstalled;
+		private static int _iterationsOverride;
+		private static int _authoredIterations = 2;
 
 		[SerializeField] private Shader _blurShader;
 		[SerializeField, Range(0, 3)] private int _downsample = 1;
@@ -33,9 +40,32 @@ namespace GameLovers.UiService.Rendering
 		/// <summary>True once an instance exists on a loaded Renderer asset, letting presenters warn when it is absent.</summary>
 		internal static bool IsInstalled => _isInstalled;
 
+		/// <summary>
+		/// Overrides the authored iteration count at runtime, for quality tiers, accessibility settings, or a
+		/// tuning UI. Zero or less clears the override. Clamped to [<see cref="MinIterations"/>,
+		/// <see cref="MaxIterations"/>].
+		/// </summary>
+		/// <remarks>
+		/// Deliberately not a write to the serialized field: this feature is a <c>ScriptableObject</c> asset,
+		/// so assigning to it at runtime would persist to disk in the Editor and change the authored look for
+		/// the whole project. Static because the asset instance is owned by the Renderer and has no reference
+		/// path back from game code.
+		/// </remarks>
+		public static int IterationsOverride
+		{
+			get => _iterationsOverride;
+			set => _iterationsOverride = value <= 0 ? 0 : Mathf.Clamp(value, MinIterations, MaxIterations);
+		}
+
+		/// <summary>The iteration count authored on the asset, readable so a tuning UI can step from it.</summary>
+		public static int AuthoredIterations => _authoredIterations;
+
+		/// <summary>The iteration count currently in effect, override included.</summary>
+		public static int EffectiveIterations => _iterationsOverride > 0 ? _iterationsOverride : _authoredIterations;
+
 		internal int Downsample => _downsample;
 
-		internal int Iterations => _iterations;
+		internal int Iterations => _iterationsOverride > 0 ? _iterationsOverride : _iterations;
 
 		internal float Spread => _spread;
 
@@ -60,6 +90,7 @@ namespace GameLovers.UiService.Rendering
 				renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing
 			};
 			_isInstalled = true;
+			_authoredIterations = _iterations;
 		}
 
 		/// <inheritdoc />
@@ -79,6 +110,13 @@ namespace GameLovers.UiService.Rendering
 			// The feature asset outlives play mode, so the material leaks without this.
 			CoreUtils.Destroy(_blurMaterial);
 			_blurMaterial = null;
+		}
+
+		// Statics survive between play sessions when Domain Reload is disabled.
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+		private static void ResetOnLoad()
+		{
+			_iterationsOverride = 0;
 		}
 
 		private void Reset()

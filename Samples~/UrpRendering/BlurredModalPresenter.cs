@@ -1,3 +1,4 @@
+using GameLovers.UiService.Rendering;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -5,23 +6,37 @@ using UnityEngine.UI;
 namespace GameLovers.UiService.Examples
 {
 	/// <summary>
-	/// A modal whose backdrop is blurred by <c>UiBackdropBlurPresenterFeature</c> on the same prefab.
+	/// A panel whose backdrop is blurred by <c>UiBackdropBlurPresenterFeature</c> on the same prefab, with
+	/// buttons that step the blur's iteration count so the effect can be compared live.
 	/// </summary>
 	/// <remarks>
-	/// Nothing here touches the blur: the feature holds it open for as long as this presenter is
-	/// visible, and the look is authored on the URP Renderer asset. That is the whole point of the
-	/// sample -- the presenter's own code is unaware a blur exists.
+	/// Nothing here switches the blur on: the feature holds it open for as long as this presenter is visible.
+	/// The +/- buttons drive <see cref="UiBackdropBlurRendererFeature.IterationsOverride"/>, which exists so a
+	/// runtime tuning UI does not have to write to the renderer asset and persist the change to disk.
 	/// </remarks>
 	public class BlurredModalPresenter : UiPresenter
 	{
 		[SerializeField] private Button _closeButton;
+		[SerializeField] private Button _moreBlurButton;
+		[SerializeField] private Button _lessBlurButton;
 		[SerializeField] private TMP_Text _body;
+		[SerializeField] private TMP_Text _blurStatus;
 
 		private void Awake()
 		{
 			if (_closeButton != null)
 			{
 				_closeButton.onClick.AddListener(() => Close(false));
+			}
+
+			if (_moreBlurButton != null)
+			{
+				_moreBlurButton.onClick.AddListener(() => StepBlur(1));
+			}
+
+			if (_lessBlurButton != null)
+			{
+				_lessBlurButton.onClick.AddListener(() => StepBlur(-1));
 			}
 		}
 
@@ -30,9 +45,42 @@ namespace GameLovers.UiService.Examples
 			if (_body != null)
 			{
 				_body.text = "Everything behind this panel is blurred by the URP renderer feature.\n\n" +
-					"If it is NOT blurred, UiBackdropBlurRendererFeature is missing from your Renderer asset -- " +
-					"check the Console for the error naming the setup step.";
+					"If it is NOT blurred, UiBackdropBlurRendererFeature is missing from your Renderer " +
+					"asset -- check the Console for the error naming the setup step.";
 			}
+
+			RefreshStatus();
+		}
+
+		private void StepBlur(int delta)
+		{
+			// Steps from whatever is in effect, so the first press moves off the authored value rather than
+			// jumping to the bottom of the range. Clamped here rather than relying on the setter: the setter
+			// treats zero as "clear the override", so decrementing into it would snap back to the asset value
+			// instead of stopping at the minimum.
+			var next = Mathf.Clamp(
+				UiBackdropBlurRendererFeature.EffectiveIterations + delta,
+				UiBackdropBlurRendererFeature.MinIterations,
+				UiBackdropBlurRendererFeature.MaxIterations);
+
+			UiBackdropBlurRendererFeature.IterationsOverride = next;
+			RefreshStatus();
+		}
+
+		private void RefreshStatus()
+		{
+			if (_blurStatus == null)
+			{
+				return;
+			}
+
+			var effective = UiBackdropBlurRendererFeature.EffectiveIterations;
+			var authored = UiBackdropBlurRendererFeature.AuthoredIterations;
+			var suffix = UiBackdropBlurRendererFeature.IterationsOverride > 0 ? string.Empty : " (asset default)";
+
+			_blurStatus.text = $"Blur passes: {effective}{suffix}    " +
+				$"range {UiBackdropBlurRendererFeature.MinIterations}-{UiBackdropBlurRendererFeature.MaxIterations}, " +
+				$"asset authored {authored}";
 		}
 	}
 }

@@ -6,9 +6,9 @@ Open `UrpRendering.unity` and press Play. Three spinning cubes give you somethin
 
 | Button | What it shows |
 |---|---|
-| **Open Blurred Modal** | `UiBackdropBlurPresenterFeature` — the world behind the panel is blurred |
-| **Open Stacked UI** | `UiCameraStackFeature` — a Screen Space - Camera presenter stacked into the URP frame |
-| **Open Overlay HUD (Layer 0)** | The layering hazard, below |
+| **Blurred UI** | `UiBackdropBlurPresenterFeature` — the world behind the panel is blurred, with **- Less Blur / + More Blur** buttons inside the panel |
+| **Stacked UI** | `UiCameraStackFeature` — a Screen Space - Camera presenter stacked into the URP frame |
+| **Overlay HUD (Layer 0)** | The layering hazard, below |
 | **Close All** | Closes everything; the blur lifts when the last blur presenter hides |
 
 ## Setup is automatic
@@ -49,6 +49,27 @@ Select your Renderer asset and adjust `Downsample`, `Iterations`, `Spread`, and 
 
 `UiBackdropBlurPresenterFeature` on a prefab has no settings at all; it just holds the blur open while that
 presenter is visible.
+
+### The +/- buttons, and which knob actually controls blur strength
+
+The panel's **- Less Blur / + More Blur** buttons step `Iterations` — the number of blur passes — between 1 and
+8, and the label reports the value in effect plus what the asset authored. Going from 1 to 8 is a very visible
+difference: at 1 the content behind stays recognisable, at 8 it dissolves into soft blobs.
+
+Iterations is the intuitive knob, but it isn't the only one and it's the most expensive:
+
+| Setting | Effect | Cost |
+|---|---|---|
+| `Iterations` | more passes → smoother, wider | **linear** — each pass is a full-screen draw |
+| `Downsample` | each halving of resolution roughly doubles the effective radius | nearly free (fewer pixels) |
+| `Spread` | scales the sample offset directly | free, but too high shows box artifacts |
+
+For a cheap strong blur, reach for `Downsample` before `Iterations`.
+
+The buttons drive `UiBackdropBlurRendererFeature.IterationsOverride`, a **non-serialized** runtime override.
+That indirection is deliberate: the renderer feature is a `ScriptableObject` asset, so writing to its fields at
+runtime would persist to disk in the Editor and silently change the authored look for the whole project. Set
+the override to zero or less to fall back to the asset value.
 
 ## Files
 

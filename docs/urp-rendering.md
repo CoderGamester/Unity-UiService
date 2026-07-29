@@ -38,6 +38,14 @@ Blurs everything behind a presenter's UI while it's open.
 Tune the look — downsample, iterations, spread, tint — **on that renderer feature**. It is one art decision
 for the project, so it is not configurable per presenter; every blurred presenter shares it.
 
+For runtime tuning (quality tiers, an accessibility slider, a settings menu) use
+`UiBackdropBlurRendererFeature.IterationsOverride`, a static non-serialized override clamped to
+`MinIterations`..`MaxIterations`; zero or less falls back to the authored value, and `EffectiveIterations`
+reports what is actually in effect. It exists instead of writing to the asset's fields because the feature is a
+`ScriptableObject` — a runtime write would persist to disk in the Editor and change the authored look
+project-wide. Iterations is the most intuitive strength knob but the most expensive (one full-screen draw
+each); `Downsample` buys more blur for less.
+
 Then add `UiBackdropBlurPresenterFeature` to any presenter that wants a blurred backdrop. It has no settings:
 it just holds the blur open while the presenter is visible, and the blur stays up until the last such
 presenter closes. Opening one with no renderer feature installed logs an error naming the setup step above.
