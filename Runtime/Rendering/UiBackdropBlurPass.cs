@@ -22,17 +22,19 @@ namespace GameLovers.UiService.Rendering
 		private static readonly MaterialPropertyBlock _propertyBlock = new();
 
 		private readonly Material _material;
+		private readonly UiBackdropBlurRendererFeature _settings;
 
-		public UiBackdropBlurPass(Material material)
+		public UiBackdropBlurPass(Material material, UiBackdropBlurRendererFeature settings)
 		{
 			_material = material;
+			_settings = settings;
 			profilingSampler = new ProfilingSampler(nameof(UiBackdropBlurPass));
 		}
 
 		/// <inheritdoc />
 		public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
 		{
-			if (_material == null)
+			if (_material == null || _settings == null)
 			{
 				return;
 			}
@@ -42,13 +44,7 @@ namespace GameLovers.UiService.Rendering
 			var isOverlay = cameraData.renderType == CameraRenderType.Overlay;
 			var hasTargetTexture = cameraData.camera != null && cameraData.camera.targetTexture != null;
 
-			if (!UiBackdropBlurRequests.ShouldInject(cameraData.isGameCamera, isOverlay, hasTargetTexture,
-				    UiBackdropBlurRequests.ActiveCount > 0))
-			{
-				return;
-			}
-
-			if (!UiBackdropBlurRequests.TryGetActive(out var settings))
+			if (!ShouldInject(cameraData.isGameCamera, isOverlay, hasTargetTexture, UiBackdropBlurPresenterFeature.AnyOpen))
 			{
 				return;
 			}
@@ -66,7 +62,7 @@ namespace GameLovers.UiService.Rendering
 			}
 
 			var descriptor = renderGraph.GetTextureDesc(source);
-			var downsampleFactor = 1 << settings.Downsample;
+			var downsampleFactor = 1 << Mathf.Clamp(_settings.Downsample, 0, 3);
 			descriptor.width = Mathf.Max(1, descriptor.width / downsampleFactor);
 			descriptor.height = Mathf.Max(1, descriptor.height / downsampleFactor);
 			descriptor.name = "_UiBackdropBlurWork";
@@ -75,18 +71,33 @@ namespace GameLovers.UiService.Rendering
 			var downsampled = renderGraph.CreateTexture(descriptor);
 			renderGraph.AddBlitPass(source, downsampled, Vector2.one, Vector2.zero, passName: "UiBackdropBlur_Downsample");
 
+			var iterations = Mathf.Max(1, _settings.Iterations);
 			var current = downsampled;
-			for (var i = 0; i < settings.Iterations; i++)
+
+			for (var i = 0; i < iterations; i++)
 			{
 				var next = renderGraph.CreateTexture(descriptor);
 				// Tinting every iteration would compound the tint multiplicatively.
-				var isLastIteration = i == settings.Iterations - 1;
-				AddBlurIterationPass(renderGraph, current, next, settings.Spread,
-					isLastIteration ? settings.Tint : Color.white);
+				var isLastIteration = i == iterations - 1;
+				AddBlurIterationPass(renderGraph, current, next, Mathf.Max(0f, _settings.Spread),
+					isLastIteration ? _settings.Tint : Color.white);
 				current = next;
 			}
 
 			renderGraph.AddBlitPass(current, source, Vector2.one, Vector2.zero, passName: "UiBackdropBlur_Composite");
+		}
+
+		/// <summary>
+		/// Whether the blur should run against a camera with the given traits.
+		/// </summary>
+		/// <remarks>
+		/// Scene and Preview cameras would blur the Editor's own views; a URP overlay camera would blur
+		/// the stacked UI rather than the world behind it; a render-texture camera would blur the UI
+		/// being captured.
+		/// </remarks>
+		internal static bool ShouldInject(bool isGameCamera, bool isOverlayCamera, bool hasTargetTexture, bool anyPresenterOpen)
+		{
+			return isGameCamera && !isOverlayCamera && !hasTargetTexture && anyPresenterOpen;
 		}
 
 		private void AddBlurIterationPass(RenderGraph renderGraph, TextureHandle source, TextureHandle destination,

@@ -227,7 +227,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return null;
 			yield return null;
 
-			var presenter = Object.FindFirstObjectByType<TestCameraStackPresenter>();
+			var presenter = Object.FindAnyObjectByType<TestCameraStackPresenter>();
 			Assert.IsNotNull(presenter);
 			Assert.IsNotNull(presenter.StackFeature);
 			Assert.IsFalse(presenter.StackFeature.IsStacked, "No Camera.main in the test scene, so nothing should be stacked.");

@@ -30,18 +30,21 @@ Blurs everything behind a presenter's UI while it's open.
 > Feature** → `UiBackdropBlurRendererFeature`. **Until you do this, the blur silently does nothing** — nothing in the
 > API or Inspector will tell you it's missing. This is the single most common reason the blur "doesn't work".
 
-Then add `UiBackdropBlurPresenterFeature` to any presenter that wants a blurred backdrop. Configurable:
-downsample factor, iterations, spread, tint, and a sort key resolving which request wins when several
-presenters request a blur at once (highest sort key, first-registered breaks ties).
+Tune the look — downsample, iterations, spread, tint — **on that renderer feature**. It is one art decision
+for the project, so it is not configurable per presenter; every blurred presenter shares it.
 
-The pass injects only when all of these hold (`UiBackdropBlurRequests.ShouldInject`):
+Then add `UiBackdropBlurPresenterFeature` to any presenter that wants a blurred backdrop. It has no settings:
+it just holds the blur open while the presenter is visible, and the blur stays up until the last such
+presenter closes. Opening one with no renderer feature installed logs an error naming the setup step above.
+
+The pass injects only when all of these hold (`UiBackdropBlurPass.ShouldInject`):
 
 - the camera is a **Game** camera — otherwise the Editor's Scene view and material preview thumbnails would
   get blurred too
 - the camera is **not** a `UiCameraStackFeature` overlay camera — renderer features run per camera in a stack,
   so injecting there would blur the UI itself rather than the world behind it
 - the camera has **no `RenderTexture` target** — blurring that blurs the UI being captured
-- at least one presenter currently has an active blur request
+- at least one `UiBackdropBlurPresenterFeature` presenter is currently open
 
 ## Rendering UI into a RenderTexture
 
@@ -89,7 +92,7 @@ If a presenter needs different panel settings, **author a second `PanelSettings`
 
 ## Known coverage gap: blur visual correctness is not automatically tested
 
-The shader is verified to compile (`ShaderUtil.ShaderHasError` against a real Material) and the
-injection/registration logic has full automated coverage. Whether the blur **looks** right — the right
+The shader is verified to compile (`ShaderUtil.ShaderHasError` against a real Material) and the injection
+matrix plus the open/close refcount have full automated coverage. Whether the blur **looks** right — the right
 downsample/iteration/spread blend for your content — has not been verified against a real rendered frame in
 this repo. Check it in the Game view before shipping.

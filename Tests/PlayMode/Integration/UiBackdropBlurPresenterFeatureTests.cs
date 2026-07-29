@@ -7,13 +7,10 @@ using UnityEngine.TestTools;
 namespace GameLovers.UiService.Tests.PlayMode
 {
 	/// <summary>
-	/// Covers the registration lifecycle only -- whether UiBackdropBlurRequests sees a request
-	/// appear/disappear at the right moments. Does NOT attempt to force an actual GPU render:
-	/// this environment runs Unity in -nographics batchmode (no on-screen surface to render to),
-	/// and a RenderTexture-target camera is excluded from injection by design (see
-	/// UiBackdropBlurShouldInjectTests), so neither path would exercise or prove anything about the
-	/// real shader execution. Whether the blur actually looks right is an explicitly documented
-	/// coverage gap -- see docs/urp-rendering.md.
+	/// Covers the open/close refcount only. Does NOT force a GPU render: this environment runs Unity in
+	/// -nographics batchmode with no surface to render to, and a RenderTexture-target camera is excluded
+	/// from injection by design, so neither path would prove anything about the shader. Whether the blur
+	/// looks right is a documented coverage gap -- see docs/urp-rendering.md.
 	/// </summary>
 	[TestFixture]
 	public class UiBackdropBlurPresenterFeatureTests
@@ -35,61 +32,84 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator OnPresenterOpening_RegistersRequest()
+		public IEnumerator OnPresenterOpening_MarksBlurOpen()
 		{
+			ExpectMissingRendererFeatureError();
 			_feature.OnPresenterOpening();
 
-			Assert.AreEqual(1, UiBackdropBlurRequests.ActiveCount);
-			Assert.IsTrue(UiBackdropBlurRequests.TryGetActive(out _));
+			Assert.IsTrue(AnyOpen);
 			yield return null;
 		}
 
 		[UnityTest]
-		public IEnumerator OnPresenterOpening_CalledTwice_DoesNotDoubleRegister()
+		public IEnumerator OnPresenterOpening_CalledTwice_DoesNotDoubleCount()
 		{
+			ExpectMissingRendererFeatureError();
 			_feature.OnPresenterOpening();
 			_feature.OnPresenterOpening();
 
-			Assert.AreEqual(1, UiBackdropBlurRequests.ActiveCount);
+			// A double count would survive one close and leave the blur stuck on.
+			_go.SetActive(false);
+
+			Assert.IsFalse(AnyOpen);
 			yield return null;
 		}
 
 		[UnityTest]
-		public IEnumerator DisablingPresenter_UnregistersRequest()
+		public IEnumerator DisablingPresenter_ClearsBlur()
 		{
+			ExpectMissingRendererFeatureError();
 			_feature.OnPresenterOpening();
-			Assert.AreEqual(1, UiBackdropBlurRequests.ActiveCount);
+			Assert.IsTrue(AnyOpen);
 
 			_go.SetActive(false); // fires OnDisable
 
-			Assert.AreEqual(0, UiBackdropBlurRequests.ActiveCount);
+			Assert.IsFalse(AnyOpen);
 			yield return null;
 		}
 
 		[UnityTest]
-		public IEnumerator Reopen_AfterDisable_ReRegisters()
+		public IEnumerator Reopen_AfterDisable_MarksBlurOpenAgain()
 		{
+			ExpectMissingRendererFeatureError();
 			_feature.OnPresenterOpening();
 			_go.SetActive(false);
 			_go.SetActive(true);
+			ExpectMissingRendererFeatureError();
 			_feature.OnPresenterOpening();
 
-			Assert.AreEqual(1, UiBackdropBlurRequests.ActiveCount);
+			Assert.IsTrue(AnyOpen);
 			yield return null;
 		}
 
 		[UnityTest]
-		public IEnumerator ConfiguredSettings_AreRegisteredCorrectly()
+		public IEnumerator TwoPresenters_BlurStaysOpenUntilBothClose()
 		{
-			_feature.ConfigureForTest(downsample: 2, iterations: 3, spread: 1.5f, tint: Color.blue, sortKey: 7);
-			_feature.OnPresenterOpening();
+			var secondGo = new GameObject("SecondBlurPresenter");
+			var second = secondGo.AddComponent<UiBackdropBlurPresenterFeature>();
 
-			Assert.IsTrue(UiBackdropBlurRequests.TryGetActive(out var settings));
-			Assert.AreEqual(2, settings.Downsample);
-			Assert.AreEqual(3, settings.Iterations);
-			Assert.AreEqual(1.5f, settings.Spread);
-			Assert.AreEqual(Color.blue, settings.Tint);
+			ExpectMissingRendererFeatureError();
+			_feature.OnPresenterOpening();
+			ExpectMissingRendererFeatureError();
+			second.OnPresenterOpening();
+
+			_go.SetActive(false);
+			Assert.IsTrue(AnyOpen, "One presenter closing must not clear a blur the other still wants.");
+
+			secondGo.SetActive(false);
+			Assert.IsFalse(AnyOpen);
+
+			Object.DestroyImmediate(secondGo);
 			yield return null;
+		}
+
+		private static bool AnyOpen => UiBackdropBlurPresenterFeature.AnyOpen;
+
+		// No renderer feature is installed in the test environment, so every open logs the setup error.
+		private static void ExpectMissingRendererFeatureError()
+		{
+			LogAssert.Expect(LogType.Error,
+				new System.Text.RegularExpressions.Regex(".*UiBackdropBlurRendererFeature.*Add Renderer Feature.*"));
 		}
 	}
 }

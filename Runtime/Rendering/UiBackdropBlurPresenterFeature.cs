@@ -3,57 +3,58 @@ using UnityEngine;
 namespace GameLovers.UiService.Rendering
 {
 	/// <summary>
-	/// Requests a blurred backdrop behind this presenter while it is open, served by a
-	/// <see cref="UiBackdropBlurRendererFeature"/> on the project's active URP Renderer asset.
+	/// Holds a blurred backdrop open behind this presenter while it is visible. The blur's appearance is
+	/// configured on the <see cref="UiBackdropBlurRendererFeature"/> asset, not per presenter.
 	/// </summary>
 	public class UiBackdropBlurPresenterFeature : PresenterFeatureBase
 	{
-		[SerializeField] private int _downsample = 1;
-		[SerializeField] private int _iterations = 2;
-		[SerializeField] private float _spread = 1f;
-		[SerializeField] private Color _tint = Color.white;
-		[SerializeField] private int _sortKey;
+		private static int _openCount;
 
-		private bool _registered;
+		private bool _counted;
+
+		/// <summary>True while at least one presenter is holding a blurred backdrop open.</summary>
+		internal static bool AnyOpen => _openCount > 0;
 
 		private void OnDisable()
 		{
 			// Not OnPresenterClosed: that fires before the close transition finishes and before
 			// SetActive(false), which would pop the blur off while the presenter is still visible.
-			if (!_registered)
+			if (!_counted)
 			{
 				return;
 			}
 
-			UiBackdropBlurRequests.Unregister(this);
-			_registered = false;
+			_openCount--;
+			_counted = false;
 		}
 
 		/// <inheritdoc />
 		public override void OnPresenterOpening()
 		{
 			base.OnPresenterOpening();
-			Register();
-		}
 
-		internal void ConfigureForTest(int downsample, int iterations, float spread, Color tint, int sortKey)
-		{
-			_downsample = downsample;
-			_iterations = iterations;
-			_spread = spread;
-			_tint = tint;
-			_sortKey = sortKey;
-		}
-
-		private void Register()
-		{
-			if (_registered)
+			if (_counted)
 			{
 				return;
 			}
 
-			UiBackdropBlurRequests.Register(this, new UiBackdropBlurSettings(_downsample, _iterations, _spread, _tint), _sortKey);
-			_registered = true;
+			if (!UiBackdropBlurRendererFeature.IsInstalled)
+			{
+				Debug.LogError($"{nameof(UiBackdropBlurPresenterFeature)} on '{name}': no" +
+					$" {nameof(UiBackdropBlurRendererFeature)} was found on the active URP Renderer asset," +
+					" so nothing will render the blur. Select your Universal Renderer asset (not the" +
+					" Pipeline asset) and use Add Renderer Feature.", this);
+			}
+
+			_openCount++;
+			_counted = true;
+		}
+
+		// Statics survive between play sessions when Domain Reload is disabled.
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+		private static void ResetOnLoad()
+		{
+			_openCount = 0;
 		}
 	}
 }
