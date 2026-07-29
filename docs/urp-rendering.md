@@ -12,9 +12,14 @@ the hazards. For the general feature-composition pattern see [Core Concepts](cor
 Renders a presenter's `Canvas` as Screen Space - Camera and inserts its overlay camera into a base camera's
 URP stack, so UI can layer over 3D content instead of always compositing on top.
 
-Assign the overlay **Camera** (a prefab child) and the presenter's **Canvas** in the Inspector. The base camera
-defaults to `Camera.main`; assign `BaseCameraResolver` (a `Func<Camera>`) if that's not right for your game —
-multiple cameras, no "MainCamera" tag, split-screen.
+Assign the overlay **Camera** and the presenter's **Canvas** in the Inspector. Authoring the camera as a child
+of the presenter prefab is fine: the feature re-parents it out of the canvas hierarchy on init, because a
+Screen Space - Camera canvas drives its own transform from its `worldCamera` and would otherwise drag the
+camera onto the canvas plane where it can see nothing. Having done that, the feature destroys the camera with
+the presenter.
+
+The base camera defaults to `Camera.main`; assign `BaseCameraResolver` (a `Func<Camera>`) if that's not right
+for your game — multiple cameras, no "MainCamera" tag, split-screen.
 
 **Why this is a runtime feature and not authoring**: URP's camera stack is an Inspector list on the *base*
 camera in the scene. Presenters are instantiated from prefabs at runtime, so they cannot be pre-authored into
@@ -90,9 +95,26 @@ If a presenter needs different panel settings, **author a second `PanelSettings`
 `UIDocument` at it. Group presenters by panel configuration; you want as few panels as possible.
 `UiToolkitPresenterFeature.PanelSettings` is exposed read-only for inspection.
 
-## Known coverage gap: blur visual correctness is not automatically tested
+## Two benign Metal warnings while the blur is active
 
-The shader is verified to compile (`ShaderUtil.ShaderHasError` against a real Material) and the injection
-matrix plus the open/close refcount have full automated coverage. Whether the blur **looks** right — the right
-downsample/iteration/spread blend for your content — has not been verified against a real rendered frame in
-this repo. Check it in the Game view before shipping.
+On Metal, URP keeps the camera depth attachment memoryless. Injecting a full-screen pass breaks the native
+render pass, so the backend logs:
+
+```
+Ignoring depth surface load action as it is memoryless
+Ignoring depth surface store action as it is memoryless
+```
+
+Both come from Unity's native renderer rather than this package, are emitted once per session, and say Unity
+ignored the action. They stop as soon as no presenter is requesting a blur. Setting
+`requiresIntermediateTexture` and stripping depth from the blur work textures does not silence them.
+
+## Coverage: verified by eye, not automatically
+
+The shader compiles (`ShaderUtil.ShaderHasError` against a real Material), and the injection matrix plus the
+open/close refcount have full automated coverage. The blur has also been **confirmed rendering** in the
+`UrpRendering` sample — captured from the Game view in play mode, with the 3D content visibly softened behind
+the modal and crisp again once it closes.
+
+What is still not automated is whether it looks *good*: the right downsample/iteration/spread blend is a
+judgement call for your content and resolution. Adjust those on the renderer feature and look at the result.

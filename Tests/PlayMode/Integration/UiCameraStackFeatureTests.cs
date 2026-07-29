@@ -67,7 +67,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var data = _overlayCamera.GetUniversalAdditionalCameraData();
 			Assert.AreEqual(CameraRenderType.Overlay, data.renderType);
 			Assert.IsFalse(data.renderPostProcessing);
-			Assert.IsFalse(_overlayCamera.enabled, "Overlay camera should be disabled -- driven entirely by the stack.");
+			Assert.IsFalse(_overlayCamera.enabled, "Overlay camera stays disabled until stacked; URP does not render an Overlay camera outside a stack.");
 			yield return null;
 		}
 
@@ -126,6 +126,38 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			var baseData = _baseCamera.GetUniversalAdditionalCameraData();
 			Assert.IsTrue(baseData.cameraStack.Contains(_overlayCamera));
+			yield return null;
+		}
+
+		[UnityTest]
+		public IEnumerator StackedCamera_IsEnabled_SoUrpActuallyRendersIt()
+		{
+			_feature.OnPresenterInitialized(null);
+
+			// Before stacking it should stay disabled: an Overlay camera outside a stack renders nothing.
+			Assert.IsFalse(_overlayCamera.enabled, "Overlay camera should be disabled until it is stacked.");
+
+			_feature.OnPresenterOpening();
+
+			// UniversalRenderPipeline.RenderCameraStack skips stacked overlay cameras that are not
+			// isActiveAndEnabled, so membership alone does not mean the UI renders.
+			Assert.IsTrue(_overlayCamera.enabled,
+				"A stacked overlay camera MUST be enabled or URP silently renders nothing.");
+			Assert.IsTrue(_overlayCamera.isActiveAndEnabled,
+				"URP checks isActiveAndEnabled, so the GameObject must be active too.");
+			yield return null;
+		}
+
+		[UnityTest]
+		public IEnumerator UnstackedCamera_IsDisabledAgain_OnClose()
+		{
+			_feature.OnPresenterInitialized(null);
+			_feature.OnPresenterOpening();
+			Assert.IsTrue(_overlayCamera.enabled);
+
+			_presenterGo.SetActive(false);
+
+			Assert.IsFalse(_overlayCamera.enabled, "Overlay camera should be disabled once unstacked.");
 			yield return null;
 		}
 

@@ -30,6 +30,7 @@ namespace GameLovers.UiService.Rendering
 
 		private Func<Camera> _baseCameraResolver = ResolveMainCamera;
 		private bool _isStacked;
+		private bool _ownsDetachedCamera;
 
 		/// <summary>True while this presenter's overlay camera is inserted in the base camera's stack.</summary>
 		public bool IsStacked => _isStacked;
@@ -68,6 +69,15 @@ namespace GameLovers.UiService.Rendering
 			RemoveFromStack();
 		}
 
+		private void OnDestroy()
+		{
+			// Detaching the camera took it out of the presenter's hierarchy, so it no longer dies with it.
+			if (_ownsDetachedCamera && _overlayCamera != null)
+			{
+				Destroy(_overlayCamera.gameObject);
+			}
+		}
+
 		/// <inheritdoc />
 		public override void OnPresenterInitialized(UiPresenter presenter)
 		{
@@ -80,6 +90,8 @@ namespace GameLovers.UiService.Rendering
 				return;
 			}
 
+			DetachCameraFromCanvas();
+
 			_canvas.renderMode = RenderMode.ScreenSpaceCamera;
 			_canvas.worldCamera = _overlayCamera;
 			_canvas.planeDistance = _planeDistance;
@@ -88,7 +100,9 @@ namespace GameLovers.UiService.Rendering
 			overlayData.renderType = CameraRenderType.Overlay;
 			overlayData.renderPostProcessing = false;
 
-			// URP drives stacked cameras itself; clearDepth has no setter and already defaults correctly.
+			// Stays disabled until actually stacked: URP only renders an Overlay camera as part of a base
+			// camera's stack, so an enabled one sitting outside a stack is dead weight. clearDepth has no
+			// setter and already defaults correctly.
 			_overlayCamera.enabled = false;
 		}
 
@@ -118,6 +132,24 @@ namespace GameLovers.UiService.Rendering
 		private static void ResetOnLoad()
 		{
 			_stackPriorities.Clear();
+		}
+
+		// A Screen Space - Camera canvas drives its own transform from its worldCamera. If that camera is
+		// parented under the canvas it inherits the driven position and scale, lands exactly on the canvas
+		// plane, and sees nothing -- so the UI renders as an empty frame. Authoring the camera as a prefab
+		// child is the natural thing to do, so this repairs it rather than rejecting it.
+		private void DetachCameraFromCanvas()
+		{
+			if (!_overlayCamera.transform.IsChildOf(_canvas.transform))
+			{
+				return;
+			}
+
+			_overlayCamera.transform.SetParent(_canvas.transform.parent, false);
+			_overlayCamera.transform.localPosition = Vector3.zero;
+			_overlayCamera.transform.localRotation = Quaternion.identity;
+			_overlayCamera.transform.localScale = Vector3.one;
+			_ownsDetachedCamera = true;
 		}
 
 		private void InsertIntoStack()
@@ -150,6 +182,10 @@ namespace GameLovers.UiService.Rendering
 			var priority = StackPriority;
 			stack.Insert(InsertIndex(priorities, priority), _overlayCamera);
 			_stackPriorities[_overlayCamera] = priority;
+
+			// Mandatory, not cosmetic: UniversalRenderPipeline.RenderCameraStack skips any stacked
+			// overlay camera that is not isActiveAndEnabled, so a disabled one renders nothing at all.
+			_overlayCamera.enabled = true;
 			_isStacked = true;
 		}
 
@@ -167,6 +203,7 @@ namespace GameLovers.UiService.Rendering
 				baseCamera.GetUniversalAdditionalCameraData().cameraStack.Remove(_overlayCamera);
 			}
 
+			_overlayCamera.enabled = false;
 			_stackPriorities.Remove(_overlayCamera);
 			_isStacked = false;
 		}

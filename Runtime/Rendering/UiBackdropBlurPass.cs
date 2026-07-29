@@ -29,6 +29,9 @@ namespace GameLovers.UiService.Rendering
 			_material = material;
 			_settings = settings;
 			profilingSampler = new ProfilingSampler(nameof(UiBackdropBlurPass));
+
+			// This pass samples the active colour target, which the backbuffer cannot provide.
+			requiresIntermediateTexture = true;
 		}
 
 		/// <inheritdoc />
@@ -67,6 +70,11 @@ namespace GameLovers.UiService.Rendering
 			descriptor.height = Mathf.Max(1, descriptor.height / downsampleFactor);
 			descriptor.name = "_UiBackdropBlurWork";
 			descriptor.clearBuffer = false;
+			// The camera target's depth and memoryless settings come along with the copied descriptor, and
+			// the blur work textures are colour-only. Leaving them in makes URP log "Ignoring depth surface
+			// load/store action as it is memoryless" every frame the blur runs.
+			descriptor.depthBufferBits = DepthBits.None;
+			descriptor.memoryless = RenderTextureMemoryless.None;
 
 			var downsampled = renderGraph.CreateTexture(descriptor);
 			renderGraph.AddBlitPass(source, downsampled, Vector2.one, Vector2.zero, passName: "UiBackdropBlur_Downsample");
