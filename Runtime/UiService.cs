@@ -669,13 +669,6 @@ namespace GameLovers.UiService
 			}
 		}
 
-		/// <summary>
-		/// Attempts to find a presenter by type and address
-		/// </summary>
-		/// <param name="type">The type of UI presenter to find</param>
-		/// <param name="address">The instance address</param>
-		/// <param name="presenter">The found presenter, or null if not found</param>
-		/// <returns>True if the presenter was found, false otherwise</returns>
 		private bool TryFindPresenter(Type type, string address, out UiPresenter presenter)
 		{
 			if (_uiPresenters.TryGetValue(type, out var instances))
@@ -731,19 +724,8 @@ namespace GameLovers.UiService
 			return ui;
 		}
 
-		/// <summary>
-		/// Resolves the instance address for a given type when operating on an already-loaded presenter.
-		/// This is used by operations that need to find an existing instance (GetUi, IsVisible, CloseUi, etc.).
-		/// 
-		/// Priority:
-		/// 1. If no instances exist, return string.Empty (default/singleton)
-		/// 2. If exactly one instance exists, return that instance's address
-		/// 3. If multiple instances exist, return the first one found (with warning)
-		/// 
-		/// Note: This method should NOT be used for Load/Open operations that create new instances.
-		/// </summary>
-		/// <param name="type">The type of UI presenter to resolve</param>
-		/// <returns>The resolved instance address</returns>
+		// Resolves against ALREADY-LOADED instances only, so it must not be used by Load/Open paths that
+		// create new ones. Multiple instances resolve to the first found, with a warning.
 		private string ResolveInstanceAddress(Type type)
 		{
 			if (!_uiPresenters.TryGetValue(type, out var instances))
