@@ -40,6 +40,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: ResourcesUiAssetLoader.InstantiatePrefab throws when Resources.Load returns null rather than
+		// passing null on to Object.Instantiate, which fails far from the misconfigured address.
+		// RCR: ResourcesUiAssetLoader.cs InstantiatePrefab — replace the throw with
+		// `return UniTask.FromResult<GameObject>(null);` → RED (expected KeyNotFoundException, none thrown). 2026-08-02
 		public void InstantiatePrefab_ThrowsKeyNotFoundException_WhenResourceNotFound()
 		{
 			// Arrange
@@ -53,6 +57,11 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: ResourcesUiAssetLoader.UnloadAsset's null guard lets UiService.Dispose sweep instances Unity has
+		// already destroyed.
+		// RCR: none reachable — deleting `if (asset != null)` leaves the test green because
+		// Object.DestroyImmediate(null) is itself a no-op, so the guard has nothing observable to protect here.
+		// D2 overclaim: the name promises the guard matters; only the double-destroy path would show it. 2026-08-02
 		public void UnloadAsset_HandlesNullGracefully()
 		{
 			// Act & Assert - should not throw
@@ -60,6 +69,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: ResourcesUiAssetLoader.UnloadAsset must destroy the instance; unlike Addressables it has no
+		// release handle to fall back on, so a no-op leaks every unloaded presenter.
+		// RCR: ResourcesUiAssetLoader.cs UnloadAsset — replace `Object.DestroyImmediate(asset);` with
+		// `_ = asset;` → RED (Assert.IsTrue(testObject == null) fails). 2026-08-02
 		public void UnloadAsset_DestroysGameObject()
 		{
 			// Arrange - create a simple GameObject to test destruction
@@ -74,6 +87,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: ResourcesUiAssetLoader's not-found message must quote UiConfig.Address — it is the only clue a
+		// developer gets that the Resources path and the config disagree.
+		// RCR: ResourcesUiAssetLoader.cs InstantiatePrefab — drop the interpolated address from the message → RED
+		// (ex.Message no longer contains "UI/TestPresenter"). The throw-type sibling stays green. 2026-08-02
 		public void InstantiatePrefab_UsesAddressAsResourcePath()
 		{
 			// Arrange
@@ -91,6 +108,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: ResourcesUiAssetLoader.InstantiatePrefab must hand back a deactivated instance — UiService owns
+		// the first SetActive(true) through the open lifecycle.
+		// RCR: ResourcesUiAssetLoader.cs InstantiatePrefab — flip to `instance.SetActive(true);` → RED (the
+		// activeSelf assertion's own message fires: the loader must SetActive(false) on the new instance). 2026-08-02
 		public void InstantiatePrefab_ValidResourceAddress_LoadsCachesAndInstantiatesInactive()
 		{
 			const string resourceAddress = "UiServiceTestPrefab";

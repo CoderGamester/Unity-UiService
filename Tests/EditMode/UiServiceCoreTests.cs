@@ -51,6 +51,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiService.Init's null guard turns a missing UiConfigs asset reference into a named
+        // ArgumentNullException instead of an opaque NullReferenceException deep in the config loop.
+        // RCR: UiService.cs Init — disable the guard with `if (false)` → RED (Assert.Throws reports
+        // NullReferenceException on `configs.Configs` where ArgumentNullException was expected). 2026-08-02
         public void Init_WithNullConfigs_ThrowsArgumentNullException()
         {
             // Arrange

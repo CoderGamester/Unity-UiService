@@ -38,6 +38,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: PrefabRegistryUiAssetLoader.InstantiatePrefab must return a fresh clone of the registered prefab,
+		// not the prefab itself — UiService parents and destroys what it gets back.
+		// RCR: PrefabRegistryUiAssetLoader.cs InstantiatePrefab — return the prefab directly instead of
+		// instantiating → RED (Assert.AreNotSame fails: instance is the registered prefab). 2026-08-02
 		public void RegisterPrefab_AddsPrefabToRegistry()
 		{
 			// Arrange
@@ -58,6 +62,11 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: PrefabRegistryUiAssetLoader.RegisterPrefab uses indexer assignment so re-registering an address
+		// replaces the entry; an add-only registry would silently keep the stale prefab.
+		// RCR: PrefabRegistryUiAssetLoader.cs RegisterPrefab — guard the write with
+		// `if (!_prefabMap.ContainsKey(address))` → RED (instance name is TestPrefab(Clone), not NewPrefab).
+		// Every single-registration sibling stays green. 2026-08-02
 		public void RegisterPrefab_OverwritesExistingEntry()
 		{
 			// Arrange
@@ -80,6 +89,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: PrefabRegistryUiAssetLoader.InstantiatePrefab throws for an unregistered address rather than
+		// returning null, which would surface later as a NullReferenceException inside UiService.LoadUiAsync.
+		// RCR: PrefabRegistryUiAssetLoader.cs InstantiatePrefab — replace the throw with
+		// `return UniTask.FromResult<GameObject>(null);` → RED (expected KeyNotFoundException, none thrown). 2026-08-02
 		public void InstantiatePrefab_ThrowsKeyNotFoundException_WhenPrefabNotRegistered()
 		{
 			// Arrange
@@ -93,6 +106,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: PrefabRegistryUiAssetLoader.InstantiatePrefab must hand back a deactivated instance — UiService
+		// owns the first SetActive(true) via the open lifecycle, so an active one flashes on screen unopened.
+		// RCR: PrefabRegistryUiAssetLoader.cs InstantiatePrefab — flip to `instance.SetActive(true);` → RED
+		// (Assert.IsFalse(instance.activeSelf) fails). 2026-08-02
 		public void InstantiatePrefab_ReturnsInactiveInstance()
 		{
 			// Arrange
@@ -111,6 +128,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: PrefabRegistryUiAssetLoader.InstantiatePrefab must forward the parent Transform, or presenters
+		// land at scene root instead of under UiService's DontDestroyOnLoad "Ui" object.
+		// RCR: PrefabRegistryUiAssetLoader.cs InstantiatePrefab — drop the parent argument from
+		// `Object.Instantiate(prefab, parent)` → RED (expected TestParent, was null). 2026-08-02
 		public void InstantiatePrefab_SetsCorrectParent()
 		{
 			// Arrange
@@ -129,6 +150,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: PrefabRegistryUiAssetLoader.UnloadAsset must actually destroy the instance; UiService.UnloadUi
+		// delegates all teardown to it, so a no-op leaks every unloaded presenter.
+		// RCR: PrefabRegistryUiAssetLoader.cs UnloadAsset — replace `Object.DestroyImmediate(asset);` with
+		// `_ = asset;` → RED (Assert.IsTrue(instance == null) fails). 2026-08-02
 		public void UnloadAsset_DestroysGameObject()
 		{
 			// Arrange
@@ -146,6 +171,11 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: PrefabRegistryUiAssetLoader.UnloadAsset's null guard lets UiService.Dispose sweep instances that
+		// Unity already destroyed.
+		// RCR: none reachable — deleting `if (asset != null)` leaves the test green because
+		// Object.DestroyImmediate(null) is itself a no-op, so the guard has nothing observable to protect here.
+		// D2 overclaim: the name promises the guard matters; only the double-destroy path would show it. 2026-08-02
 		public void UnloadAsset_HandlesNullGracefully()
 		{
 			// Act & Assert - should not throw
@@ -153,6 +183,10 @@ namespace GameLovers.UiService.Tests
 		}
 
 		[Test]
+		// ADMIT: PrefabRegistryUiAssetLoader(PrefabRegistryUiConfigs) must walk configs.PrefabEntries and register
+		// each one, or a sample wired purely through the asset resolves no addresses at all.
+		// RCR: PrefabRegistryUiAssetLoader.cs constructor — make it return unconditionally (`return;`) → RED
+		// (KeyNotFoundException "Prefab not registered for address: ctor/prefab"). 2026-08-02
 		public void Constructor_WithConfigsAsset_PrePopulatesRegistryFromEntries()
 		{
 			var configsAsset = ScriptableObject.CreateInstance<PrefabRegistryUiConfigs>();

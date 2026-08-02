@@ -7,6 +7,10 @@ namespace GameLovers.UiService.Tests
     public class UiInstanceIdTests
     {
         [Test]
+        // ADMIT: UiInstanceId's constructor must keep a non-empty instance address verbatim — it is the key every
+        // UiService lookup matches on, so losing it collapses all multi-instance presenters onto one id.
+        // RCR: UiInstanceId.cs constructor — make the normalisation ternary yield `string.Empty` on both branches
+        // → RED (expected "test_address", was ""). 2026-08-02
         public void Constructor_WithValidType_CreatesInstance()
         {
             // Arrange & Act
@@ -18,6 +22,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId's constructor normalises an empty address to string.Empty; any other sentinel would
+        // stop matching the default instance UiService.AddUi registers.
+        // RCR: UiInstanceId.cs constructor — replace the ternary's `string.Empty` branch with `"__none__"` → RED
+        // (expected String.Empty, was "__none__"). Leaves the non-empty-address sibling green. 2026-08-02
         public void Constructor_WithEmptyAddress_CreatesDefaultInstance()
         {
             // Arrange & Act
@@ -29,6 +37,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId built from a null address must read as the default/singleton instance.
+        // RCR: none exists — null trips both the constructor's `string.IsNullOrEmpty` normalisation and
+        // IsDefault's own `string.IsNullOrEmpty`; disabling the normalisation leaves IsDefault(null) still true
+        // (verified). Double-covered, not single-line falsifiable. 2026-08-02
         public void Constructor_WithNullAddress_CreatesDefaultInstance()
         {
             // Arrange & Act
@@ -39,6 +51,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId.Equals compares InstanceAddress by value; UiService stores ids in a List and every
+        // visible/loaded lookup is a Contains, so a broken address comparison loses presenters silently.
+        // RCR: UiInstanceId.cs Equals — invert the address comparison to `InstanceAddress !=
+        // other.InstanceAddress` → RED (Assert.IsTrue(id1.Equals(id2)) fails). 2026-08-02
         public void Equals_SameTypeAndAddress_ReturnsTrue()
         {
             // Arrange
@@ -51,6 +67,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId.Equals must compare PresenterType, or two different presenters sharing an instance
+        // address become the same id and close/unload hit the wrong one.
+        // RCR: UiInstanceId.cs Equals — replace `PresenterType == other.PresenterType` with `true` → RED
+        // (Assert.IsFalse(id1.Equals(id2)) fails). 2026-08-02
         public void Equals_DifferentType_ReturnsFalse()
         {
             // Arrange
@@ -63,6 +83,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId.Equals must compare InstanceAddress, or two instances of the same presenter type at
+        // different addresses collapse into one id.
+        // RCR: UiInstanceId.cs Equals — replace `InstanceAddress == other.InstanceAddress` with `true` → RED
+        // (Assert.IsFalse(id1.Equals(id2)) fails). 2026-08-02
         public void Equals_DifferentAddress_ReturnsFalse()
         {
             // Arrange
@@ -74,6 +98,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId's hash must agree with Equals for two structurally identical ids.
+        // RCR: none exists — every deterministic function of (PresenterType, InstanceAddress) satisfies this,
+        // including `return 0;` and dropping either term (verified green); only introducing nondeterminism
+        // reddens it, which is not a revert of any shipped line. 2026-08-02
         public void GetHashCode_SameTypeAndAddress_ReturnsSameHash()
         {
             // Arrange
@@ -85,6 +113,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId.ToString is the only identification in every UiService warning/exception message
+        // ("already loaded", "is not open"); dropping the address makes multi-instance diagnostics ambiguous.
+        // RCR: UiInstanceId.cs ToString — drop `:{InstanceAddress}` from the non-default branch → RED
+        // (Assert.IsTrue(result.Contains("my_instance")) fails). 2026-08-02
         public void ToString_ReturnsExpectedFormat()
         {
             // Arrange
@@ -99,6 +131,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId.Default must construct with no instance address, or the singleton factory produces
+        // an id that never matches what UiService.AddUi<T>(ui, layer) registers.
+        // RCR: UiInstanceId.cs Default — pass an address: `new UiInstanceId(presenterType, "default")` → RED
+        // (expected String.Empty, was "default"; IsDefault also False). 2026-08-02
         public void Default_ProducesIsDefaultTrueAndEmptyAddress()
         {
             var instanceId = UiInstanceId.Default(typeof(TestUiPresenter));
@@ -109,6 +145,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiInstanceId.Named must forward its instanceAddress argument, or every named instance silently
+        // becomes the default one.
+        // RCR: UiInstanceId.cs Named — drop the argument: `new UiInstanceId(presenterType)` → RED
+        // (expected "popup_1", was ""). 2026-08-02
         public void Named_NonEmptyAddress_ProducesIsDefaultFalse()
         {
             var instanceId = UiInstanceId.Named(typeof(TestUiPresenter), "popup_1");
