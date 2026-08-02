@@ -98,18 +98,23 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
-        // ADMIT: UiInstanceId's hash must agree with Equals for two structurally identical ids.
-        // RCR: none exists — every deterministic function of (PresenterType, InstanceAddress) satisfies this,
-        // including `return 0;` and dropping either term (verified green); only introducing nondeterminism
-        // reddens it, which is not a revert of any shipped line. 2026-08-02
-        public void GetHashCode_SameTypeAndAddress_ReturnsSameHash()
+        // ADMIT: UiInstanceId.GetHashCode must fold BOTH PresenterType and InstanceAddress, or ids differing
+        // only in address share a bucket in every hash-based lookup keyed on this struct.
+        // RCR: UiInstanceId.cs GetHashCode — drop the `^ (InstanceAddress != null ? ...)` term → RED (the
+        // same-type/different-address pair below hashes equal). Asserting only that identical ids agree would
+        // stay green even for `return 0;`, which is why the discriminating pairs are the point of this test.
+        public void GetHashCode_FoldsBothTypeAndAddress()
         {
             // Arrange
             var id1 = new UiInstanceId(typeof(TestUiPresenter), "address");
             var id2 = new UiInstanceId(typeof(TestUiPresenter), "address");
+            var differentAddress = new UiInstanceId(typeof(TestUiPresenter), "other_address");
+            var differentType = new UiInstanceId(typeof(TestDataUiPresenter), "address");
 
             // Assert
-            Assert.AreEqual(id1.GetHashCode(), id2.GetHashCode());
+            Assert.AreEqual(id1.GetHashCode(), id2.GetHashCode(), "structurally identical ids must agree");
+            Assert.AreNotEqual(id1.GetHashCode(), differentAddress.GetHashCode(), "address must participate");
+            Assert.AreNotEqual(id1.GetHashCode(), differentType.GetHashCode(), "presenter type must participate");
         }
 
         [Test]

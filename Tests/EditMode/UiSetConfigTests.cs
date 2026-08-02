@@ -7,24 +7,6 @@ namespace GameLovers.UiService.Tests
     public class UiSetConfigTests
     {
         [Test]
-        // ADMIT: UiSetConfig.SetId is the key UiService.AddUiSet/_uiSets is indexed by.
-        // RCR: none exists — UiSetConfig is a field-only struct with no logic; the only edit that reddens this is
-        // deleting the field, which is a compile error. The id's real behaviour is pinned by
-        // Serialization_RoundTrip_PreservesData and UiServiceCorePlayModeTests.AddUiSet_NewSet_AddsSuccessfully. 2026-08-02
-        public void UiSetConfig_Creation_StoresSetId()
-        {
-            // Arrange & Act
-            var setConfig = new UiSetConfig
-            {
-                SetId = 42,
-                UiInstanceIds = new UiInstanceId[0]
-            };
-
-            // Assert
-            Assert.AreEqual(42, setConfig.SetId);
-        }
-
-        [Test]
         // ADMIT: UiSetEntry.ToUiInstanceId must carry InstanceAddress into the resulting id — a set entry that
         // loses its address resolves to the default instance and UiService opens the wrong one.
         // RCR: UiSetConfig.cs UiSetEntry.ToUiInstanceId — pass `null` instead of the address ternary → RED

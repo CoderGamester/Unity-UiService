@@ -7,46 +7,6 @@ namespace GameLovers.UiService.Tests
     public class UiConfigTests
     {
         [Test]
-        // ADMIT: UiConfig is the shape UiService.Init and every loader read; this pins its four public fields.
-        // RCR: none exists — UiConfig is a field-only struct with no logic, so the only edit that reddens this is
-        // deleting or renaming a field, which is a compile error, not a mutation (verified: every operator in
-        // UiConfigs.UiConfigSerializable can be broken with this test still green). 2026-08-02
-        public void UiConfig_Creation_PreservesAllProperties()
-        {
-            // Arrange & Act
-            var config = new UiConfig
-            {
-                Address = "test_address",
-                Layer = 5,
-                UiType = typeof(TestUiPresenter),
-                LoadSynchronously = true
-            };
-
-            // Assert
-            Assert.AreEqual("test_address", config.Address);
-            Assert.AreEqual(5, config.Layer);
-            Assert.AreEqual(typeof(TestUiPresenter), config.UiType);
-            Assert.IsTrue(config.LoadSynchronously);
-        }
-
-        [Test]
-        // ADMIT: a default-constructed UiConfig must read as unconfigured so UiService.Init's empty-address guard
-        // fires rather than a presenter silently loading from address null.
-        // RCR: none exists — the asserted values are C#'s zero-init for a field-only struct; no line in Runtime/
-        // participates, so every candidate edit is a compile error. Kept as the anchor for the guard above. 2026-08-02
-        public void UiConfig_DefaultValues_AreCorrect()
-        {
-            // Arrange & Act
-            var config = new UiConfig();
-
-            // Assert
-            Assert.IsNull(config.Address);
-            Assert.AreEqual(0, config.Layer);
-            Assert.IsNull(config.UiType);
-            Assert.IsFalse(config.LoadSynchronously);
-        }
-
-        [Test]
         // ADMIT: UiConfigs.Configs round-trips through UiConfigSerializable, and LoadSynchronously is the field
         // most easily dropped there — AddressablesUiAssetLoader reads it to pick sync instantiation.
         // RCR: UiConfigs.cs UiConfigSerializable(UiConfig) operator — replace `LoadSynchronously =
