@@ -147,5 +147,26 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			Assert.DoesNotThrow(() => presenter.ToolkitFeature.RemoveVisualTreeAttachedListener(null));
 		}
+
+		[UnityTest]
+		// ADMIT: UiService.EnsureCanvasSortingOrder's UIDocument branch must assign document.sortingOrder = layer,
+		// or a UI Toolkit presenter's panel keeps Unity's default 0 regardless of UiConfig.Layer.
+		// RCR: UiService.cs EnsureCanvasSortingOrder — comment out `document.sortingOrder = layer;` → RED
+		// (expected 4, was 0). 2026-08-01
+		public IEnumerator LoadUiAsync_WithUiDocumentPresenter_SetsDocumentSortingOrderToLayer()
+		{
+			// Arrange - register a second UI Toolkit presenter config on a non-default layer
+			_mockLoader.RegisterPrefab<TestMultiFeatureToolkitPresenter>("uitoolkit_layered");
+			_service.AddUiConfig(TestHelpers.CreateTestConfig(typeof(TestMultiFeatureToolkitPresenter), "uitoolkit_layered", 4));
+
+			// Act
+			var task = _service.LoadUiAsync(typeof(TestMultiFeatureToolkitPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestMultiFeatureToolkitPresenter;
+
+			// Assert
+			var document = presenter.GetComponent<UnityEngine.UIElements.UIDocument>();
+			Assert.AreEqual(4, document.sortingOrder);
+		}
 	}
 }

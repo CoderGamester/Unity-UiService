@@ -568,7 +568,7 @@ namespace GameLovers.UiService
 			{
 				var instanceId = _visibleUiList[i];
 
-				if (_uiConfigs[instanceId.PresenterType].Layer == layer)
+				if (_uiConfigs.TryGetValue(instanceId.PresenterType, out var config) && config.Layer == layer)
 				{
 					if (TryFindPresenter(instanceId.PresenterType, instanceId.InstanceAddress, out var presenter))
 					{

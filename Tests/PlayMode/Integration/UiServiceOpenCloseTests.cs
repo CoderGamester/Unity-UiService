@@ -163,6 +163,26 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.CloseAllUi(int layer) indexes _uiConfigs unguarded, but _uiConfigs is populated only by
+		// AddUiConfig — a presenter registered via AddUi<T> throws KeyNotFoundException as soon as its layer closes.
+		// RCR: UiService.cs CloseAllUi — revert to the unguarded
+		// `if (_uiConfigs[instanceId.PresenterType].Layer == layer)` → RED (KeyNotFoundException). 2026-08-01
+		public IEnumerator CloseAllUi_WithLayer_WhenPresenterWasAddedWithoutUiConfig_DoesNotThrow()
+		{
+			// Arrange - register a presenter via the public AddUi API only, bypassing the config-driven load path
+			// so _uiConfigs never receives an entry for its type
+			var prefab = TestHelpers.CreateTestPresenterPrefab<TestLayerUiPresenter>();
+			var presenter = prefab.GetComponent<TestLayerUiPresenter>();
+			_service.AddUi(presenter, 5, openAfter: true);
+
+			// Act & Assert
+			Assert.DoesNotThrow(() => _service.CloseAllUi(5));
+
+			UnityEngine.Object.DestroyImmediate(prefab);
+			yield return null;
+		}
+
+		[UnityTest]
 		public IEnumerator VisiblePresenters_TracksOpenClose()
 		{
 			// Act 1 - Open
@@ -423,6 +443,25 @@ namespace GameLovers.UiService.Tests.PlayMode
 			var loaded = _service.GetLoadedPresenters();
 			Assert.AreEqual(1, loaded.Count);
 			Assert.AreEqual("data_addr", loaded[0].Address);
+		}
+
+		[UnityTest]
+		// ADMIT: UiService.EnsureCanvasSortingOrder must assign canvas.sortingOrder = layer, or every presenter
+		// keeps Unity's default 0 regardless of UiConfig.Layer while load and open still succeed.
+		// RCR: UiService.cs EnsureCanvasSortingOrder — comment out `canvas.sortingOrder = layer;` → RED
+		// (expected 1, was 0). 2026-08-01
+		public IEnumerator LoadUiAsync_WithLayerInUiConfig_SetsCanvasSortingOrderToLayer()
+		{
+			// Arrange - TestDataUiPresenter is configured on layer 1 in Setup()
+
+			// Act
+			var task = _service.LoadUiAsync<TestDataUiPresenter>();
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult();
+
+			// Assert
+			var canvas = presenter.GetComponent<Canvas>();
+			Assert.AreEqual(1, canvas.sortingOrder);
 		}
 	}
 }

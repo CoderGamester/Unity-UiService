@@ -88,6 +88,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		[Timeout(10000)]
 		public IEnumerator LoadUiAsync_MissingConfig_ThrowsException()
 		{
 			// Arrange - Remove configs and recreate service with no TestUiPresenter config
@@ -98,12 +99,18 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Act & Assert
 			KeyNotFoundException caughtException = null;
 			var task = _service.LoadUiAsync(typeof(TestUiPresenter));
-			
+
+			var frameGuard = 0;
 			while (!task.Status.IsCompleted())
 			{
+				if (++frameGuard > 300) // ~5s at 60fps; no simulated delay in this test, so this is a generous cap
+				{
+					Assert.Fail($"LoadUiAsync_MissingConfig_ThrowsException: task did not complete within {frameGuard} frames");
+				}
+
 				yield return null;
 			}
-			
+
 			try
 			{
 				task.GetAwaiter().GetResult();
@@ -132,6 +139,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		[Timeout(10000)]
 		public IEnumerator LoadUiAsync_WithCancellation_CancelsOperation()
 		{
 			// Arrange
@@ -144,8 +152,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 			cts.Cancel();
 
 			// Wait for the task to complete (cancelled or otherwise)
+			var frameGuard = 0;
 			while (!task.Status.IsCompleted())
 			{
+				if (++frameGuard > 300) // ~5s at 60fps; comfortably exceeds the test's own 1000ms simulated delay
+				{
+					Assert.Fail($"LoadUiAsync_WithCancellation_CancelsOperation: task did not complete within {frameGuard} frames");
+				}
+
 				yield return null;
 			}
 
@@ -394,6 +408,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		[Timeout(10000)]
 		public IEnumerator LoadUiAsync_CancellationRequestedMidLoad_AbortsBeforeAddRegistration()
 		{
 			_mockLoader.SimulatedDelayMs = 1000;
@@ -403,8 +418,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return null;
 			cts.Cancel();
 
+			var frameGuard = 0;
 			while (!task.Status.IsCompleted())
 			{
+				if (++frameGuard > 300) // ~5s at 60fps; comfortably exceeds the test's own 1000ms simulated delay
+				{
+					Assert.Fail($"LoadUiAsync_CancellationRequestedMidLoad_AbortsBeforeAddRegistration: task did not complete within {frameGuard} frames");
+				}
+
 				yield return null;
 			}
 
@@ -420,6 +441,117 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			Assert.IsNotNull(caught);
 			Assert.AreEqual(0, _service.GetLoadedPresenters().Count);
+		}
+
+		[UnityTest]
+		[Timeout(10000)]
+		// ADMIT: UiPresenter.InternalCloseProcessAsync's post-await guard must short-circuit when the presenter's
+		// GameObject is destroyed mid-transition, or the resumed method calls SetActive(false) on a dead object.
+		// RCR: UiPresenter.cs InternalCloseProcessAsync — delete the
+		// `if (!this) { _closeTransitionCompletion?.TrySetResult(); return; }` block → RED (the frame guard below
+		// trips: the fire-and-forget faults with MissingReferenceException, which .Forget() swallows, so
+		// CloseTransitionTask never completes). 2026-08-01
+		public IEnumerator CloseAsync_WhenPresenterDestroyedDuringCloseTransition_CompletesTaskWithoutException()
+		{
+			// Arrange - a presenter whose close transition spans multiple frames (TimeDelayFeature close delay = 0.05s)
+			_mockLoader.RegisterPrefab<TestTimeDelayPresenter>("time_delay_presenter");
+			_service.AddUiConfig(TestHelpers.CreateTestConfig(typeof(TestTimeDelayPresenter), "time_delay_presenter", 2));
+
+			var openTask = _service.OpenUiAsync(typeof(TestTimeDelayPresenter));
+			yield return openTask.ToCoroutine();
+			var presenter = openTask.GetAwaiter().GetResult() as TestTimeDelayPresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+
+			Assert.That(presenter.IsOpen, Is.True);
+
+			// Act - start the close transition. This passes UiPresenter's pre-await guard (~line 141) synchronously
+			// and suspends at `await WaitForCloseTransitionsAsync()`, waiting on TimeDelayFeature's close delay.
+			_service.CloseUi(typeof(TestTimeDelayPresenter));
+			var closeTask = presenter.CloseTransitionTask;
+
+			yield return null; // let the close delay start ticking, landing us between the two guards
+
+			// Destroy the presenter's GameObject mid-transition, before the close delay elapses and the
+			// post-await guard (~line 150, "Check again after await") gets evaluated.
+			Object.Destroy(presenter.gameObject);
+
+			System.Exception caught = null;
+
+			// Bounded on wall-clock time, not frame count: see the RCR comment on
+			// LoadUiAsync_TwoOverlappingCallsForSameType_UnloadsTheDuplicateAndReturnsOneInstance in this same
+			// file for why a fixed frame budget is unreliable for a UniTask.Delay(TimeSpan)-based wait in
+			// batchmode (DelayType.DeltaTime accumulates Time.deltaTime, and batchmode's tick rate is
+			// unbounded/variable). 5s real time comfortably exceeds the 0.05s close delay regardless of tick rate.
+			var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+			while (!closeTask.Status.IsCompleted())
+			{
+				if (stopwatch.ElapsedMilliseconds > 5000)
+				{
+					Assert.Fail($"CloseAsync_WhenPresenterDestroyedDuringCloseTransition_CompletesTaskWithoutException: task did not complete within {stopwatch.ElapsedMilliseconds}ms");
+				}
+
+				yield return null;
+			}
+
+			try
+			{
+				closeTask.GetAwaiter().GetResult();
+			}
+			catch (System.Exception ex)
+			{
+				caught = ex;
+			}
+
+			// Assert
+			Assert.IsNull(caught);
+			Assert.That(closeTask.Status.IsCompleted(), Is.True);
+		}
+
+		[UnityTest]
+		[Timeout(10000)]
+		// ADMIT: UiService.LoadUiAsync's post-await double check must catch a second concurrent call for the same
+		// type/address whose await resolves after the first already registered its presenter; otherwise both
+		// register and the service tracks two instances for one UiInstanceId.
+		// RCR: UiService.cs LoadUiAsync — delete the post-await TryFindPresenter unload-and-return block → RED
+		// (UnloadCallCount becomes 0 and the two returned presenters are different instances — a silent duplicate
+		// registration with no exception). 2026-08-01
+		public IEnumerator LoadUiAsync_TwoOverlappingCallsForSameType_UnloadsTheDuplicateAndReturnsOneInstance()
+		{
+			// Arrange - a nonzero simulated delay keeps InstantiatePrefab pending so a second LoadUiAsync call
+			// for the same type can start (and increment InstantiateCallCount) before the first call resolves.
+			_mockLoader.SimulatedDelayMs = 50;
+
+			// Act - start two overlapping loads for the same type WITHOUT awaiting either first
+			var task1 = _service.LoadUiAsync(typeof(TestUiPresenter));
+			var task2 = _service.LoadUiAsync(typeof(TestUiPresenter));
+
+			Assert.AreEqual(2, _mockLoader.InstantiateCallCount, "Both calls must have started InstantiatePrefab before either completed");
+
+			// Bounded on wall-clock time, not frame count: UniTask.Delay(TimeSpan) defaults to
+			// DelayType.DeltaTime, and batchmode's Update-tick rate is unbounded/variable (no vsync target),
+			// so a fixed frame budget assuming "~60fps" can represent far less than 50ms of accumulated
+			// Time.deltaTime under load — a 300-frame cap was observed timing out on this exact test even
+			// though the tasks completed correctly, just slower in ticks than expected. 5s real time
+			// comfortably exceeds the 50ms simulated delay regardless of tick rate.
+			var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+			while (!task1.Status.IsCompleted() || !task2.Status.IsCompleted())
+			{
+				if (stopwatch.ElapsedMilliseconds > 5000)
+				{
+					Assert.Fail($"LoadUiAsync_TwoOverlappingCallsForSameType_UnloadsTheDuplicateAndReturnsOneInstance: tasks did not complete within {stopwatch.ElapsedMilliseconds}ms");
+				}
+
+				yield return null;
+			}
+
+			var presenter1 = task1.GetAwaiter().GetResult();
+			var presenter2 = task2.GetAwaiter().GetResult();
+
+			// Assert
+			Assert.AreEqual(2, _mockLoader.InstantiateCallCount);
+			Assert.AreEqual(1, _mockLoader.UnloadCallCount);
+			Assert.AreSame(presenter1, presenter2);
+			Assert.AreEqual(1, _service.GetLoadedPresenters().Count);
 		}
 	}
 }

@@ -4,6 +4,14 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
+## [Unreleased]
+
+**Fixed**:
+- `UiService.CloseAllUi(int layer)` threw `KeyNotFoundException` when any visible presenter had been registered through `AddUi<T>` rather than `AddUiConfig`. The layer comparison indexed `_uiConfigs` unguarded, but only `AddUiConfig` populates that dictionary — so closing a layer while an `AddUi<T>`-registered presenter was visible always threw. Now a `TryGetValue` miss simply skips the presenter.
+
+**Changed**:
+- `package.json` now declares `com.unity.test-framework.performance` (3.5.0). The PlayMode test asmdef already referenced `Unity.PerformanceTesting`, so consumers without that package installed hit a missing-assembly compile error in this package's test assembly.
+
 ## [1.3.0] - 2026-07-29
 
 **New**:

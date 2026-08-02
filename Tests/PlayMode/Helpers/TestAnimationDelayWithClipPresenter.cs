@@ -26,6 +26,13 @@ namespace GameLovers.UiService.Tests.PlayMode
 			introClip.SetCurve("", typeof(Transform), "localPosition.x",
 				AnimationCurve.Linear(0f, 0f, 0.1f, 1f));
 
+			// Animation.Play() with no arguments plays the component's "default clip", which requires the
+			// clip to already be registered in the component's attached-animations list. Merely assigning
+			// AnimationDelayFeature's `_animation.clip = introClip` later does not retroactively register a
+			// freshly-created runtime clip that was never added via AddClip — Play() then logs "Default clip
+			// could not be found in attached animations list." and silently no-ops instead of playing.
+			animation.AddClip(introClip, introClip.name);
+
 			AnimationFeature.SetAnimation(animation, introClip);
 		}
 	}

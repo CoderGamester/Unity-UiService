@@ -162,6 +162,34 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.DetachCameraFromCanvas re-parents the overlay camera out of its own canvas
+		// — the half of commit 4f72d23 that no sibling test here covers (they pin enabled/isActiveAndEnabled).
+		// RCR: UiCameraStackFeature.cs DetachCameraFromCanvas — delete the SetParent call and the three
+		// localPosition/localRotation/localScale resets after it → RED (still a child, keeps its parented
+		// offset). No exception: a Screen Space - Camera canvas drives a child camera onto the canvas plane,
+		// so the symptom is an empty frame, not a crash. 2026-08-01
+		public IEnumerator Open_WhenOverlayCameraIsChildOfItsOwnCanvas_DetachesCameraFromCanvas()
+		{
+			// Arrange -- parent the overlay camera under its own canvas, the authoring mistake this guards against.
+			_overlayCameraGo.transform.SetParent(_canvas.transform, false);
+			_overlayCameraGo.transform.localPosition = new Vector3(1f, 2f, 3f);
+			Assume.That(_overlayCamera.transform.IsChildOf(_canvas.transform),
+				"Precondition: the overlay camera must actually be parented under its own canvas for this test to exercise the detach path.");
+
+			// Act
+			_feature.OnPresenterInitialized(null);
+			_feature.OnPresenterOpening();
+
+			// Assert
+			Assert.IsFalse(_overlayCamera.transform.IsChildOf(_canvas.transform),
+				"DetachCameraFromCanvas must re-parent the camera out of its own canvas -- otherwise a Screen " +
+				"Space - Camera canvas drives the camera's transform and it lands on the canvas plane, rendering nothing.");
+			Assert.AreEqual(Vector3.zero, _overlayCamera.transform.localPosition,
+				"Detach must reset local position to zero after re-parenting, or the camera keeps the offset it had as a child.");
+			yield return null;
+		}
+
+		[UnityTest]
 		public IEnumerator MultipleStackedCameras_OrderByCanvasSortingOrder()
 		{
 			_canvas.sortingOrder = 20;

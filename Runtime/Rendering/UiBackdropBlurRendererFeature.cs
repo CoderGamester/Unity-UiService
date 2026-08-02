@@ -71,6 +71,9 @@ namespace GameLovers.UiService.Rendering
 
 		internal Color Tint => _tint;
 
+		/// <summary>Exposes the created blur material for tests; production code has no need to reach it.</summary>
+		internal Material BlurMaterialInternal => _blurMaterial;
+
 		/// <inheritdoc />
 		public override void Create()
 		{

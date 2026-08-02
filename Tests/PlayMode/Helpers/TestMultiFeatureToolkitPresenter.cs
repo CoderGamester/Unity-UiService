@@ -13,6 +13,21 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 		private void Awake()
 		{
+			// TestHelpers.CreateTestPresenterPrefab<T>() unconditionally adds a Canvas ("most presenters
+			// need a canvas") before adding the presenter component. This presenter is UIDocument-only and
+			// never wants one: UiService.EnsureCanvasSortingOrder checks Canvas before UIDocument (by
+			// design — see the package root AGENTS.md §4, "the Canvas/UIDocument pair it already handles
+			// is complete"), so a stray factory-added Canvas silently steals the sorting-order write that
+			// should land on this presenter's UIDocument instead. DestroyImmediate (not Destroy) because
+			// EnsureCanvasSortingOrder's TryGetComponent<Canvas> check runs later in the same synchronous
+			// call chain as this Awake() (no frame boundary in between for a zero-simulated-delay load), so
+			// a deferred Destroy would not have taken effect yet.
+			var strayCanvas = GetComponent<Canvas>();
+			if (strayCanvas != null)
+			{
+				DestroyImmediate(strayCanvas);
+			}
+
 			var document = GetComponent<UIDocument>();
 			if (document == null)
 			{

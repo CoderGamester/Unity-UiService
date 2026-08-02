@@ -162,5 +162,36 @@ namespace GameLovers.UiService.Tests.PlayMode
 				hooks,
 				"Open hooks must fire in order before close hooks; close hooks must fire after CloseTransitionTask completes");
 		}
+
+		[UnityTest]
+		// ADMIT: AnimationDelayFeature.OnOpenStarted assigns _animation.clip and calls _animation.Play(); the 8
+		// tests above assert only derived delay timing and hook order, so deleting .Play() leaves them all green
+		// while the intro animation silently never advances on screen.
+		// RCR: AnimationDelayFeature.cs OnOpenStarted — comment out `_animation.Play();` → RED
+		// (animation.isPlaying was False). 2026-08-01
+		public IEnumerator OnOpen_WithClip_ActuallyPlaysTheAnimation()
+		{
+			// Arrange
+			_mockLoader.RegisterPrefab<TestAnimationDelayWithClipPresenter>("animation_clip_presenter");
+			_service.AddUiConfig(TestHelpers.CreateTestConfig(typeof(TestAnimationDelayWithClipPresenter), "animation_clip_presenter", 0));
+
+			// Act
+			var task = _service.OpenUiAsync(typeof(TestAnimationDelayWithClipPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestAnimationDelayWithClipPresenter;
+
+			var animation = presenter.AnimationFeature.AnimationComponent;
+			var clipName = presenter.AnimationFeature.IntroAnimationClip.name;
+
+			// Assert - Play() was actually invoked (not merely the clip assigned)
+			Assert.IsTrue(animation.isPlaying);
+
+			var normalizedTimeRightAfterPlay = animation[clipName].normalizedTime;
+
+			yield return null;
+
+			// Assert - real playback time advances after a frame, proving it is actually running
+			Assert.Greater(animation[clipName].normalizedTime, normalizedTimeRightAfterPlay);
+		}
 	}
 }

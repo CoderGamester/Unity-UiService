@@ -67,5 +67,33 @@ namespace GameLovers.UiService.Tests.PlayMode
 				"NonDrawingView.OnPopulateMesh must always emit zero verts (its raison d'être)");
 			yield return null;
 		}
+
+		[UnityTest]
+		// ADMIT: NonDrawingView's [RequireComponent(typeof(CanvasRenderer))] is the entire historical 0.9.1 crash
+		// fix — without it, AddComponent<NonDrawingView>() on a GameObject with no CanvasRenderer leaves the
+		// Graphic base class without the renderer it requires.
+		// RCR: NonDrawingView.cs — delete `[RequireComponent(typeof(CanvasRenderer))]` → RED
+		// (`GetComponent<CanvasRenderer>() != null` fails). The forced rebuild below is defense-in-depth only:
+		// NonDrawingView's SetVerticesDirty/SetMaterialDirty no-ops mean OnPopulateMesh is never re-entered. 2026-08-01
+		public IEnumerator AddComponent_OnGameObjectWithoutCanvasRenderer_AutoAddsCanvasRendererAndRebuildsWithoutThrowing()
+		{
+			// Arrange
+			var bareGo = new GameObject("BareView", typeof(RectTransform));
+			bareGo.transform.SetParent(_canvasGo.transform, false);
+
+			// Act
+			var view = bareGo.AddComponent<NonDrawingView>();
+
+			// Assert
+			Assert.IsNotNull(bareGo.GetComponent<CanvasRenderer>(),
+				"[RequireComponent(typeof(CanvasRenderer))] on NonDrawingView must make Unity auto-add a CanvasRenderer.");
+
+			view.SetAllDirty();
+			Canvas.ForceUpdateCanvases();
+			LogAssert.NoUnexpectedReceived();
+
+			Object.DestroyImmediate(bareGo);
+			yield return null;
+		}
 	}
 }

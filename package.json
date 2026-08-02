@@ -9,7 +9,8 @@
   "dependencies": {
     "com.unity.addressables": "2.6.0",
     "com.cysharp.unitask": "2.5.10",
-    "com.unity.render-pipelines.universal": "17.0.1"
+    "com.unity.render-pipelines.universal": "17.0.1",
+    "com.unity.test-framework.performance": "3.5.0"
   },
   "type": "library",
   "hideInEditor": false,

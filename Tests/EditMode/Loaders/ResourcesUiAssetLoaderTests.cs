@@ -111,19 +111,6 @@ namespace GameLovers.UiService.Tests
 			Assert.AreNotSame(firstInstance, secondInstance,
 				"Each call must return a distinct instance — the cache stores the prefab, not the instance");
 		}
-
-		[Test]
-		public void MultipleInstances_CanBeCreated()
-		{
-			// This test verifies the loader doesn't have singleton restrictions
-			// We can't test with real Resources, but we verify the loader can be called multiple times
-			
-			var loader1 = new ResourcesUiAssetLoader();
-			var loader2 = new ResourcesUiAssetLoader();
-
-			// Both should be independent instances
-			Assert.AreNotSame(loader1, loader2);
-		}
 	}
 }
 
