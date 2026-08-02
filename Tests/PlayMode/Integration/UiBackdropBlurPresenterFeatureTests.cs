@@ -106,8 +106,22 @@ namespace GameLovers.UiService.Tests.PlayMode
 		private static bool AnyOpen => UiBackdropBlurPresenterFeature.AnyOpen;
 
 		// No renderer feature is installed in the test environment, so every open logs the setup error.
+		/// <summary>
+		/// The missing-feature error is logged by <see cref="UiBackdropBlurPresenterFeature.OnPresenterOpening"/>
+		/// ONLY when no renderer feature is installed, so the expectation has to follow the environment rather
+		/// than assume one. Batchmode never instantiates the URP renderer, so nothing calls
+		/// <c>UiBackdropBlurRendererFeature.Create()</c> and the error fires; in the Editor the Game view renders,
+		/// the feature registers, and production correctly stays silent. Hard-coding the expectation made these
+		/// tests pass only where the feature happens to be absent.
+		/// The refcount assertions below are the actual subject and hold either way.
+		/// </summary>
 		private static void ExpectMissingRendererFeatureError()
 		{
+			if (UiBackdropBlurRendererFeature.IsInstalled)
+			{
+				return;
+			}
+
 			LogAssert.Expect(LogType.Error,
 				new System.Text.RegularExpressions.Regex(".*UiBackdropBlurRendererFeature.*Add Renderer Feature.*"));
 		}
