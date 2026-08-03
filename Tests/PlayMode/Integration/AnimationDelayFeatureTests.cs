@@ -36,6 +36,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: AnimationDelayFeature.OpenDelayInSeconds must report 0 when no intro clip is assigned, or a
+		// clipless presenter stalls its open transition for a phantom duration.
+		// RCR: AnimationDelayFeature.cs OpenDelayInSeconds — change the null-clip branch from `0f` to `1f` → RED
+		// (expected 0, was 1). The non-null branch of the same ternary is a separate mutation. 2026-08-02
 		public IEnumerator AnimationDelayFeature_NoClips_HasZeroDelay()
 		{
 			// Act
@@ -110,6 +114,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: AnimationDelayFeature.OpenDelayInSeconds must derive the delay from the intro clip's length, or the
+		// presenter stops waiting before the animation has played out.
+		// RCR: AnimationDelayFeature.cs OpenDelayInSeconds — change the non-null branch from
+		// `_introAnimationClip.length` to `0f` → RED (expected 0.1, was 0). Pins the other half of the ternary. 2026-08-02
 		public IEnumerator AnimationDelayFeature_WithClip_UsesClipLength()
 		{
 			// Arrange - Create a test animation clip
@@ -142,6 +150,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: AnimationDelayFeature.CloseWithAnimationAsync must call OnCloseStarted before awaiting the outro —
+		// that hook is what assigns the outro clip and plays it.
+		// RCR: AnimationDelayFeature.cs CloseWithAnimationAsync — comment out `OnCloseStarted();` → RED (3 recorded
+		// hooks, expected 4; CollectionAssert reports the missing "OnCloseStarted"). 2026-08-02
 		public IEnumerator AnimationDelayFeature_LifecycleHooks_FireInOrderForOpenAndClose()
 		{
 			_mockLoader.RegisterPrefab<TestTrackingAnimationDelayPresenter>("tracking_animation_presenter");

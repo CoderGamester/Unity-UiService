@@ -50,6 +50,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.OnPresenterInitialized must switch the canvas to ScreenSpaceCamera; an Overlay
+		// canvas composites after all URP rendering and ignores the stacked camera entirely.
+		// RCR: UiCameraStackFeature.cs OnPresenterInitialized — comment out
+		// `_canvas.renderMode = RenderMode.ScreenSpaceCamera;` → RED (expected ScreenSpaceCamera, was Overlay). 2026-08-02
 		public IEnumerator OnPresenterInitialized_SetsCanvasToScreenSpaceCameraWithOverlayCamera()
 		{
 			_feature.OnPresenterInitialized(null);
@@ -60,6 +64,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.OnPresenterInitialized must set the overlay camera's URP renderType to Overlay,
+		// or URP treats a stacked Base camera as an illegal stack entry and refuses to render it.
+		// RCR: UiCameraStackFeature.cs OnPresenterInitialized — comment out
+		// `overlayData.renderType = CameraRenderType.Overlay;` → RED (expected Overlay, was Base). 2026-08-02
 		public IEnumerator OnPresenterInitialized_SetsOverlayCameraAsUrpOverlay_AndDisablesIt()
 		{
 			_feature.OnPresenterInitialized(null);
@@ -72,6 +80,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.InsertIntoStack must insert the overlay camera into the base camera's
+		// cameraStack; nothing else puts the presenter's UI in front of the 3D scene.
+		// RCR: UiCameraStackFeature.cs InsertIntoStack — comment out
+		// `stack.Insert(InsertIndex(priorities, priority), _overlayCamera);` → RED (stack does not contain it). 2026-08-02
 		public IEnumerator OnPresenterOpening_InsertsOverlayCameraIntoBaseStack()
 		{
 			_feature.OnPresenterInitialized(null);
@@ -102,6 +114,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.RemoveFromStack must remove the overlay camera from the base camera's stack on
+		// disable, or a closed presenter's camera keeps rendering as part of every subsequent frame.
+		// RCR: UiCameraStackFeature.cs RemoveFromStack — comment out the
+		// `...cameraStack.Remove(_overlayCamera);` call → RED (the stack still contains the overlay camera). 2026-08-02
 		public IEnumerator DisablingPresenter_RemovesOverlayCameraFromStack()
 		{
 			_feature.OnPresenterInitialized(null);
@@ -116,6 +132,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.RemoveFromStack must clear _isStacked, or the reopen path short-circuits on its
+		// own stale flag and the camera is never re-inserted.
+		// RCR: UiCameraStackFeature.cs RemoveFromStack — comment out the trailing `_isStacked = false;` → RED
+		// (the stack does not contain the overlay camera after reopening). 2026-08-02
 		public IEnumerator Reopen_AfterDisable_ReInsertsIntoStack()
 		{
 			_feature.OnPresenterInitialized(null);
@@ -130,6 +150,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.InsertIntoStack must enable the overlay camera — UniversalRenderPipeline
+		// .RenderCameraStack skips a stacked camera that is not isActiveAndEnabled, so membership alone renders nothing.
+		// RCR: UiCameraStackFeature.cs InsertIntoStack — comment out `_overlayCamera.enabled = true;` → RED
+		// (Assert.IsTrue(_overlayCamera.enabled) fails after stacking). 2026-08-02
 		public IEnumerator StackedCamera_IsEnabled_SoUrpActuallyRendersIt()
 		{
 			_feature.OnPresenterInitialized(null);
@@ -149,6 +173,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.RemoveFromStack must disable the overlay camera once unstacked; an enabled
+		// Overlay-type camera outside a stack is dead weight URP still walks every frame.
+		// RCR: UiCameraStackFeature.cs RemoveFromStack — comment out `_overlayCamera.enabled = false;` → RED
+		// (Assert.IsFalse(_overlayCamera.enabled) fails). Anchored past OnPresenterInitialized's identical line. 2026-08-02
 		public IEnumerator UnstackedCamera_IsDisabledAgain_OnClose()
 		{
 			_feature.OnPresenterInitialized(null);
@@ -190,6 +218,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.StackPriority must derive from the canvas sortingOrder when _useCanvasSortingOrder
+		// is set, or every presenter stacks at priority 0 and the layering collapses to insertion order.
+		// RCR: UiCameraStackFeature.cs StackPriority — replace the property with `=> _stackPriority;` → RED
+		// (Assert.Less(secondIndex, firstIndex) fails: sortingOrder 5 no longer stacks before 20). 2026-08-02
 		public IEnumerator MultipleStackedCameras_OrderByCanvasSortingOrder()
 		{
 			_canvas.sortingOrder = 20;
@@ -220,6 +252,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.RemoveFromStack's base-camera null check is what survives a base camera destroyed
+		// while a presenter is still stacked — a routine scene-teardown ordering.
+		// RCR: UiCameraStackFeature.cs RemoveFromStack — replace `if (baseCamera != null)` with `if (true)` → RED
+		// (Assert.DoesNotThrow fails on GetUniversalAdditionalCameraData against a destroyed Camera). 2026-08-02
 		public IEnumerator DestroyedBaseCamera_DoesNotThrow()
 		{
 			_feature.OnPresenterInitialized(null);
@@ -233,6 +269,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature.InsertIntoStack's null base-camera guard is what lets a presenter open in a scene
+		// with no resolvable base camera instead of throwing during the open lifecycle.
+		// RCR: UiCameraStackFeature.cs InsertIntoStack — replace `if (baseCamera == null || baseCamera == _overlay...)`
+		// with `if (baseCamera == _overlayCamera)` → RED (Assert.DoesNotThrow fails; IsStacked would be true). 2026-08-02
 		public IEnumerator NullBaseCamera_OnPresenterOpening_DoesNotThrow_AndDoesNotStack()
 		{
 			_feature.ConfigureForTest(_overlayCamera, _canvas, () => null);

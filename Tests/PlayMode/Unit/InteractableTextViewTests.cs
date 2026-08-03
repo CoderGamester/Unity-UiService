@@ -84,6 +84,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: InteractableTextView.OnPointerClick's `linkedText > -1` hit test must admit index 0 — TMP returns -1
+		// for a miss, so an off-by-one drops every click on a text's first link.
+		// RCR: InteractableTextView.cs OnPointerClick — replace `if (linkedText > -1)` with `if (linkedText > 0)` →
+		// RED (expected 1 OnLinkedInfoClicked invocation, was 0). The two render-mode siblings redden too. 2026-08-02
 		public IEnumerator OnPointerClick_OnLinkedTextHit_FiresOnLinkedInfoClickedWithLinkInfo()
 		{
 			_tmp.text = "click <link=\"my_link_id\">here</link> now";

@@ -39,6 +39,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.InitializeFeatures must discover ALL PresenterFeatureBase components via GetComponents;
+		// a single GetComponent silently drops every feature after the first on a multi-feature prefab.
+		// RCR: UiPresenter.cs InitializeFeatures — replace `GetComponents(_features);` with a single
+		// `GetComponent<PresenterFeatureBase>()` add → RED (FeatureB.WasOpened was False). 2026-08-02
 		public IEnumerator DualFeatures_BothReceiveLifecycleCallbacks()
 		{
 			// Act
@@ -67,6 +71,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.WaitForOpenTransitionsAsync must WhenAll the transition tasks, not await just the first —
+		// otherwise the fastest feature releases the presenter while the others are still animating.
+		// RCR: UiPresenter.cs WaitForOpenTransitionsAsync — replace `UniTask.WhenAll(tasks)` with `tasks[0]` → RED
+		// (OpenTransitionCount is 2 after completing only FeatureA, expected 1). 2026-08-02
 		public IEnumerator DualFeatures_WithDelays_PresenterAwaitsAll()
 		{
 			// Arrange - First open without delays to get presenter reference
@@ -106,6 +114,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.NotifyFeaturesOpened must notify features in GetComponents order; features on one prefab
+		// are authored assuming the component order they were added in.
+		// RCR: UiPresenter.cs NotifyFeaturesOpened — reverse the iteration to `for (var i = _features.Count - 1; ...)`
+		// → RED (FeatureA.OpenOrder < FeatureB.OpenOrder fails). FeatureOrder_Deterministic reddens too. 2026-08-02
 		public IEnumerator TripleFeatures_AllReceiveCallbacksInOrder()
 		{
 			// Act

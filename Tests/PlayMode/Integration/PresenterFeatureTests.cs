@@ -143,6 +143,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.InitializeFeatures must notify every discovered feature once at init, or features never
+		// receive their owning Presenter and every later hook operates on a null reference.
+		// RCR: UiPresenter.cs InitializeFeatures — comment out `feature.OnPresenterInitialized(this);` → RED
+		// (Feature.WasInitialized was False; ReceivedPresenter null). 2026-08-02
 		public IEnumerator Feature_OnPresenterInitialized_CalledOnLoad()
 		{
 			var task = _service.LoadUiAsync(typeof(TestPresenterWithFeature));
@@ -155,6 +159,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.NotifyFeaturesOpening must fire OnPresenterOpening before the GameObject is activated —
+		// transition features start their intro from this hook.
+		// RCR: UiPresenter.cs NotifyFeaturesOpening — comment out `feature.OnPresenterOpening();` → RED
+		// (Feature.WasOpening was False). 2026-08-02
 		public IEnumerator Feature_OnPresenterOpening_CalledBeforeOpen()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
@@ -165,6 +173,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.NotifyFeaturesOpened must fire OnPresenterOpened after activation; TimeDelayFeature and
+		// AnimationDelayFeature both start their open transition from this hook.
+		// RCR: UiPresenter.cs NotifyFeaturesOpened — comment out `feature.OnPresenterOpened();` → RED
+		// (Feature.WasOpened was False). 2026-08-02
 		public IEnumerator Feature_OnPresenterOpened_CalledAfterOpen()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
@@ -175,6 +187,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.NotifyFeaturesClosing must fire OnPresenterClosing before the close transition is awaited;
+		// it is where transition features create the task the presenter then waits on.
+		// RCR: UiPresenter.cs NotifyFeaturesClosing — comment out `feature.OnPresenterClosing();` → RED
+		// (Feature.WasClosing was False). 2026-08-02
 		public IEnumerator Feature_OnPresenterClosing_CalledOnClose()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
@@ -187,6 +203,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.NotifyFeaturesClosed must fire OnPresenterClosed in the close lifecycle, or features never
+		// learn the presenter is going away.
+		// RCR: UiPresenter.cs NotifyFeaturesClosed — comment out `feature.OnPresenterClosed();` → RED
+		// (Feature.WasClosed was False). 2026-08-02
 		public IEnumerator Feature_OnPresenterClosed_CalledAfterClose()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
@@ -228,6 +248,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.WaitForOpenTransitionsAsync must actually await the collected ITransitionFeature tasks, or
+		// OnOpenTransitionCompleted fires while the intro animation is still running.
+		// RCR: UiPresenter.cs WaitForOpenTransitionsAsync — replace the return with `return UniTask.CompletedTask;` →
+		// RED (Assert.IsFalse(WasOpenTransitionCompleted) fails before the feature is completed). 2026-08-02
 		public IEnumerator TransitionFeature_PresenterAwaitsOpenTransition()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithTransitionFeature));
@@ -243,6 +267,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.WaitForCloseTransitionsAsync must await the collected close tasks, or the presenter hides
+		// itself and reports completion mid-outro.
+		// RCR: UiPresenter.cs WaitForCloseTransitionsAsync — replace the return with `return UniTask.CompletedTask;` →
+		// RED (Assert.IsFalse(WasCloseTransitionCompleted) and Assert.IsTrue(IsOpen) both fail). 2026-08-02
 		public IEnumerator TransitionFeature_PresenterAwaitsCloseTransition()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithTransitionFeature));
@@ -286,6 +314,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.Close must pass its own InstanceAddress to IUiService.CloseUi, so a presenter self-closing
+		// targets its own instance rather than the default one.
+		// RCR: UiPresenter.cs Close(bool) — replace `InstanceAddress` with `string.Empty` in the CloseUi call → RED
+		// (unexpected "is not open" warning; VisiblePresenters stays 1). 2026-08-02
 		public IEnumerator Close_FromInsidePresenter_RoutesThroughIUiService()
 		{
 			_mockLoader.RegisterPrefab<SelfClosingPresenter>("self_closing");

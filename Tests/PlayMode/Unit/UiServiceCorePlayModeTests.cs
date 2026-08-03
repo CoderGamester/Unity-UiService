@@ -77,6 +77,10 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.AddUiSet must actually insert the set into _uiSets; the TryAdd both stores it and reports
+        // the duplicate, so a guard that only checks membership registers nothing.
+        // RCR: UiService.cs AddUiSet — replace `if (!_uiSets.TryAdd(uiSet.SetId, uiSet))` with
+        // `if (_uiSets.ContainsKey(uiSet.SetId))` → RED (UiSets.ContainsKey(1) was False). 2026-08-02
         public IEnumerator AddUiSet_NewSet_AddsSuccessfully()
         {
             // Arrange
@@ -118,6 +122,10 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.GetUi<T>(string) must reject an unloaded type with KeyNotFoundException rather than return
+        // a null presenter the caller then dereferences.
+        // RCR: UiService.cs GetUi<T>(string) — change the throw to `InvalidOperationException` → RED (Assert.Throws
+        // reports InvalidOperationException where KeyNotFoundException was expected). 2026-08-02
         public IEnumerator GetUi_NotLoaded_ThrowsKeyNotFoundException()
         {
             // Arrange
@@ -133,6 +141,10 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.UnloadUi(Type, string) must reject an unloaded instance with KeyNotFoundException instead of
+        // silently succeeding and hiding a lifecycle bug in the caller.
+        // RCR: UiService.cs UnloadUi(Type, string) — change the throw to `InvalidOperationException` → RED
+        // (Assert.Throws reports InvalidOperationException where KeyNotFoundException was expected). 2026-08-02
         public IEnumerator UnloadUi_NotLoaded_ThrowsKeyNotFoundException()
         {
             // Arrange
@@ -148,6 +160,10 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.RemoveUiSet must reject an unknown setId with KeyNotFoundException; it is the same contract
+        // OpenUiSetAsync states, and callers branch on the type.
+        // RCR: UiService.cs RemoveUiSet — change the throw to `InvalidOperationException` → RED (Assert.Throws reports
+        // InvalidOperationException). Anchored on RemoveUiSet's own copy of the message, not OpenUiSetAsync's. 2026-08-02
         public IEnumerator RemoveUiSet_InvalidSetId_ThrowsKeyNotFoundException()
         {
             // Arrange
@@ -173,6 +189,10 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.RemoveUi(Type, string) must report false when the type was never registered, or callers
+        // treat a no-op as a successful detach and never load the presenter they need.
+        // RCR: UiService.cs RemoveUi(Type, string) — change the `_uiPresenters.TryGetValue` guard's `return false;`
+        // to `return true;` → RED (Assert.IsFalse fails). The loop's trailing return is a separate mutation. 2026-08-02
         public IEnumerator RemoveUi_NotLoaded_ReturnsFalse()
         {
             // Arrange
@@ -296,6 +316,10 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.AddUi's duplicate check must be keyed by type AND instance address; a type-only check
+        // rejects the second instance of a legitimately multi-instance presenter.
+        // RCR: UiService.cs AddUi(T, int, string, bool) — replace `if (TryFindPresenter(type, instanceAddress, out _))`
+        // with `if (_uiPresenters.ContainsKey(type))` → RED (GetUi<T>("instance_b") throws KeyNotFoundException). 2026-08-02
         public IEnumerator AddUi_MultiInstanceWithAddress_RegistersUnderInstanceId()
         {
             _service = new UiService(_mockLoader);

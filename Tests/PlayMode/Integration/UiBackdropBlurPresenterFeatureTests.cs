@@ -32,6 +32,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiBackdropBlurPresenterFeature.OnPresenterOpening must increment the static _openCount, which is the
+		// only thing AnyOpen (and therefore the blur pass) reads.
+		// RCR: UiBackdropBlurPresenterFeature.cs OnPresenterOpening — comment out `_openCount++;` → RED
+		// (AnyOpen was False after opening). 2026-08-02
 		public IEnumerator OnPresenterOpening_MarksBlurOpen()
 		{
 			ExpectMissingRendererFeatureError();
@@ -42,6 +46,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiBackdropBlurPresenterFeature's per-instance _counted guard is what keeps a reopened presenter from
+		// double-incrementing the refcount and leaving the blur stuck on after its single close.
+		// RCR: UiBackdropBlurPresenterFeature.cs OnPresenterOpening — replace `if (_counted)` with `if (false)` → RED
+		// (AnyOpen still True after the close; a second unexpected setup error is also logged). 2026-08-02
 		public IEnumerator OnPresenterOpening_CalledTwice_DoesNotDoubleCount()
 		{
 			ExpectMissingRendererFeatureError();
@@ -56,6 +64,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiBackdropBlurPresenterFeature.OnDisable must decrement _openCount, or the blur stays on screen for
+		// the rest of the session once any presenter has opened.
+		// RCR: UiBackdropBlurPresenterFeature.cs OnDisable — comment out `_openCount--;` → RED (AnyOpen was True
+		// after the presenter was disabled). 2026-08-02
 		public IEnumerator DisablingPresenter_ClearsBlur()
 		{
 			ExpectMissingRendererFeatureError();
@@ -69,6 +81,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiBackdropBlurPresenterFeature.OnDisable must reset _counted, or the reopen path short-circuits on
+		// its own stale guard and the blur never comes back.
+		// RCR: UiBackdropBlurPresenterFeature.cs OnDisable — comment out `_counted = false;` → RED (AnyOpen was False
+		// after reopening). Pins the other half of OnDisable from DisablingPresenter_ClearsBlur. 2026-08-02
 		public IEnumerator Reopen_AfterDisable_MarksBlurOpenAgain()
 		{
 			ExpectMissingRendererFeatureError();
@@ -83,6 +99,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiBackdropBlurPresenterFeature.OnDisable must decrement rather than reset _openCount — it is a
+		// refcount, and one presenter closing must not drop a blur another presenter still wants.
+		// RCR: UiBackdropBlurPresenterFeature.cs OnDisable — replace `_openCount--;` with `_openCount = 0;` → RED
+		// (AnyOpen was False after only the first presenter closed). 2026-08-02
 		public IEnumerator TwoPresenters_BlurStaysOpenUntilBothClose()
 		{
 			var secondGo = new GameObject("SecondBlurPresenter");

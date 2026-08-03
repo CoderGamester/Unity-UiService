@@ -160,6 +160,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: TimeDelayFeature.OpenWithDelayAsync must call OnOpenStarted before awaiting the delay — subclasses
+		// kick off their visuals from that hook, and the delay is meaningless without it.
+		// RCR: TimeDelayFeature.cs OpenWithDelayAsync — comment out `OnOpenStarted();` → RED (3 recorded hooks,
+		// expected 4; CollectionAssert reports the missing "OnOpenStarted"). 2026-08-02
 		public IEnumerator TimeDelayFeature_LifecycleHooks_FireInOrderForOpenAndClose()
 		{
 			_mockLoader.RegisterPrefab<TestTrackingTimeDelayPresenter>("tracking_time_delay_presenter");

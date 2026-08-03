@@ -50,6 +50,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: NonDrawingView.OnPopulateMesh must clear the VertexHelper — emitting zero geometry while remaining a
+		// raycast target is the entire purpose of the type.
+		// RCR: NonDrawingView.cs OnPopulateMesh — comment out `vh.Clear();` → RED (expected 0 verts, was 3, so the
+		// view would draw whatever geometry Graphic handed it). 2026-08-02
 		public IEnumerator OnPopulateMesh_AlwaysClearsVertexHelper()
 		{
 			using var vh = new VertexHelper();

@@ -82,6 +82,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiToolkitPresenterFeature.AddVisualTreeAttachedListener must register the callback on the
+		// _onVisualTreeReady event, or no presenter ever gets a visual-tree-ready notification.
+		// RCR: UiToolkitPresenterFeature.cs AddVisualTreeAttachedListener — comment out
+		// `_onVisualTreeReady.AddListener(callback);` → RED (SetupCallbackCount never rises above 0). 2026-08-02
 		public IEnumerator UiToolkitFeature_ListenerInvokedOnEachOpen()
 		{
 			var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
@@ -104,6 +108,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiToolkitPresenterFeature.RemoveVisualTreeAttachedListener must actually unsubscribe, or a presenter
+		// that unregisters still gets called on every reopen and re-queries a stale visual tree.
+		// RCR: UiToolkitPresenterFeature.cs RemoveVisualTreeAttachedListener — comment out
+		// `_onVisualTreeReady.RemoveListener(callback);` → RED (SetupCallbackCount rises after the reopen). 2026-08-02
 		public IEnumerator UiToolkitFeature_RemoveListener_StopsInvocation()
 		{
 			var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
@@ -138,6 +146,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiToolkitPresenterFeature.RemoveVisualTreeAttachedListener's null guard keeps a defensive unsubscribe
+		// of a never-assigned callback from throwing during teardown.
+		// RCR: UiToolkitPresenterFeature.cs RemoveVisualTreeAttachedListener — replace `if (callback == null)` with
+		// `if (false)` → RED (Assert.DoesNotThrow fails inside UnityEvent.RemoveListener(null)). 2026-08-02
 		public IEnumerator RemoveVisualTreeAttachedListener_NullCallback_NoOpsInsteadOfThrowing()
 		{
 			var task = _service.LoadUiAsync(typeof(TestUiToolkitPresenter));

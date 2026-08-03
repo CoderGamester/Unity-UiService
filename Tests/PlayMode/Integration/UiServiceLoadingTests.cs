@@ -53,6 +53,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.AddUi must honour openAfter by calling OpenUi, or `LoadUiAsync(openAfter: true)` loads the
+		// presenter and leaves it hidden.
+		// RCR: UiService.cs AddUi(T, int, string, bool) — replace `if (openAfter)` with `if (false)` → RED
+		// (presenter.IsOpen was False; VisiblePresenters 0). 2026-08-02
 		public IEnumerator LoadUiAsync_WithOpenAfter_OpensPresenter()
 		{
 			// Act
@@ -67,6 +71,12 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.LoadUiAsync's pre-await guard is what makes a repeat load a cache hit; without it the
+		// service re-instantiates the prefab and only the post-await double check saves it.
+		// RCR: UiService.cs LoadUiAsync — replace `if (TryFindPresenter(type, instanceAddress, out var existingUi))`
+		// with `if (false)` → RED (InstantiateCallCount 2, expected 1; "was already loaded" never logged). 2026-08-02
+		// The bare `if (false)` is NOT usable here: it leaves `out var existingUi` unassigned and
+		// fails to compile, which the harness reports as a missing report rather than a red.
 		public IEnumerator LoadUiAsync_AlreadyLoaded_ReturnsExisting()
 		{
 			// Arrange
@@ -88,6 +98,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.LoadUiAsync(Type) must surface a missing UiConfig as KeyNotFoundException; callers key their
+		// recovery on that type, and it names AddUiConfig as the fix.
+		// RCR: UiService.cs LoadUiAsync(Type, bool, CancellationToken) — change the throw to
+		// `InvalidOperationException` → RED (the awaited task faults with the wrong type; caughtException stays null). 2026-08-02
 		[Timeout(10000)]
 		public IEnumerator LoadUiAsync_MissingConfig_ThrowsException()
 		{
@@ -124,6 +138,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.UnloadUi must hand the GameObject back to the asset loader; deregistering alone leaks the
+		// Addressables instance for the lifetime of the session.
+		// RCR: UiService.cs UnloadUi(Type, string) — comment out `_assetLoader.UnloadAsset(ui.gameObject);` → RED
+		// (expected 1 UnloadCallCount, was 0). The RemoveUi half is pinned by UnloadUiSet_WithOpenPresenters. 2026-08-02
 		public IEnumerator UnloadUi_LoadedUi_UnloadsCorrectly()
 		{
 			// Arrange
@@ -139,6 +157,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.LoadUiAsync must thread the caller's CancellationToken into IUiAssetLoader.InstantiatePrefab,
+		// or a cancelled load runs to completion and registers a presenter nobody asked for.
+		// RCR: UiService.cs LoadUiAsync — replace the `cancellationToken` argument to InstantiatePrefab with
+		// `CancellationToken.None` → RED (no OperationCanceledException; caughtException stays null). 2026-08-02
 		[Timeout(10000)]
 		public IEnumerator LoadUiAsync_WithCancellation_CancelsOperation()
 		{
@@ -239,6 +261,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		/// This tests the correct API for managing visibility (CloseUi, not LoadUiAsync).
 		/// </summary>
 		[UnityTest]
+		// ADMIT: UiPresenter.InternalOpenProcessAsync must reactivate the GameObject on every open, not just the first
+		// — a close-then-reopen cycle otherwise returns the same instance permanently hidden.
+		// RCR: UiPresenter.cs InternalOpenProcessAsync — comment out `gameObject.SetActive(true);` → RED
+		// (reopenedPresenter.IsOpen was False). First-open siblings redden on the same line. 2026-08-02
 		public IEnumerator OpenUiAsync_AfterCloseUi_OpensSuccessfully()
 		{
 			// Arrange - Open the presenter, then close it via CloseUi
@@ -270,6 +296,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		/// This tests the correct API for closing (CloseUi, not LoadUiAsync).
 		/// </summary>
 		[UnityTest]
+		// ADMIT: UiPresenter.InternalCloseProcessAsync must call the OnClosed hook, which subclasses use to release
+		// per-open subscriptions before the close transition runs.
+		// RCR: UiPresenter.cs InternalCloseProcessAsync — comment out `OnClosed();` → RED (CloseCount unchanged).
+		// The OnCloseTransitionCompleted half is pinned by CloseTransitionCompleted_AlwaysCalled. 2026-08-02
 		public IEnumerator CloseUi_OnVisiblePresenter_CallsCloseLifecycleHooks()
 		{
 			// Arrange - Open the presenter first
@@ -323,6 +353,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		/// This is the correct way to open an already-loaded presenter.
 		/// </summary>
 		[UnityTest]
+		// ADMIT: UiPresenter.InternalOpenProcessAsync must call the OnOpened hook after activation, which subclasses
+		// use to bind per-open state.
+		// RCR: UiPresenter.cs InternalOpenProcessAsync — comment out `OnOpened();` → RED (OpenCount unchanged).
+		// The OnOpenTransitionCompleted half is pinned by OpenTransitionCompleted_AlwaysCalled. 2026-08-02
 		public IEnumerator OpenUiAsync_OnClosedPresenter_CallsOpenLifecycleHooks()
 		{
 			// Arrange - Load but don't open (presenter is closed)
@@ -362,6 +396,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.LoadUiAsync<T> must delegate to the Type overload and cast the result; it is the typed
+		// entry point every caller uses instead of hand-casting.
+		// RCR: UiService.cs LoadUiAsync<T> — replace `return await LoadUiAsync(typeof(T), openAfter, ct) as T;`
+		// with `return null;` → RED (Assert.IsNotNull fails). Other LoadUiAsync<T> callers redden too. 2026-08-02
 		public IEnumerator LoadUiAsyncGeneric_ValidConfig_ReturnsTypedPresenter()
 		{
 			var task = _service.LoadUiAsync<TestUiPresenter>();
@@ -377,6 +415,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.UnloadUi<T>() must forward to the Type overload, or the generic convenience API silently
+		// unloads nothing.
+		// RCR: UiService.cs UnloadUi<T>() — replace `UnloadUi(typeof(T));` with `_ = typeof(T);` → RED (expected 0
+		// loaded presenters, was 1; UnloadCallCount unchanged). Only this test calls the no-arg generic. 2026-08-02
 		public IEnumerator UnloadUiGeneric_LoadedSingleton_UnloadsCorrectly()
 		{
 			var loadTask = _service.LoadUiAsync<TestUiPresenter>();
@@ -391,6 +433,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.UnloadUi<T>(T) must unload at the presenter's own InstanceAddress, or passing an explicit
+		// multi-instance presenter targets the default instance instead.
+		// RCR: UiService.cs UnloadUi<T>(T) — replace `uiPresenter.InstanceAddress` with `string.Empty` → RED
+		// (KeyNotFoundException "Cannot unload UI ... It is not loaded" instead of unloading instB). 2026-08-02
 		public IEnumerator UnloadUiGenericInstance_WithExplicitPresenter_UnloadsAtItsAddress()
 		{
 			var task1 = _service.LoadUiAsync(typeof(TestUiPresenter), "instA");
