@@ -277,15 +277,16 @@ Per §2's inverted-benchmark rule: a `[Performance]` test's measured region must
 
 ## 13. Coverage Register
 
-**Baseline — runtime assembly: 75.5% (1030/1365), measured 2026-08-02.**
+**Baseline — runtime assembly: 75.4% (1030/1365), measured 2026-08-04.**
 Editor assembly: **0.0% (0/1240)** — near-zero by policy; the ACCEPTED (iii) rows below are why.
+Repo-wide runtime coverage is **74.1% (6609/8922)** across all 11 assemblies.
 
-Regenerate with `Tools/coverage.sh`, which prints the runtime/Editor split.
-Steer by the **runtime** figure: Editor code is ~48% of the repo's coverable
-lines and is accepted-untestable, so the combined number (41.0%) can never
-meaningfully move. Do not compare against any figure recorded before this date —
-earlier reports were produced without `-debugCodeOptimization` (Release mode
-shrinks the denominator ~40%) or with test/sample assemblies leaking into scope.
+Regenerate with `Tools/coverage.sh`, which prints the runtime/Editor split. Steer by
+the **runtime** figure: Editor code is ~48% of coverable lines and accepted-untestable,
+so the combined number (41.1%) can never meaningfully move. Sanity-check any rerun by
+confirming `MathfloatP` reports ~1002 coverable lines — a smaller figure means
+`-debugCodeOptimization` was missing and the denominator silently shrank ~40%.
+
 
 Every untested symbol worth naming is either ACCEPTED (justified — do not
 re-report) or OPEN (a real gap, owed a test). An untested symbol in neither state
@@ -316,6 +317,9 @@ The count of OPEN rows is the honest coverage-debt number.
 | 12 public `Editor/` types, ~2048 LOC (`Editor/**`) | ACCEPTED | (iii) harness-impossible — blocker: no editor test assembly exists in this package, and neither `GameLovers.UiService.Tests.asmdef` nor `GameLovers.UiService.Tests.PlayMode.asmdef` references `GameLovers.UiService.Editor`. | 2026-07-31 |
 | Visual/screenshot regression for camera stacking and backdrop blur (`Runtime/Rendering/UiCameraStackFeature.cs`, `Runtime/Rendering/UiBackdropBlurRendererFeature.cs`, `UiBackdropBlurPass.cs`) | ACCEPTED | (iii) harness-impossible — blocker: needs committed reference images per platform × URP version; no such fixture set exists. | 2026-07-31 |
 | `InteractableTextView.ResolveEventCamera` non-overlay branches (`Runtime/Views/InteractableTextView.cs:53-66`) | OPEN | Owed: `InteractableTextViewTests` hardcodes `canvas.renderMode = RenderMode.ScreenSpaceOverlay` (`InteractableTextViewTests.cs:26`), so the `ScreenSpaceCamera` (cameraless and camera-bearing) and `WorldSpace` branches of `ResolveEventCamera` are unpinned. The 1.3.0 fix to this method is unverified by any test. | 2026-07-31 |
+
+| `UiServiceMonoComponent` resolution/orientation diff-and-raise loop (`Runtime/UiServiceMonoComponent.cs`) | OPEN | Owed: the two tests that appeared to cover this were deleted as A3 — they subscribed to the static `UnityEvent` and invoked it themselves, never constructing `UiServiceMonoComponent`. Nothing exercises the detection loop that actually raises the events. | 2026-08-04 |
+| `UiCameraStackFeatureIntegrationTests.LoadThroughUiService_DoesNotThrow_WithNoMainCameraInScene` A6 coupling (`Tests/PlayMode/Integration/UiCameraStackFeatureTests.cs`) | OPEN | Owed: asserts `IsStacked == false` because the scene happens to contain no `Camera.main` — a fact about the environment, not the code (A6). The fixture must establish the absence itself via `ConfigureBaseCamera(null)`, or branch on `Camera.main != null`. | 2026-08-04 |
 
 ## 14. Update Policy
 Update this file when:
