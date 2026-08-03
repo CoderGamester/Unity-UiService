@@ -219,6 +219,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync's unconditional OnOpenTransitionCompleted for a feature-less presenter; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OnOpenTransitionCompleted_AlwaysCalledForPresentersWithoutFeatures()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
@@ -232,6 +235,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalCloseProcessAsync's unconditional OnCloseTransitionCompleted for a feature-less presenter; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseTransitionCompleted_AlwaysCalled's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OnCloseTransitionCompleted_AlwaysCalledForPresentersWithoutFeatures()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithFeature));
@@ -294,6 +300,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.WaitForCloseTransitionsAsync gating SetActive(false) on the feature's close task; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under TransitionFeature_PresenterAwaitsCloseTransition's mutation (radius 5, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TransitionFeature_GameObjectHiddenOnlyAfterTransitionCompletes()
 		{
 			var task = _service.OpenUiAsync(typeof(TestPresenterWithTransitionFeature));

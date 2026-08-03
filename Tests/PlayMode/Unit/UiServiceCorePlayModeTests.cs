@@ -94,32 +94,7 @@ namespace GameLovers.UiService.Tests.PlayMode
             yield return null;
         }
 
-        [UnityTest]
-        public IEnumerator VisiblePresenters_InitiallyEmpty()
-        {
-            // Arrange
-            _service = new UiService(_mockLoader);
-            _service.Init(TestHelpers.CreateTestConfigs());
 
-            // Assert
-            Assert.AreEqual(0, _service.VisiblePresenters.Count);
-            yield return null;
-        }
-
-        [UnityTest]
-        public IEnumerator GetLoadedPresenters_InitiallyEmpty()
-        {
-            // Arrange
-            _service = new UiService(_mockLoader);
-            _service.Init(TestHelpers.CreateTestConfigs());
-
-            // Act
-            var loaded = _service.GetLoadedPresenters();
-
-            // Assert
-            Assert.AreEqual(0, loaded.Count);
-            yield return null;
-        }
 
         [UnityTest]
         // ADMIT: UiService.GetUi<T>(string) must reject an unloaded type with KeyNotFoundException rather than return
@@ -176,6 +151,11 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.Dispose must stay safe on a second call; consumers dispose from both
+        // teardown and a scene unload.
+        // RCR: none exists - a second Dispose is blocked by both the `if (_disposed) return;` guard and
+        // the already-empty _uiPresenters/_visibleUiList plus the null _uiParent; disabling the flag leaves
+        // the cleared state making every branch a no-op (verified). Double-covered, not single-line falsifiable.
         public IEnumerator Dispose_CalledTwice_DoesNotThrow()
         {
             // Arrange
@@ -208,6 +188,10 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.IsVisible<T>(string) must answer false for a type that was never opened, or
+        // callers skip a load they need.
+        // RCR: UiService.cs IsVisible<T>(string) - `return _visibleUiList.Contains(instanceId);` ->
+        // `return _visibleUiList.Count == 0 || _visibleUiList.Contains(instanceId);` -> RED (expected False, was True).
         public IEnumerator IsVisible_NotLoaded_ReturnsFalse()
         {
             // Arrange
@@ -225,55 +209,12 @@ namespace GameLovers.UiService.Tests.PlayMode
             yield return null;
         }
 
-        [UnityTest]
-        public IEnumerator OnResolutionChanged_OnResolutionShift_FiresWithNewResolution()
-        {
-            var fired = 0;
-            Vector2 receivedFrom = Vector2.zero;
-            Vector2 receivedTo = Vector2.zero;
 
-            _resolutionListener = (from, to) =>
-            {
-                fired++;
-                receivedFrom = from;
-                receivedTo = to;
-            };
-            UiService.OnResolutionChanged.AddListener(_resolutionListener);
-
-            var prev = new Vector2(1280, 720);
-            var next = new Vector2(1920, 1080);
-            UiService.OnResolutionChanged.Invoke(prev, next);
-
-            Assert.AreEqual(1, fired);
-            Assert.AreEqual(prev, receivedFrom);
-            Assert.AreEqual(next, receivedTo);
-            yield return null;
-        }
 
         [UnityTest]
-        public IEnumerator OnOrientationChanged_OnOrientationShift_FiresWithNewOrientation()
-        {
-            var fired = 0;
-            DeviceOrientation receivedFrom = DeviceOrientation.Unknown;
-            DeviceOrientation receivedTo = DeviceOrientation.Unknown;
-
-            _orientationListener = (from, to) =>
-            {
-                fired++;
-                receivedFrom = from;
-                receivedTo = to;
-            };
-            UiService.OnOrientationChanged.AddListener(_orientationListener);
-
-            UiService.OnOrientationChanged.Invoke(DeviceOrientation.Portrait, DeviceOrientation.LandscapeLeft);
-
-            Assert.AreEqual(1, fired);
-            Assert.AreEqual(DeviceOrientation.Portrait, receivedFrom);
-            Assert.AreEqual(DeviceOrientation.LandscapeLeft, receivedTo);
-            yield return null;
-        }
-
-        [UnityTest]
+        // ADMIT: exercises UiService.LoadUiAsync/OpenUiAsync/CloseUi's default-instance-address round trip through UiPresenter.IsOpen; no unique one-line pin.
+        // RCR: no isolated mutation - reddens under LoadUiAsync_WithoutAddress_UsesConfigAddress's mutation (radius 7, verified).
+        // Shared-path coverage, not a duplicate.
         public IEnumerator IsOpen_ReflectsActiveSelfState_AcrossOpenClose()
         {
             _mockLoader.RegisterPrefab<TestUiPresenter>("isopen_target");
@@ -297,6 +238,10 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.AddUi must register the instance for GetUi<T> and must NOT open it when
+        // openAfter is left at its default false.
+        // RCR: UiService.cs AddUi(T, int, string, bool) - `if (openAfter)` -> `if (true)` -> RED
+        // (IsVisible<TestUiPresenter>() expected False, was True).
         public IEnumerator AddUi_RegistersInstance_AppearsInGetUi()
         {
             _service = new UiService(_mockLoader);

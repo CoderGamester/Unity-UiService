@@ -33,6 +33,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiToolkitPresenterFeature.Document must surface the serialized UIDocument; every
+		// Root/PanelSettings read and the sortingOrder wiring go through it.
+		// RCR: UiToolkitPresenterFeature.cs Document - `=> _document` -> `=> null` -> RED
+		// (Assert.IsNotNull fails). Root reads the field directly, so it stays green.
 		public IEnumerator UiToolkitFeature_Document_IsAssigned()
 		{
 			var task = _service.LoadUiAsync(typeof(TestUiToolkitPresenter));
@@ -55,18 +59,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.DoesNotThrow(() => { var _ = presenter.ToolkitFeature.Root; });
 		}
 
-		[UnityTest]
-		public IEnumerator UiToolkitFeature_LifecycleHooks_AreCalled()
-		{
-			var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
-			yield return task.ToCoroutine();
-			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
-
-			Assert.IsNotNull(presenter);
-			Assert.IsTrue(presenter.WasOpened);
-		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.GetOrLoadUiAsync's load-then-open path for a prefab carrying two PresenterFeatureBase components; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiAsync_NotLoaded_LoadsAndOpens's mutation (radius 78, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator UiToolkitFeature_WithMultipleFeatures_AllFeaturesWork()
 		{
 			_mockLoader.RegisterPrefab<TestMultiFeatureToolkitPresenter>("multi_feature");

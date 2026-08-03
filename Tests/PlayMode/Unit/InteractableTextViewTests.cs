@@ -114,6 +114,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: InteractableTextView.OnPointerClick must not raise OnLinkedInfoClicked when TMP reports
+		// no hit (-1); firing on a miss indexes linkInfo out of range.
+		// RCR: InteractableTextView.cs OnPointerClick - `if (linkedText > -1)` -> `if (linkedText > -2)`
+		// -> RED. The hit sibling's `> 0` mutation leaves this test green, so the two pin opposite polarities.
 		public IEnumerator OnPointerClick_NoLinkInText_DoesNotFireOnLinkedInfoClicked()
 		{
 			_tmp.text = "no links here at all";

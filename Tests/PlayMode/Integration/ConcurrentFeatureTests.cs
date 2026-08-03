@@ -56,6 +56,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync notifying exactly once across two ITransitionFeature components; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator DualFeatures_OnOpenTransitionCompleted_CalledOnce()
 		{
 			// Arrange
@@ -136,6 +139,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync notifying exactly once across three ITransitionFeature components; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TripleFeatures_OnOpenTransitionCompleted_CalledOnce()
 		{
 			// Arrange
@@ -151,6 +157,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.NotifyFeaturesClosing fanning out to every feature discovered by InitializeFeatures; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under DualFeatures_BothReceiveLifecycleCallbacks's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator MixedFeatures_CloseLifecycle_WorksCorrectly()
 		{
 			// Arrange
@@ -226,6 +235,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.WaitForCloseTransitionsAsync WhenAll-ing two features' close tasks before hiding; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under TransitionFeature_PresenterAwaitsCloseTransition's mutation (radius 5, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator MultipleFeatures_CloseTransition_PresenterAwaitsAll()
 		{
 			// Arrange

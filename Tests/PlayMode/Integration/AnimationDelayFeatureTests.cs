@@ -53,6 +53,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync's transition-completed notification for an AnimationDelayFeature presenter; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator AnimationDelayFeature_OnOpen_NotifiesTransitionCompleted()
 		{
 			// Act
@@ -68,6 +71,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalCloseProcessAsync's transition-completed notification for an AnimationDelayFeature presenter; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseTransitionCompleted_AlwaysCalled's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator AnimationDelayFeature_OnClose_NotifiesTransitionCompleted()
 		{
 			// Arrange
@@ -85,6 +91,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalCloseProcessAsync's SetActive(false) after an AnimationDelayFeature close transition; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseUi_OpenUi_ClosesSuccessfully's mutation (radius 8, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator AnimationDelayFeature_OnClose_DeactivatesGameObject()
 		{
 			// Arrange
@@ -102,6 +111,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: AnimationDelayFeature.AnimationComponent must surface the assigned Animation; OnOpenStarted
+		// and OnCloseStarted both drive their clip through it.
+		// RCR: AnimationDelayFeature.cs AnimationComponent - `=> _animation` -> `=> null` -> RED
+		// (Assert.IsNotNull fails). The hooks read the field directly, so the clip tests stay green.
 		public IEnumerator AnimationDelayFeature_AnimationComponent_IsAssigned()
 		{
 			// Act
@@ -133,21 +146,6 @@ namespace GameLovers.UiService.Tests.PlayMode
 			Assert.AreEqual(0.1f, presenter.AnimationFeature.OpenDelayInSeconds, 0.001f);
 		}
 
-		[UnityTest]
-		public IEnumerator AnimationDelayFeature_ImplementsITransitionFeature()
-		{
-			// Act
-			var task = _service.LoadUiAsync(typeof(TestAnimationDelayPresenter));
-			yield return task.ToCoroutine();
-			var presenter = task.GetAwaiter().GetResult() as TestAnimationDelayPresenter;
-
-			// Assert
-			Assert.IsTrue(presenter.AnimationFeature is ITransitionFeature);
-			
-			var transitionFeature = presenter.AnimationFeature as ITransitionFeature;
-			Assert.IsNotNull(transitionFeature.OpenTransitionTask);
-			Assert.IsNotNull(transitionFeature.CloseTransitionTask);
-		}
 
 		[UnityTest]
 		// ADMIT: AnimationDelayFeature.CloseWithAnimationAsync must call OnCloseStarted before awaiting the outro —

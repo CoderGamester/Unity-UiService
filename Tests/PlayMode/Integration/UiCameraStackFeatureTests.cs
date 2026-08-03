@@ -96,6 +96,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiCameraStackFeature.InsertIntoStack's _isStacked re-entry guard on a repeated OnPresenterOpening; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OnPresenterOpening_InsertsOverlayCameraIntoBaseStack's mutation (radius 4, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OnPresenterOpening_CalledTwice_DoesNotDoubleInsert()
 		{
 			_feature.OnPresenterInitialized(null);

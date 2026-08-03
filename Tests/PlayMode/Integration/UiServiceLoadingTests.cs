@@ -39,6 +39,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.LoadUiAsync must return an instantiated presenter that is NOT open - load and
+		// open are separate operations and openAfter defaults to false.
+		// RCR: UiService.cs AddUi(T, int, string, bool) - `if (openAfter)` -> `if (true)` -> RED
+		// (presenter.IsOpen expected False, was True).
 		public IEnumerator LoadUiAsync_ValidConfig_LoadsPresenter()
 		{
 			// Act
@@ -207,6 +211,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		/// The openAfter parameter only applies when the presenter is newly loaded.
 		/// </summary>
 		[UnityTest]
+		// ADMIT: exercises UiService.LoadUiAsync's already-loaded early return leaving an open presenter's visibility untouched; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under LoadUiAsync_WithoutAddress_UsesConfigAddress's mutation (radius 7, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator LoadUiAsync_OnVisiblePresenter_WithOpenAfterFalse_DoesNotChangeVisibility()
 		{
 			// Arrange - Open the presenter first
@@ -234,6 +241,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		/// Verifies that LoadUiAsync on an already-visible presenter with openAfter=true keeps it visible.
 		/// </summary>
 		[UnityTest]
+		// ADMIT: exercises UiService.LoadUiAsync's already-loaded early return short-circuiting before the openAfter branch; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under LoadUiAsync_WithoutAddress_UsesConfigAddress's mutation (radius 7, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator LoadUiAsync_OnVisiblePresenter_WithOpenAfterTrue_RemainsOpen()
 		{
 			// Arrange - Open the presenter first
@@ -326,6 +336,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		/// Use OpenUiAsync to open an already-loaded presenter.
 		/// </summary>
 		[UnityTest]
+		// ADMIT: exercises UiService.LoadUiAsync's already-loaded early return skipping openAfter on a closed instance; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiAsync_TypeAddressOverload_OpensInstanceAtAddress's mutation (radius 77, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator LoadUiAsync_OnClosedPresenter_WithOpenAfterTrue_DoesNotOpen()
 		{
 			// Arrange - Load but don't open (presenter is closed)
@@ -382,6 +395,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		#endregion
 
 		[UnityTest]
+		// ADMIT: exercises UiService.LoadUiAsync(Type, string, bool, CancellationToken)'s explicit-instanceAddress registration; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiAsync_TypeAddressOverload_OpensInstanceAtAddress's mutation (radius 77, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator LoadUiAsync_TypeAddressOverload_LoadsAtExplicitAddress()
 		{
 			var task = _service.LoadUiAsync(typeof(TestUiPresenter), "explicit_addr", openAfter: false);
@@ -454,6 +470,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.LoadUiAsync aborting at the awaited InstantiatePrefab so AddUi never registers the instance; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under LoadUiAsync_WithCancellation_CancelsOperation's mutation (radius 2, verified).
+		// Shared-path coverage, not a duplicate.
 		[Timeout(10000)]
 		public IEnumerator LoadUiAsync_CancellationRequestedMidLoad_AbortsBeforeAddRegistration()
 		{

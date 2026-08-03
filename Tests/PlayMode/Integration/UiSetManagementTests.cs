@@ -67,6 +67,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: exercises UiService.LoadUiSetAsync's already-loaded `continue` skip over an entry the caller pre-loaded; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under LoadUiSetAsync_ValidSet_LoadsAllPresenters's mutation (radius 4, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator LoadUiSetAsync_PartiallyLoaded_LoadsOnlyMissing()
 		{
 			// Arrange - Pre-load one presenter
@@ -181,6 +184,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.OpenUiSetAsync's load-on-miss path for a set no entry of which was pre-loaded; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiSetAsync_ValidSet_OpensAllPresenters's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OpenUiSetAsync_NotLoaded_LoadsAndOpensAll()
 		{
 			// Act - Open without pre-loading
@@ -195,6 +201,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.OpenUiSetAsync's per-entry PresenterType resolution in the returned array; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiSetAsync_ValidSet_OpensAllPresenters's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OpenUiSetAsync_ReturnsCorrectPresenterTypes()
 		{
 			// Act
@@ -237,6 +246,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		#region Cross-Operation Compatibility Tests (Set + Individual methods)
 
 		[UnityTest]
+		// ADMIT: exercises UiService.CloseAllUiSet against presenters opened through the individual OpenUiAsync(Type) path; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseAllUiSet_OpenSet_ClosesAllInSet's mutation (radius 4, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OpenUiAsync_WithoutPreload_ThenCloseAllUiSet_ClosesCorrectly()
 		{
 			// This test verifies the fix for the core bug:
@@ -291,6 +303,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.CloseAllUiSet against presenters loaded by set but opened individually; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseAllUiSet_OpenSet_ClosesAllInSet's mutation (radius 4, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator LoadUiSetAsync_ThenOpenUiAsync_ThenCloseAllUiSet_ClosesAll()
 		{
 			// Verify the scenario: Load via set, open via individual, close via set

@@ -276,6 +276,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.CloseAllUi must be safe on an empty _visibleUiList - Dispose calls it
+		// unconditionally, including on a service that never opened anything.
+		// RCR: none exists - the empty case is protected by both the foreach over an empty list and the
+		// unconditional `_visibleUiList.Clear()`; neither can be disabled without the other still making the
+		// call a no-op (verified). Double-covered, not single-line falsifiable.
 		public IEnumerator CloseAllUi_Empty_DoesNothing()
 		{
 			// Act
@@ -371,6 +376,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter<T>.Data's setter firing OnSetData on every assignment rather than only on change; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under SetData_DirectAssignment_CallsOnSetData's mutation (radius 8, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator SetData_MultipleUpdates_CallsOnSetDataEachTime()
 		{
 			// Arrange
@@ -390,6 +398,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.OpenUiAsync<TData>'s initial Data assignment composing with a later live update; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiAsync_WithData_SetsData's mutation (radius 5, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator SetData_OnAlreadyOpenPresenter_UpdatesDynamically()
 		{
 			// Arrange - Open with initial data
@@ -410,6 +421,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter<T>.Data's setter retaining the last of ten consecutive assignments; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under SetData_DirectAssignment_CallsOnSetData's mutation (radius 8, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator SetData_ConsecutiveUpdates_PreservesLatestValue()
 		{
 			// Arrange

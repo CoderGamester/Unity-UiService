@@ -50,6 +50,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync's transition-completed notification for a TimeDelayFeature presenter; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_OnOpen_NotifiesTransitionCompleted()
 		{
 			// Act
@@ -65,6 +68,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalCloseProcessAsync's transition-completed notification for a TimeDelayFeature presenter; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseTransitionCompleted_AlwaysCalled's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_OnClose_NotifiesTransitionCompleted()
 		{
 			// Arrange
@@ -86,6 +92,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalCloseProcessAsync's SetActive(false) after a TimeDelayFeature close delay; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseUi_OpenUi_ClosesSuccessfully's mutation (radius 8, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_OnClose_DeactivatesGameObject()
 		{
 			// Arrange
@@ -103,6 +112,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises TimeDelayFeature.OpenTransitionTask completing once UiService's load-and-open path has run; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiAsync_NotLoaded_LoadsAndOpens's mutation (radius 78, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_OpenTransitionTask_IsValid()
 		{
 			// Act
@@ -122,6 +134,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync's completion path when TimeDelayFeature's `if (_openDelayInSeconds > 0)` is false; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_ZeroDelay_CompletesImmediately()
 		{
 			// Arrange - Create presenter with zero delay
@@ -141,6 +156,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.WaitForOpenTransitionsAsync awaiting TimeDelayFeature's own OpenTransitionTask; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_PresenterAwaitsFeatureTask()
 		{
 			// Act
