@@ -316,7 +316,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Camera.main is a property of the loaded scene, not of this package: batchmode's empty scene
 			// has none, an Editor run against a scene with a Main Camera has one. Establish the absence
 			// here so IsStacked is an assertion about UiCameraStackFeature, not about the runner (A6).
-			foreach (var camera in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
+			foreach (var camera in Object.FindObjectsByType<Camera>())
 			{
 				if (camera.enabled && camera.CompareTag("MainCamera"))
 				{
