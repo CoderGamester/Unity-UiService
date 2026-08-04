@@ -12,6 +12,9 @@ namespace GameLovers.UiService.Views
     [RequireComponent(typeof(TMP_Text))]
     public class InteractableTextView : MonoBehaviour, IPointerClickHandler
     {
+        /// <summary>
+        /// Which link a click resolves to.
+        /// </summary>
         public enum InteractableTextType
         {
             IntersectingLink,
@@ -23,6 +26,7 @@ namespace GameLovers.UiService.Views
 
         [SerializeField] private TMP_Text _text;
 
+        /// <summary>The text component whose links this view resolves.</summary>
         public TMP_Text Text => _text;
 
         private void OnValidate()
@@ -30,6 +34,7 @@ namespace GameLovers.UiService.Views
             _text = _text == null ? GetComponent<TMP_Text>() : _text;
         }
 
+        /// <inheritdoc />
         public void OnPointerClick(PointerEventData eventData)
         {
             var camera = ResolveEventCamera();

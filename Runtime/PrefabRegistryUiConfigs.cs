@@ -30,6 +30,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		public IReadOnlyList<PrefabEntry> PrefabEntries => _prefabEntries;
 
+		/// <summary>Replaces the whole registry; the editor's sync path owns this.</summary>
 		internal void SetPrefabEntries(IEnumerable<PrefabEntry> entries)
 		{
 			_prefabEntries.Clear();

@@ -23,6 +23,7 @@ namespace GameLoversEditor.UiService
 		private SerializedProperty _prefabEntriesProperty;
 		private ListView _prefabListView;
 
+		/// <inheritdoc />
 		protected override void OnEnable()
 		{
 			// Must initialize _prefabEntriesProperty before base.OnEnable() 
@@ -31,6 +32,7 @@ namespace GameLoversEditor.UiService
 			base.OnEnable();
 		}
 
+		/// <inheritdoc />
 		protected override void SyncConfigs()
 		{
 			var configs = new List<UiConfig>();
@@ -376,12 +378,16 @@ namespace GameLoversEditor.UiService
 			});
 		}
 
+		/// <inheritdoc />
 		protected override IReadOnlyList<string> GetAddressList() => _uiConfigsAddress ?? new List<string>();
 
+		/// <inheritdoc />
 		protected override Dictionary<string, string> GetAssetPathLookup() => _assetPathLookup;
 
+		/// <inheritdoc />
 		protected override Dictionary<string, Type> GetUiTypesByAddress() => _uiTypesByAddress;
 
+		/// <inheritdoc />
 		protected override VisualElement CreateConfigElement()
 		{
 			var container = new VisualElement();
@@ -394,6 +400,7 @@ namespace GameLoversEditor.UiService
 			return container;
 		}
 
+		/// <inheritdoc />
 		protected override void BindConfigElement(VisualElement element, int index)
 		{
 			if (index >= ConfigsProperty.arraySize) return;

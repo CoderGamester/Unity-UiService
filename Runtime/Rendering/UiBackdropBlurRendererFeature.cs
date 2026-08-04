@@ -63,12 +63,16 @@ namespace GameLovers.UiService.Rendering
 		/// <summary>The iteration count currently in effect, override included.</summary>
 		public static int EffectiveIterations => _iterationsOverride > 0 ? _iterationsOverride : _authoredIterations;
 
+		/// <summary>Authored render-target downsample factor; higher is cheaper and blurrier.</summary>
 		internal int Downsample => _downsample;
 
+		/// <summary>Blur pass count actually used this frame, the runtime override taking precedence.</summary>
 		internal int Iterations => _iterationsOverride > 0 ? _iterationsOverride : _iterations;
 
+		/// <summary>Authored sample offset per blur pass, in pixels.</summary>
 		internal float Spread => _spread;
 
+		/// <summary>Authored colour multiplied over the blurred result.</summary>
 		internal Color Tint => _tint;
 
 		/// <summary>Exposes the created blur material for tests; production code has no need to reach it.</summary>

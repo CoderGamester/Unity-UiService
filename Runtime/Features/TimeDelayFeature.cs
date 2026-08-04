@@ -17,6 +17,7 @@ namespace GameLovers.UiService
 		private UniTaskCompletionSource _openTransitionCompletion;
 		private UniTaskCompletionSource _closeTransitionCompletion;
 
+		/// <summary>Assigns both transition delays in code, for tests and generated prefabs.</summary>
 		internal void SetDelays(float openSeconds, float closeSeconds)
 		{
 			_openDelayInSeconds = openSeconds;

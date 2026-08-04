@@ -32,6 +32,7 @@ namespace GameLoversEditor.UiService
 			FocusInspectorWindow();
 		}
 
+		/// <summary>Selects the UI configs asset with the layer visualizer already expanded.</summary>
 		[MenuItem("Tools/GameLovers/UI Configs/Layer Visualizer", priority = 200)]
 		public static void ShowLayerVisualizer()
 		{

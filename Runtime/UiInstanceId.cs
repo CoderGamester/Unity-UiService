@@ -41,6 +41,9 @@ namespace GameLovers.UiService
 		/// </summary>
 		public bool IsDefault => string.IsNullOrEmpty(InstanceAddress);
 
+		/// <summary>
+		/// Two ids match when both the presenter type and the normalized instance address match.
+		/// </summary>
 		public bool Equals(UiInstanceId other)
 		{
 			return PresenterType == other.PresenterType && InstanceAddress == other.InstanceAddress;

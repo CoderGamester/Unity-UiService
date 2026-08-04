@@ -51,6 +51,7 @@ namespace GameLovers.UiService
 		/// </summary>
 		public List<UiSetConfig> Sets => _sets.ConvertAll(element => UiSetConfigSerializable.ToUiSetConfig(element));
 
+		/// <summary>Replaces every serialized UI set; the editor's sync path owns this.</summary>
 		internal void SetSets(IEnumerable<UiSetConfig> sets)
 		{
 			_sets.Clear();
@@ -109,6 +110,10 @@ namespace GameLovers.UiService
 			public string UiType;
 			public bool LoadSynchronously;
 
+			/// <summary>
+			/// Rehydrates the runtime config, resolving <see cref="UiConfig.UiType"/> from the stored
+			/// assembly-qualified name. Yields a null <c>UiType</c> when that type no longer exists.
+			/// </summary>
 			public static implicit operator UiConfig(UiConfigSerializable serializable)
 			{
 				return new UiConfig
@@ -120,6 +125,10 @@ namespace GameLovers.UiService
 				};
 			}
 
+			/// <summary>
+			/// Flattens the runtime config for YAML serialization, storing the presenter type by
+			/// assembly-qualified name.
+			/// </summary>
 			public static implicit operator UiConfigSerializable(UiConfig config)
 			{
 				return new UiConfigSerializable

@@ -113,6 +113,9 @@ namespace GameLovers.UiService.Rendering
 			InsertIntoStack();
 		}
 
+		/// <summary>
+		/// Assigns the serialized fields in code so a test can exercise the stacking logic without a prefab.
+		/// </summary>
 		internal void ConfigureForTest(Camera overlayCamera, Canvas canvas, Func<Camera> baseCameraResolver = null,
 			bool useCanvasSortingOrder = true, int stackPriority = 0)
 		{

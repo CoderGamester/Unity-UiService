@@ -19,6 +19,7 @@ namespace GameLovers.UiService
 		private UniTaskCompletionSource _openTransitionCompletion;
 		private UniTaskCompletionSource _closeTransitionCompletion;
 
+		/// <summary>Assigns the animation and its clips in code, for tests and generated prefabs.</summary>
 		internal void SetAnimation(Animation animation, AnimationClip introClip = null, AnimationClip outroClip = null)
 		{
 			_animation = animation;

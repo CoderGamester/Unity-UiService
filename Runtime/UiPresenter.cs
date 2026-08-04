@@ -85,6 +85,10 @@ namespace GameLovers.UiService
 		/// </summary>
 		protected virtual void OnCloseTransitionCompleted() {}
 
+		/// <summary>
+		/// One-time wiring done by <see cref="IUiService"/> on load: stores the owning service and this
+		/// instance's address, discovers the presenter's features, then raises <c>OnInitialized</c>.
+		/// </summary>
 		internal void Init(IUiService uiService, string instanceAddress)
 		{
 			_uiService = uiService;
@@ -93,11 +97,18 @@ namespace GameLovers.UiService
 			OnInitialized();
 		}
 
+		/// <summary>
+		/// Starts the open sequence fire-and-forget; awaiting it is what <c>OpenTransitionTask</c> is for.
+		/// </summary>
 		internal void InternalOpen()
 		{
 			InternalOpenProcessAsync().Forget();
 		}
 
+		/// <summary>
+		/// Starts the close sequence fire-and-forget, unloading this instance afterwards when
+		/// <paramref name="destroy"/> is set. Awaiting it is what <c>CloseTransitionTask</c> is for.
+		/// </summary>
 		internal void InternalClose(bool destroy)
 		{
 			InternalCloseProcessAsync(destroy).Forget();

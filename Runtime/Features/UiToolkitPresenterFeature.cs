@@ -16,6 +16,7 @@ namespace GameLovers.UiService
 		private readonly UnityEvent<VisualElement> _onVisualTreeReady = new UnityEvent<VisualElement>();
 		private bool _callbacksRegistered;
 
+		/// <summary>Assigns the document in code, for tests and generated prefabs.</summary>
 		internal void SetDocument(UIDocument document) => _document = document;
 
 		/// <summary>

@@ -35,6 +35,10 @@ namespace GameLovers.UiService
 		/// </summary>
 		public string InstanceAddress;
 		
+		/// <summary>
+		/// Resolves this entry to a runtime id. Returns <c>default</c> and logs a warning when
+		/// <see cref="UiTypeName"/> no longer resolves, so a renamed presenter degrades instead of throwing.
+		/// </summary>
 		public UiInstanceId ToUiInstanceId()
 		{
 			var type = Type.GetType(UiTypeName);
@@ -46,6 +50,9 @@ namespace GameLovers.UiService
 			return new UiInstanceId(type, string.IsNullOrEmpty(InstanceAddress) ? null : InstanceAddress);
 		}
 		
+		/// <summary>
+		/// Flattens a runtime id for serialization, storing the presenter by assembly-qualified name.
+		/// </summary>
 		public static UiSetEntry FromUiInstanceId(UiInstanceId instanceId)
 		{
 			return new UiSetEntry
@@ -66,6 +73,9 @@ namespace GameLovers.UiService
 		public int SetId;
 		public List<UiSetEntry> UiEntries;
 
+		/// <summary>
+		/// Rehydrates a set, silently dropping entries whose presenter type no longer resolves.
+		/// </summary>
 		public static UiSetConfig ToUiSetConfig(UiSetConfigSerializable serializable)
 		{
 			var instanceIds = new List<UiInstanceId>();
@@ -89,6 +99,9 @@ namespace GameLovers.UiService
 			};
 		}
 
+		/// <summary>
+		/// Flattens a set for serialization, skipping ids that carry no presenter type.
+		/// </summary>
 		public static UiSetConfigSerializable FromUiSetConfig(UiSetConfig config)
 		{
 			var entries = new List<UiSetEntry>();

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+**Docs**:
+- Documented the remaining public/protected/internal surface flagged by `Tools/style-audit.py`, completing this package against the host `AGENTS.md` §6.6. `UiConfigsEditorBase`'s six extension points (`SyncConfigs`, `GetAddressList`, `GetAssetPathLookup`, `GetUiTypesByAddress`, `CreateConfigElement`, `BindConfigElement`) now carry summaries, which also let the 17 overrides across `AddressablesUiConfigsEditor` / `ResourcesUiConfigsEditor` / `PrefabRegistryUiConfigsEditor` use `/// <inheritdoc />` meaningfully instead of pointing at undocumented bases. Also documented the `UiConfigs` / `UiSetConfig` serialization round-trips (including that a renamed presenter type degrades to `default` with a warning rather than throwing), `UiPresenter`'s internal `Init` / `InternalOpen` / `InternalClose` lifecycle seams, the internal `Set*` test/prefab-generation setters, `UiBackdropBlurRendererFeature`'s four authored look values, and `InteractableTextView`'s public surface.
+
 **Fixed**:
 - `UiService.CloseAllUi(int layer)` threw `KeyNotFoundException` when any visible presenter had been registered through `AddUi<T>` rather than `AddUiConfig`. The layer comparison indexed `_uiConfigs` unguarded, but only `AddUiConfig` populates that dictionary — so closing a layer while an `AddUi<T>`-registered presenter was visible always threw. Now a `TryGetValue` miss simply skips the presenter.
 
