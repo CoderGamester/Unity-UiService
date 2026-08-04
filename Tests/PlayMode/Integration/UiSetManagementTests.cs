@@ -408,6 +408,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		#region Unload Set with Open Presenters
 
 		[UnityTest]
+		// ADMIT: UiService.UnloadUiSet's per-entry TryFindPresenter test must admit presenters that are still
+		// visible; gating it wrongly would leave an open set permanently loaded.
+		// RCR: UiService.cs UnloadUiSet — disable the entry test with `if (false)` → RED
+		// (GetLoadedPresenters().Count expected 0, was 2). 2026-08-02
 		public IEnumerator UnloadUiSet_WithOpenPresenters_UnloadsAll()
 		{
 			// Verify that UnloadUiSet works even when presenters are still open
@@ -442,6 +446,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.OpenUi's already-open guard is what keeps a re-issued OpenUiSetAsync from adding a
+		// second _visibleUiList entry per set member.
+		// RCR: UiService.cs OpenUi — disable with `if (false)` → RED (VisiblePresenters.Count expected 2, was 4,
+		// and neither expected "is already open" warning is received). 2026-08-02
 		public IEnumerator OpenUiSetAsync_CalledTwice_DoesNotDuplicatePresenters()
 		{
 			// First open
