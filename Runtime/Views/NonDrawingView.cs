@@ -12,7 +12,10 @@ namespace GameLovers.UiService.Views
     [RequireComponent(typeof(CanvasRenderer))]
 	public class NonDrawingView : Graphic
 	{
+		/// <inheritdoc />
 		public override void SetMaterialDirty() { }
+
+		/// <inheritdoc />
 		public override void SetVerticesDirty() { }
 		
 		/// <summary>

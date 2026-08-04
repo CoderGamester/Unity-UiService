@@ -20,11 +20,6 @@ namespace GameLovers.UiService
 		/// </summary>
 		public readonly string InstanceAddress;
 
-		/// <summary>
-		/// Creates a UI instance identifier for a specific presenter type and optional instance address
-		/// </summary>
-		/// <param name="presenterType">The type of the UI presenter</param>
-		/// <param name="instanceAddress">Optional instance address. Use null or empty string for singleton instances.</param>
 		public UiInstanceId(Type presenterType, string instanceAddress = null)
 		{
 			PresenterType = presenterType ?? throw new ArgumentNullException(nameof(presenterType));
@@ -51,11 +46,13 @@ namespace GameLovers.UiService
 			return PresenterType == other.PresenterType && InstanceAddress == other.InstanceAddress;
 		}
 
+		/// <inheritdoc />
 		public override bool Equals(object obj)
 		{
 			return obj is UiInstanceId other && Equals(other);
 		}
 
+		/// <inheritdoc />
 		public override int GetHashCode()
 		{
 			unchecked
@@ -74,6 +71,7 @@ namespace GameLovers.UiService
 			return !left.Equals(right);
 		}
 
+		/// <inheritdoc />
 		public override string ToString()
 		{
 			return IsDefault ? $"{PresenterType.Name}" : $"{PresenterType.Name}:{InstanceAddress}";

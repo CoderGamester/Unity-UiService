@@ -14,6 +14,7 @@ namespace GameLoversEditor.UiService
 	[CanEditMultipleObjects, CustomEditor(typeof(NonDrawingView), false)]
 	public class NonDrawingViewEditor : GraphicEditor
 	{
+		/// <inheritdoc />
 		public override VisualElement CreateInspectorGUI()
 		{
 			var root = new VisualElement();

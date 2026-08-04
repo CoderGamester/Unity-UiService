@@ -185,7 +185,17 @@ symbol appears anywhere in the causal chain behind the assertion.
 **Two consequences, stated so RCR does not become theatre:**
 
 - A test with no `// RCR:` line — and no UNFALSIFIABLE exemption — is not trusted
-  coverage. In an audit it is a suspect by default.
+  coverage. In an audit it is a suspect by default. **`Smoke/` is exempt here too**, on the
+  same directory basis as §1: its defect class is "the assembly no longer loads", which has
+  no one-line mutation, so demanding an RCR line there flags those fixtures forever. The
+  exemption is the directory, not the assertion shape.
+- **"Unannotated" is three states, not one, and they need different actions.** A test with no
+  `// RCR:` line may have been (a) observed RED with the write-back lost, (b) seen reddening
+  only as collateral inside another test's blast radius, or (c) never probed. Only (c) needs a
+  probe; (a) needs the recorded observation written back; (b) is SHARED-PATH evidence, not a
+  unique pin. Check `.test-all/rcr/` before probing, and never write prepared annotation text
+  without a matching `RED-OK` for that test — prepared text also exists for tests that were
+  never probed, and writing it fabricates a verified claim.
 - **Benchmarks are included, inverted:** a performance test must be observed
   *changing its number* when the measured operation is removed from the measured
   body. A benchmark whose measured region does not contain the workload is a
@@ -335,6 +345,7 @@ The count of OPEN rows is the honest coverage-debt number.
 | `UiServiceMonoComponent` resolution/orientation diff-and-raise loop (`Runtime/UiServiceMonoComponent.cs`) | OPEN | Owed: the two tests that appeared to cover this were deleted as A3 — they subscribed to the static `UnityEvent` and invoked it themselves, never constructing `UiServiceMonoComponent`. Nothing exercises the detection loop that actually raises the events. | 2026-08-04 |
 | `UiCameraStackFeatureIntegrationTests.LoadThroughUiService_DoesNotThrow_WithNoMainCameraInScene` A6 coupling (`Tests/PlayMode/Integration/UiCameraStackFeatureTests.cs`) | CLOSED | Closed 2026-08-04 by `ee271bc`: `[SetUp]` now disables every enabled `MainCamera`-tagged camera it finds and records them, asserts the precondition with `Assume.That` (so a future scene that defeats the sweep is INCONCLUSIVE, not falsely green), and `[TearDown]` restores exactly those. The tautological `DoesNotThrow` + `Forget()` wrapper is replaced by an awaited `OpenUiAsync`. Verified in **both** environments: batchmode PlayMode 295/295 and Editor PlayMode 295/295 with 0 inconclusive. | 2026-08-04 |
 | `UiToolkitPresenterFeature.AddVisualTreeAttachedListener` null guard (`Runtime/Features/UiToolkitPresenterFeature.cs`) | CLOSED | Closed 2026-08-04: the test now opens the presenter and awaits panel attachment, asserting `Root?.panel != null` as an explicit precondition, so the guard's invoke branch is reachable. Observed in the **Editor** (filtered single-test PlayMode run): green -> RED under `if (callback == null)` -> `if (false)` with `NullReferenceException` at `UiToolkitPresenterFeature.cs` `callback(Root)`, caught by `Assert.DoesNotThrow` rather than crashing the test -> green after revert, production restored byte-identical. Green in **both** environments for this test: Editor filtered run 1/1 and batchmode full PlayMode 295/295, so the panel-attachment precondition holds in batchmode too. | 2026-08-04 |
+| 66 production edits reddening only collaterally (`Runtime/UiService.cs`, `Runtime/UiPresenter.cs`) | OPEN | Measured 2026-08-04 from `.test-all/rcr/unowned-edits.json`: 66 edits produced RED but never an `isolated` verdict — `UiService.cs` (35), `UiPresenter.cs` (15), `UiCameraStackFeature.cs` (5). **Not 66 missing tests.** `UiService` is the integration hub every PlayMode fixture flows through, so a mutation there reddens up to 77 tests (`OpenUiAsync_NotLoaded_LoadsAndOpens`, radius 77 recorded) and centrality — not neglect — is why no single test owns the line. This is the measurement behind the SHARED-PATH annotations in §2. Owed: a diagnosability judgement, not coverage — decide whether the highest-radius paths deserve narrow EditMode pins so a break points somewhere specific. | 2026-08-04 |
 
 ## 14. Update Policy
 Update this file when:

@@ -15,16 +15,10 @@ namespace GameLovers.UiService
 	{
 		private readonly Dictionary<string, GameObject> _prefabMap = new();
 
-		/// <summary>
-		/// Default constructor.
-		/// </summary>
 		public PrefabRegistryUiAssetLoader()
 		{
 		}
 
-		/// <summary>
-		/// Initializes the loader with entries from the given <paramref name="configs"/>.
-		/// </summary>
 		public PrefabRegistryUiAssetLoader(PrefabRegistryUiConfigs configs)
 		{
 			if (configs == null) return;

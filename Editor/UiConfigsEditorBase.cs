@@ -12,9 +12,9 @@ using UnityEngine.UIElements;
 namespace GameLoversEditor.UiService
 {
 	/// <summary>
-	/// Base class for <see cref="UiConfigs"/> editors with shared logic for layer visualization and set management.
+	/// Base class for <see cref="UiConfigs"/> editors with shared logic for layer visualization and set
+	/// management, where <typeparamref name="TSet"/> is the enum type of the <see cref="UiSetConfig"/> id.
 	/// </summary>
-	/// <typeparam name="TSet">The enum type of the <see cref="UiSetConfig"/> id</typeparam>
 	public abstract class UiConfigsEditorBase<TSet> : Editor
 		where TSet : Enum
 	{

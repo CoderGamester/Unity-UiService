@@ -44,12 +44,14 @@ namespace GameLovers.UiService.Views
             }
         }
 
+        /// <inheritdoc />
         protected override void OnEnable()
         {
             base.OnEnable();
             SetDirty();
         }
-        
+
+        /// <inheritdoc />
         protected override void OnDisable()
         {
             LayoutRebuilder.MarkLayoutForRebuild(RectTransform);
@@ -79,6 +81,7 @@ namespace GameLovers.UiService.Views
         /// </summary>
         public virtual void SetLayoutVertical() {}
         
+        /// <inheritdoc />
         protected override void OnTransformParentChanged()
         {
             base.OnTransformParentChanged();
@@ -129,6 +132,7 @@ namespace GameLovers.UiService.Views
         }
 
     #if UNITY_EDITOR
+        /// <inheritdoc />
         protected override void OnValidate()
         {
             SetDirty();
