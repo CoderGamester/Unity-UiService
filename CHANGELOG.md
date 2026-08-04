@@ -4,40 +4,23 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
-## [Unreleased]
-
-**Docs**:
-- Documented the remaining public/protected/internal surface flagged by `Tools/style-audit.py`, completing this package against the host `AGENTS.md` §6.6. `UiConfigsEditorBase`'s six extension points (`SyncConfigs`, `GetAddressList`, `GetAssetPathLookup`, `GetUiTypesByAddress`, `CreateConfigElement`, `BindConfigElement`) now carry summaries, which also let the 17 overrides across `AddressablesUiConfigsEditor` / `ResourcesUiConfigsEditor` / `PrefabRegistryUiConfigsEditor` use `/// <inheritdoc />` meaningfully instead of pointing at undocumented bases. Also documented the `UiConfigs` / `UiSetConfig` serialization round-trips (including that a renamed presenter type degrades to `default` with a warning rather than throwing), `UiPresenter`'s internal `Init` / `InternalOpen` / `InternalClose` lifecycle seams, the internal `Set*` test/prefab-generation setters, `UiBackdropBlurRendererFeature`'s four authored look values, and `InteractableTextView`'s public surface.
-
-**Fixed**:
-- `UiService.CloseAllUi(int layer)` threw `KeyNotFoundException` when any visible presenter had been registered through `AddUi<T>` rather than `AddUiConfig`. The layer comparison indexed `_uiConfigs` unguarded, but only `AddUiConfig` populates that dictionary — so closing a layer while an `AddUi<T>`-registered presenter was visible always threw. Now a `TryGetValue` miss simply skips the presenter.
-
-**Changed**:
-- `package.json` now declares `com.unity.test-framework.performance` (3.5.0). The PlayMode test asmdef already referenced `Unity.PerformanceTesting`, so consumers without that package installed hit a missing-assembly compile error in this package's test assembly.
-
-## [1.3.0] - 2026-07-29
+## [1.3.0] - 2026-08-04
 
 **New**:
-- Expanded test coverage: all generic-typed `IUiService` overloads
-- Added `com.unity.render-pipelines.universal` as a package dependency (17.0.1 floor). This package is now **URP-only**; the `Runtime/Rendering/` features compile into the main `GameLovers.UiService` assembly, which references `Unity.RenderPipelines.Universal.Runtime` + `Unity.RenderPipelines.Core.Runtime` directly
-- Added `UiToolkitPresenterFeature.PanelSettings`, a read-only accessor documenting that the asset is shared and must not be mutated at runtime — presenters needing different panel configuration author a second `PanelSettings` asset, and world-space UI Toolkit uses `PanelSettings.renderMode = PanelRenderMode.WorldSpace` with per-document `UIDocument.position`/`pivot`/`worldSpaceSize`
-- Added `UiCameraStackFeature`: switches a presenter's `Canvas` to Screen Space - Camera and stacks its overlay camera onto a base camera via `UniversalAdditionalCameraData.cameraStack`, so UI can layer over 3D content. Base-camera resolution goes through a swappable `Func<Camera> BaseCameraResolver` (default `Camera.main`); multi-camera ordering uses `UiCameraStackFeature.InsertIndex`
-- Documented render-texture UI as an **authoring** recipe rather than shipping a feature for it: `Canvas.renderMode` = Screen Space - Camera + that camera's Target Texture for uGUI, `PanelSettings` → Render Texture for UI Toolkit. Both are plain serialized Inspector fields in Unity 6, so no runtime component is needed
-- Added `UiBackdropBlurRendererFeature` + `UiBackdropBlurPresenterFeature`: a `ScriptableRendererFeature` (add to the project's URP Renderer asset) that blurs everything behind a presenter's UI while it is open. The blur's look (downsample, iterations, spread, tint) is authored on the renderer feature asset — one project-wide art decision rather than per-presenter state — and the presenter feature only holds a refcount open while visible. Injection is gated by `UiBackdropBlurPass.ShouldInject`, which skips Scene/Preview cameras, URP overlay cameras stacked by `UiCameraStackFeature`, and cameras targeting a `RenderTexture`. Opening a presenter with no renderer feature installed logs an actionable error instead of silently doing nothing
-- Added the `UrpRendering` sample: a scene with 3D content, a blur-backed modal, a URP camera-stacked presenter, and a deliberate demonstration of the layer-ordering hazard (an Overlay presenter at `Layer` 0 draws over a stacked one at `Layer` 20). Uses `PrefabRegistryUiConfigs`, so it needs no Addressables setup. Ships sample-scoped editor automation that installs `UiBackdropBlurRendererFeature` onto the active URP pipeline's Renderer assets on import, with a menu-item fallback under `Tools/GameLovers/Samples/Urp Rendering/`
-- Added `UiBackdropBlurRendererFeature.IterationsOverride`, a static non-serialized runtime override for the blur's pass count (clamped to `MinIterations`..`MaxIterations`, zero clears it), plus `EffectiveIterations` and `AuthoredIterations` readouts. Runtime tuning cannot write to the feature's serialized fields: it is a `ScriptableObject` asset, so that would persist to disk in the Editor and change the authored look project-wide. The `UrpRendering` sample uses it for **- Less Blur / + More Blur** buttons
+- Added `UiCameraStackFeature` for Screen Space - Camera presenters that stack overlay cameras over a resolved base camera, with configurable insertion order.
+- Added `UiBackdropBlurRendererFeature` and `UiBackdropBlurPresenterFeature` for blurring content behind an open presenter; add the renderer feature to the project's URP Renderer asset.
+- Added the `UrpRendering` sample demonstrating camera stacking, backdrop blur, and layer-ordering interactions without requiring Addressables.
+- Added the read-only `UiToolkitPresenterFeature.PanelSettings` accessor and guidance for shared `PanelSettings` assets.
 
 **Changed**:
-- Pruned dead `[Ignore]` Addressables PlayMode tests; expanded Resources loader happy-path coverage.
-- `Runtime/Rendering/` now follows the repo-wide code style recorded in the host `AGENTS.md` §6.6 (comments carry rationale only, XML docs cover public/internal types and members but never fields, members ordered by kind then access, private statics named `_camelCase`).
-- `InteractableTextView` now resolves the correct event camera for TMP link hit-testing (matching `UnityEngine.UI.GraphicRaycaster`'s own rule) instead of hardcoding `null` -- was only correct because every canvas in this package was Screen Space - Overlay, which stopped being universally true once `UiCameraStackFeature` landed
-- Converted all 9 sample scenes (`BasicUiFlow`, `DataPresenter`, `DelayedPresenter`, `MultiInstance`, `CustomFeatures`, `UiSets`, `AssetLoadingStrategies`, `UiToolkit`, `DelayedUiToolkit`) to URP: each Main Camera now carries `UniversalAdditionalCameraData`. Every sample Canvas stays Screen Space - Overlay (pipeline-independent), so this was the only change each scene needed. BiRP/HDRP consumers who import a sample will see a missing-script warning on the camera -- accepted, since it only affects consumers who both stay off URP and import a sample
+- The package is now **URP-only** and requires `com.unity.render-pipelines.universal` 17.0.1 or newer alongside its existing dependencies.
+- Documented render-texture and world-space UI as Unity authoring configurations: use a camera Target Texture for uGUI and `PanelSettings` render mode for UI Toolkit; no custom runtime feature is required.
+- Added the `com.unity.test-framework.performance` (3.5.0) dependency so the package's test assemblies compile when tests are enabled.
 
 **Fixed**:
-- `UiConfigs.UiConfigSerializable` now serializes `LoadSynchronously`
-- `Tests/PlayMode/GameLovers.UiService.Tests.PlayMode.asmdef` now references `Unity.TextMeshPro` and `UnityEngine.UI` directly
-- Tests fixed.
-- Removed redundant `[Serializable]` from `UiConfig` and `UiSetConfig` structs.
+- Fixed `UiConfig` serialization so `LoadSynchronously` survives configuration round-trips.
+- Fixed `UiService.CloseAllUi(int layer)` for presenters registered through `AddUi<T>`.
+- Fixed `InteractableTextView` TMP link hit-testing to resolve the correct event camera for camera-based canvases.
 
 ## [1.2.1] - 2026-04-26
 
