@@ -10,6 +10,7 @@ Welcome to the GameLovers UI Service documentation. This guide covers everything
 | [Core Concepts](core-concepts.md) | Presenters, layers, sets, features, and configuration |
 | [API Reference](api-reference.md) | Complete API documentation with examples |
 | [Advanced Topics](advanced.md) | Performance optimization, helper views |
+| [URP Rendering Features](urp-rendering.md) | Camera stacking, backdrop blur (**required Renderer-asset setup**), render-texture authoring, layering hazards |
 | [Troubleshooting](troubleshooting.md) | Common issues and solutions |
 
 ## Overview
@@ -82,11 +83,14 @@ Runtime/
 │   ├── TimeDelayFeature.cs
 │   ├── AnimationDelayFeature.cs
 │   └── UiToolkitPresenterFeature.cs
-└── Views/                 # Helper components
-    ├── SafeAreaHelperView.cs
-    ├── NonDrawingView.cs
-    ├── AdjustScreenSizeFitterView.cs
-    └── InteractableTextView.cs
+├── Views/                 # Helper components
+│   ├── SafeAreaHelperView.cs
+│   ├── NonDrawingView.cs
+│   ├── AdjustScreenSizeFitterView.cs
+│   └── InteractableTextView.cs
+└── Rendering/             # URP presenter features
+    ├── UiCameraStackFeature.cs
+    └── UiBackdropBlurRendererFeature.cs + UiBackdropBlurPresenterFeature.cs
 
 Editor/
 ├── UiConfigsEditorBase.cs        # Base config inspector

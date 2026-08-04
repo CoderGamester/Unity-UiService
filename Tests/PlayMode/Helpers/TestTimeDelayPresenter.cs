@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace GameLovers.UiService.Tests.PlayMode
 {
-	/// <summary>
-	/// Test presenter with TimeDelayFeature for testing delay behavior
-	/// </summary>
 	[RequireComponent(typeof(TimeDelayFeature))]
 	public class TestTimeDelayPresenter : UiPresenter
 	{
@@ -19,19 +16,8 @@ namespace GameLovers.UiService.Tests.PlayMode
 			{
 				DelayFeature = gameObject.AddComponent<TimeDelayFeature>();
 			}
-			
-			// Set short delays for testing
-			SetDelayValues(0.1f, 0.05f);
-		}
 
-		private void SetDelayValues(float open, float close)
-		{
-			var openField = typeof(TimeDelayFeature).GetField("_openDelayInSeconds", 
-				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-			var closeField = typeof(TimeDelayFeature).GetField("_closeDelayInSeconds", 
-				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-			openField?.SetValue(DelayFeature, open);
-			closeField?.SetValue(DelayFeature, close);
+			DelayFeature.SetDelays(0.1f, 0.05f);
 		}
 
 		protected override void OnOpenTransitionCompleted()
@@ -45,4 +31,3 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	}
 }
-

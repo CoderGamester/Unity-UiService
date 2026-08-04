@@ -16,6 +16,9 @@ namespace GameLovers.UiService
 		private readonly UnityEvent<VisualElement> _onVisualTreeReady = new UnityEvent<VisualElement>();
 		private bool _callbacksRegistered;
 
+		/// <summary>Assigns the document in code, for tests and generated prefabs.</summary>
+		internal void SetDocument(UIDocument document) => _document = document;
+
 		/// <summary>
 		/// The attached <see cref="UIDocument"/>.
 		/// </summary>
@@ -25,6 +28,14 @@ namespace GameLovers.UiService
 		/// The root <see cref="VisualElement"/> of the UIDocument.
 		/// </summary>
 		public VisualElement Root => _document?.rootVisualElement;
+
+		/// <summary>The shared <see cref="PanelSettings"/> driving this document's panel. Inspect only; never mutate at runtime.</summary>
+		/// <remarks>
+		/// Every <see cref="UIDocument"/> sharing this asset shares one panel, which is what makes ordering
+		/// by <see cref="UIDocument.sortingOrder"/> work; writing to it reconfigures every other presenter
+		/// using it. A presenter needing different settings gets a second authored asset instead.
+		/// </remarks>
+		public PanelSettings PanelSettings => _document?.panelSettings;
 
 		private void OnValidate()
 		{

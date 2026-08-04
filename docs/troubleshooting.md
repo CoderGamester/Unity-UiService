@@ -9,6 +9,7 @@ Common issues and their solutions.
 - [UiConfig Not Added Error](#uiconfig-not-added-error)
 - [UI Flickers on Open](#ui-flickers-on-open)
 - [Cancellation Not Working](#cancellation-not-working)
+- [Backdrop Blur Does Nothing](#backdrop-blur-does-nothing)
 - [Getting Help](#getting-help)
 
 ---
@@ -198,6 +199,34 @@ catch (OperationCanceledException)
     Debug.Log("Loading was cancelled");
 }
 ```
+
+---
+
+## Backdrop Blur Does Nothing
+
+**Symptom:** A presenter has `UiBackdropBlurPresenterFeature` attached, it opens normally, and nothing behind it is blurred. **No error, warning, or log line appears.**
+
+**Cause:** `UiBackdropBlurRendererFeature` has not been added to the project's active URP Renderer asset. The presenter-side component only registers a *request*; the renderer feature is what actually renders the blur, and without it the request has no consumer.
+
+### Solution
+
+1. Select your Universal **Renderer** asset — not the Pipeline asset. In this repo that's `Assets/Settings/URP-Mobile_Renderer.asset`; the Pipeline asset (`URP-Mobile.asset`) is the one that *points at* it.
+2. Click **Add Renderer Feature** → **Ui Backdrop Blur Feature**.
+3. Confirm the `Shader` field is populated (it auto-fills in the Editor; assign `Runtime/Rendering/Shaders/UiBackdropBlur.shader` if empty).
+
+**Verification:** the renderer asset's `m_RendererFeatures` list is no longer `[]`.
+
+**If it still does nothing**, the per-camera gate is rejecting the camera. The blur deliberately skips:
+
+| Camera | Why |
+|---|---|
+| Scene view / material preview | Would blur the Editor's own views |
+| A `UiCameraStackFeature` overlay camera | Would blur the stacked UI, not the world behind it |
+| A camera with a `RenderTexture` target | Would blur the UI being captured |
+
+So a presenter that combines the blur with camera stacking on the *same* camera will never show it — that pairing is rejected by design. Also note one renderer feature covers only the cameras using *that* renderer; with multiple renderers, add it to each.
+
+See [URP Rendering Features](urp-rendering.md) for the full gating rules.
 
 ---
 

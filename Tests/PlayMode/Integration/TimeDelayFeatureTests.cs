@@ -36,20 +36,30 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator TimeDelayFeature_DefaultValues_AreCorrect()
+		// ADMIT: TimeDelayFeature.OpenDelayInSeconds must return the configured field; a getter reporting 0
+		// hides a delay the presenter still waits on.
+		// RCR: TimeDelayFeature.cs OpenDelayInSeconds - `=> _openDelayInSeconds` -> `=> 0f` -> RED
+		// (expected 0.1, was 0). OnPresenterOpened reads the field directly, so the transition siblings stay
+		// green - this getter is this test's own pin. 2026-08-04
+		public IEnumerator TimeDelayFeature_ConfiguredDelays_AreExposedByTheGetters()
 		{
 			// Act
 			var task = _service.LoadUiAsync(typeof(TestTimeDelayPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestTimeDelayPresenter;
 
-			// Assert
+			// Assert - the values TestTimeDelayPresenter writes through SetDelays, not the serialized defaults
 			Assert.IsNotNull(presenter.DelayFeature);
 			Assert.AreEqual(0.1f, presenter.DelayFeature.OpenDelayInSeconds, 0.001f);
 			Assert.AreEqual(0.05f, presenter.DelayFeature.CloseDelayInSeconds, 0.001f);
+			Assert.AreNotEqual(0f, presenter.DelayFeature.OpenDelayInSeconds,
+				"A zero open delay would skip OnPresenterOpened's OpenWithDelayAsync branch entirely.");
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync's transition-completed notification for a TimeDelayFeature presenter; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_OnOpen_NotifiesTransitionCompleted()
 		{
 			// Act
@@ -65,6 +75,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalCloseProcessAsync's transition-completed notification for a TimeDelayFeature presenter; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseTransitionCompleted_AlwaysCalled's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_OnClose_NotifiesTransitionCompleted()
 		{
 			// Arrange
@@ -86,6 +99,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalCloseProcessAsync's SetActive(false) after a TimeDelayFeature close delay; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseUi_OpenUi_ClosesSuccessfully's mutation (radius 8, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_OnClose_DeactivatesGameObject()
 		{
 			// Arrange
@@ -99,10 +115,13 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Assert - Presenter should have deactivated the GameObject after transition
-			Assert.IsFalse(presenter.gameObject.activeSelf);
+			Assert.IsFalse(presenter.IsOpen);
 		}
 
 		[UnityTest]
+		// ADMIT: exercises TimeDelayFeature.OpenTransitionTask completing once UiService's load-and-open path has run; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiAsync_NotLoaded_LoadsAndOpens's mutation (radius 78, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_OpenTransitionTask_IsValid()
 		{
 			// Act
@@ -122,6 +141,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync's completion path when TimeDelayFeature's `if (_openDelayInSeconds > 0)` is false; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_ZeroDelay_CompletesImmediately()
 		{
 			// Arrange - Create presenter with zero delay
@@ -141,6 +163,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.WaitForOpenTransitionsAsync awaiting TimeDelayFeature's own OpenTransitionTask; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TimeDelayFeature_PresenterAwaitsFeatureTask()
 		{
 			// Act
@@ -157,6 +182,32 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 			// Assert - Presenter's transition completed after feature
 			Assert.IsTrue(presenter.WasOpenTransitionCompleted);
+		}
+
+		[UnityTest]
+		// ADMIT: TimeDelayFeature.OpenWithDelayAsync must call OnOpenStarted before awaiting the delay — subclasses
+		// kick off their visuals from that hook, and the delay is meaningless without it.
+		// RCR: TimeDelayFeature.cs OpenWithDelayAsync — comment out `OnOpenStarted();` → RED (3 recorded hooks,
+		// expected 4; CollectionAssert reports the missing "OnOpenStarted"). 2026-08-02
+		public IEnumerator TimeDelayFeature_LifecycleHooks_FireInOrderForOpenAndClose()
+		{
+			_mockLoader.RegisterPrefab<TestTrackingTimeDelayPresenter>("tracking_time_delay_presenter");
+			_service.AddUiConfig(TestHelpers.CreateTestConfig(typeof(TestTrackingTimeDelayPresenter), "tracking_time_delay_presenter", 0));
+
+			var openTask = _service.OpenUiAsync(typeof(TestTrackingTimeDelayPresenter));
+			yield return openTask.ToCoroutine();
+			var presenter = openTask.GetAwaiter().GetResult() as TestTrackingTimeDelayPresenter;
+			yield return presenter.OpenTransitionTask.ToCoroutine();
+
+			_service.CloseUi(typeof(TestTrackingTimeDelayPresenter));
+			yield return presenter.CloseTransitionTask.ToCoroutine();
+
+			var hooks = presenter.DelayFeature.RecordedHookOrder;
+			Assert.AreEqual(4, hooks.Count, "Expected all 4 lifecycle hooks to fire across open + close");
+			CollectionAssert.AreEqual(
+				new[] { "OnOpenStarted", "OnOpenedCompleted", "OnCloseStarted", "OnClosedCompleted" },
+				hooks,
+				"Open hooks must fire in order before close hooks; close hooks must fire after CloseTransitionTask completes");
 		}
 	}
 }

@@ -4,6 +4,24 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 
+## [1.3.0] - 2026-08-04
+
+**New**:
+- Added `UiCameraStackFeature` for Screen Space - Camera presenters that stack overlay cameras over a resolved base camera, with configurable insertion order.
+- Added `UiBackdropBlurRendererFeature` and `UiBackdropBlurPresenterFeature` for blurring content behind an open presenter; add the renderer feature to the project's URP Renderer asset.
+- Added the `UrpRendering` sample demonstrating camera stacking, backdrop blur, and layer-ordering interactions without requiring Addressables.
+- Added the read-only `UiToolkitPresenterFeature.PanelSettings` accessor and guidance for shared `PanelSettings` assets.
+
+**Changed**:
+- The package is now **URP-only** and requires `com.unity.render-pipelines.universal` 17.0.1 or newer alongside its existing dependencies.
+- Documented render-texture and world-space UI as Unity authoring configurations: use a camera Target Texture for uGUI and `PanelSettings` render mode for UI Toolkit; no custom runtime feature is required.
+- Added the `com.unity.test-framework.performance` (3.5.0) dependency so the package's test assemblies compile when tests are enabled.
+
+**Fixed**:
+- Fixed `UiConfig` serialization so `LoadSynchronously` survives configuration round-trips.
+- Fixed `UiService.CloseAllUi(int layer)` for presenters registered through `AddUi<T>`.
+- Fixed `InteractableTextView` TMP link hit-testing to resolve the correct event camera for camera-based canvases.
+
 ## [1.2.1] - 2026-04-26
 
 **New**:
@@ -137,7 +155,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 **Changed**:
 - Renamed *AdjustScreenSizeFitter* to *AdjustScreenSizeFitterView* to mark it as a View in the architecture conventions
-- Moved *AdjustScreenSizeFitterView* and *NonDrawingView*, *SafeAreaHelperView* to the Views folder and namespace to organize the codebase accordingly 
+- Moved *AdjustScreenSizeFitterView* and *NonDrawingView*, *SafeAreaHelperView* to the Views folder and namespace to organize the codebase accordingly
 
 ## [0.11.0] - 2025-01-05
 
@@ -209,7 +227,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added *SafeAreaHelperView* to add the possibility for the *RectTransform* to adjust himself to the screen notches
 - Added *AnimatedUiPresenter* to play animation on enter or closing
 - Added the possibility to add *Layers* externally into the *UiService*
-  
+
 **Changed**:
 - Now *Canvas* are single *GameObjects* that can be controlled outside of the *UiService*
 
@@ -224,7 +242,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [0.6.0] - 2020-09-24
 
 ***New**:
-- Added the possibility for the *IUiService* to allow to open/close already opened/closed *UiPresenters*, and throw an exception if not. 
+- Added the possibility for the *IUiService* to allow to open/close already opened/closed *UiPresenters*, and throw an exception if not.
 - Added the visible property to UiPresenter of its current visual status Added *IUiServiceInit* to give a new contract interface for the *UiService" initialisation
 
 **Fixed**:

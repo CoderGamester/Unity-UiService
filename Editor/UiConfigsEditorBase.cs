@@ -12,9 +12,9 @@ using UnityEngine.UIElements;
 namespace GameLoversEditor.UiService
 {
 	/// <summary>
-	/// Base class for <see cref="UiConfigs"/> editors with shared logic for layer visualization and set management.
+	/// Base class for <see cref="UiConfigs"/> editors with shared logic for layer visualization and set
+	/// management, where <typeparamref name="TSet"/> is the enum type of the <see cref="UiSetConfig"/> id.
 	/// </summary>
-	/// <typeparam name="TSet">The enum type of the <see cref="UiSetConfig"/> id</typeparam>
 	public abstract class UiConfigsEditorBase<TSet> : Editor
 		where TSet : Enum
 	{
@@ -27,18 +27,21 @@ namespace GameLoversEditor.UiService
 		protected VisualElement VisualizerContainer;
 		protected string VisualizerSearchFilter = "";
 
-		protected virtual string ConfigExplanation => 
+		/// <summary>Help-box copy shown above the presenter-config list; override to retarget the wording.</summary>
+		protected virtual string ConfigExplanation =>
 			"UI Presenter Configurations\n\n" +
 			"Lists all UI Presenter prefabs in the game with their sorting layer values. " +
 			"The Layer field controls the rendering order - higher values appear closer to the camera. " +
 			"For presenters with Canvas or UIDocument components, this value directly maps to the UI sorting order.";
 
+		/// <summary>Help-box copy shown above the UI-set list; override to retarget the wording.</summary>
 		protected virtual string SetExplanation =>
 			"UI Set Configurations\n\n" +
 			"UI Sets group multiple presenter instances that should be displayed together. " +
 			"When a set is activated via UiService, all its presenters are loaded and shown simultaneously. " +
 			"Presenters are loaded in the order listed (top to bottom).";
 
+		/// <summary>Resolves the inspected asset, binds the serialized properties, and runs the first sync.</summary>
 		protected virtual void OnEnable()
 		{
 			ScriptableObjectInstance = target as UiConfigs;
@@ -100,11 +103,19 @@ namespace GameLoversEditor.UiService
 			return root;
 		}
 
+		/// <summary>Reconciles the asset's config rows against the addresses the loading strategy currently exposes.</summary>
 		protected abstract void SyncConfigs();
+
+		/// <summary>Every presenter address the loading strategy can resolve, in the order shown in the list.</summary>
 		protected abstract IReadOnlyList<string> GetAddressList();
+
+		/// <summary>Maps each address to its project asset path, so a layer edit can be written to the prefab.</summary>
 		protected abstract Dictionary<string, string> GetAssetPathLookup();
+
+		/// <summary>Maps each address to the <see cref="UiPresenter"/> type found on that prefab.</summary>
 		protected abstract Dictionary<string, Type> GetUiTypesByAddress();
 
+		/// <summary>Builds the bound presenter-config list; override only to change the list's own chrome.</summary>
 		protected virtual ListView CreateConfigsListView()
 		{
 			var listView = new ListView
@@ -130,9 +141,13 @@ namespace GameLoversEditor.UiService
 			return listView;
 		}
 
+		/// <summary>Creates one recycled row for the config list; called by the list's virtualization, not per item.</summary>
 		protected abstract VisualElement CreateConfigElement();
+
+		/// <summary>Populates a recycled row with the config at <paramref name="index"/>.</summary>
 		protected abstract void BindConfigElement(VisualElement element, int index);
 
+		/// <summary>Routes a row's layer edit to the backing prefab, keyed by the address stashed on the field.</summary>
 		protected virtual void OnLayerChanged(ChangeEvent<int> evt)
 		{
 			if (evt.newValue == evt.previousValue) return;
@@ -144,6 +159,7 @@ namespace GameLoversEditor.UiService
 			}
 		}
 
+		/// <summary>Writes <paramref name="newLayer"/> onto the prefab's <c>Canvas</c> / <c>UIDocument</c> sorting order.</summary>
 		protected virtual void SyncLayerToPrefab(string address, int newLayer)
 		{
 			var pathLookup = GetAssetPathLookup();
@@ -377,6 +393,7 @@ namespace GameLoversEditor.UiService
 			SaveSetChanges();
 		}
 
+		/// <summary>Applies pending set edits and writes the asset to disk immediately.</summary>
 		protected void SaveSetChanges()
 		{
 			serializedObject.ApplyModifiedProperties();
@@ -387,6 +404,7 @@ namespace GameLoversEditor.UiService
 			}
 		}
 
+		/// <summary>Builds the collapsible layer-visualizer section, honouring the persisted expanded state.</summary>
 		protected VisualElement CreateVisualizerSection()
 		{
 			var section = new VisualElement();
@@ -464,6 +482,7 @@ namespace GameLoversEditor.UiService
 			return section;
 		}
 
+		/// <summary>Flips the visualizer's visibility and persists the choice to <see cref="EditorPrefs"/>.</summary>
 		protected void ToggleVisualizer()
 		{
 			ShowVisualizer = !ShowVisualizer;
@@ -478,6 +497,7 @@ namespace GameLoversEditor.UiService
 			}
 		}
 
+		/// <summary>Rebuilds the visualizer's contents in place; a no-op before the section has been created.</summary>
 		protected void RefreshVisualizerContent()
 		{
 			if (VisualizerContainer == null) return;
@@ -489,6 +509,7 @@ namespace GameLoversEditor.UiService
 			}
 		}
 
+		/// <summary>Renders the configs grouped by layer, highest first; override to change the grouping.</summary>
 		protected virtual void BuildVisualizerLayerHierarchy(ScrollView scrollView)
 		{
 			var configs = ScriptableObjectInstance?.Configs;

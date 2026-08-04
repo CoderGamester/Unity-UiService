@@ -36,6 +36,7 @@ namespace GameLoversEditor.UiService
 		private ScrollView _scrollView;
 		private Label _statsLabel;
 
+		/// <summary>Opens the presenter manager window.</summary>
 		[MenuItem("Tools/GameLovers/UI Presenter Manager")]
 		public static void ShowWindow()
 		{

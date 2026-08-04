@@ -8,6 +8,7 @@
 - **Dependencies** (see `package.json`)
   - `com.unity.addressables` (2.6.0)
   - `com.cysharp.unitask` (2.5.10)
+  - `com.unity.render-pipelines.universal` (17.0.1) — required by the `Runtime/Rendering/` presenter features (camera stacking, render-texture targets, backdrop blur); floor version matches this package's `unity: 6000.0` (declaring the 17.5.0 bundled with newer editors would silently raise the effective Unity requirement — UPM resolves upward regardless of the floor)
 
 This package provides a centralized UI management service that coordinates presenter **load/open/close/unload**, supports **layering**, **UI sets**, and **multi-instance** presenters, and integrates with **Addressables** + **UniTask**.
 
@@ -45,6 +46,12 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
   - `ITransitionFeature` interface for features that provide open/close transition delays (presenter awaits these).
   - Built-in transition features: `TimeDelayFeature`, `AnimationDelayFeature`.
   - UI Toolkit support: `UiToolkitPresenterFeature` (via `UIDocument`) provides `AddVisualTreeAttachedListener(callback)` for safe element queries. Callback is invoked on each open because UI Toolkit recreates elements when the presenter is deactivated/reactivated.
+  - `UiToolkitPresenterFeature.PanelSettings` is read-only by contract — see §4 for why there is no per-presenter `PanelSettings` feature.
+- **URP presenter features**: `Runtime/Rendering/*` (namespace `GameLovers.UiService.Rendering`) compile into the main `GameLovers.UiService` assembly, which references `Unity.RenderPipelines.Universal.Runtime` + `Unity.RenderPipelines.Core.Runtime` directly. No quarantine assembly — the URP dependency in `package.json` is hard, so URP is always present.
+  - `UiCameraStackFeature`: Screen Space - Camera + URP `cameraStack` insertion. **Two non-obvious requirements, both of which shipped broken and were caught only by running the sample:** (1) the overlay camera must be `enabled` while stacked -- `UniversalRenderPipeline.RenderCameraStack` does `if (!overlayCamera.isActiveAndEnabled) continue`, so a disabled camera sits in the stack and renders nothing; (2) the overlay camera must **not** be a child of the canvas it renders -- a Screen Space - Camera canvas drives its own transform from its `worldCamera`, so a child camera is dragged onto the canvas plane and sees nothing. `DetachCameraFromCanvas` re-parents it out, after which the feature owns its destruction. Both requirements are now pinned by tests in `UiCameraStackFeatureTests`: (1) by the enabled/`isActiveAndEnabled` assertions in the stacking tests (`StackedCamera_IsEnabled_SoUrpActuallyRendersIt`, `UnstackedCamera_IsDisabledAgain_OnClose`); (2) by `Open_WhenOverlayCameraIsChildOfItsOwnCanvas_DetachesCameraFromCanvas`, which asserts `DetachCameraFromCanvas` re-parents the camera out of its own canvas and resets its local position. Base camera via `Func<Camera> BaseCameraResolver` (default `Camera.main`, ~16ns/call and resolved twice per open — do not add caching). Ordering maths in `UiCameraStackFeature.InsertIndex`; per-camera priority in a private static `Dictionary<Camera, int>`. Do not derive priority from the hierarchy — the serialized camera need not be a child, so `GetComponentInParent` silently yields 0 (caught by `MultipleStackedCameras_OrderByCanvasSortingOrder`).
+  - **No render-texture feature, deliberately.** It is Inspector-authorable in both UI systems (`Camera.m_TargetTexture` + `Canvas.m_RenderMode`; `PanelSettings.m_TargetTexture`). A `UiRenderTextureFeature` was removed as ~180 lines wrapping three Inspector fields — document the authoring recipe instead of re-adding it.
+  - `UiBackdropBlurRendererFeature` (`ScriptableRendererFeature`, added to the project's URP Renderer asset) authors the blur's look — downsample, iterations, spread, tint — because that is one project-wide art decision, not per-presenter state. `UiBackdropBlurPresenterFeature` only holds a static refcount open while the presenter is visible, exposed as `AnyOpen`. A `UiBackdropBlurRequests` registry keyed by presenter with `sortKey` resolution was removed: it existed solely to answer "whose settings win", a question that disappears once the look lives on the asset. The camera gating is `UiBackdropBlurPass.ShouldInject`.
+  - **Test asmdefs reference URP directly.** Calling a static on a type whose *base class* lives in the URP assembly (`UiBackdropBlurPass : ScriptableRenderPass`) needs that reference — `CS0012` otherwise. A base type in this assembly (`UiCameraStackFeature : PresenterFeatureBase`) does not. Do not move code around to keep a test asmdef URP-free; this package is URP-only, so the reference is honest.
 - **Helper views**: `Runtime/Views/*` (`GameLovers.UiService.Views`)
   - `SafeAreaHelperView`: adjusts anchors/size based on safe area (notches).
   - `NonDrawingView`: raycast target without rendering (extends `Graphic`).
@@ -72,20 +79,16 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
       - UI Toolkit presenters rely on `UiToolkitPresenterFeature`; avoid querying `UIDocument.rootVisualElement` during `OnInitialized()`—use `AddVisualTreeAttachedListener(...)`.
     - `Views/*` — **optional helper components** used by presenter prefabs (safe area, raycasts, layout fitters, TMP link clicks).
       - If interaction/layout is off but service bookkeeping looks correct, look here before changing `UiService`.
+    - `Rendering/*` — **URP presenter features** (camera stacking, render-texture targets, backdrop blur). Part of the main `GameLovers.UiService` assembly; the folder is an organizational boundary, not an assembly one. See §2 for the per-type breakdown.
 - **Editor**: `Editor/` (assembly: `Editor/GameLovers.UiService.Editor.asmdef`)
   - Config editors: `UiConfigsEditorBase.cs`, `*UiConfigsEditor.cs`, `DefaultUiConfigsEditor.cs`.
   - Debugging: `UiPresenterManagerWindow.cs`, `UiPresenterEditor.cs`.
 - **Samples**: `Samples~/`
   - Demonstrates basic flows, data presenters, delay features, UI Toolkit integration.
+  - `Samples~/UrpRendering/` is the only sample that requires URP. It ships sample-scoped editor automation (`Editor/UrpRenderingSampleSetup.cs` + its own asmdef) that installs `UiBackdropBlurRendererFeature` onto every Renderer asset the active URP pipeline uses, because the blur is otherwise a silent no-op. It replicates URP's internal `ScriptableRendererDataEditor.AddComponent`: the feature must be added as a sub-asset **and** registered in `m_RendererFeatureMap` by local file id, or the list deserializes with a null entry. Idempotent, with an `[InitializeOnLoadMethod]` safety net for the UPM first-import ordering problem.
 - **Tests**: `Tests/`
-  - `Tests/EditMode/*` — unit tests (configs, sets, loaders, core service behavior). Owned by `GameLovers.UiService.Tests.asmdef` which is **editor-only** (`includePlatforms: ["Editor"]`).
-  - `Tests/PlayMode/*` — integration/performance/smoke tests and unit tests that require PlayMode (e.g. `DontDestroyOnLoad`). Owned by `GameLovers.UiService.Tests.PlayMode.asmdef` (runtime-compatible).
-  - `Tests/Helpers/*` — **shared test fixtures** consumed by both EditMode and PlayMode. Owned by `GameLovers.UiService.Tests.Helpers.asmdef` (runtime-compatible, gated by `defineConstraints: ["UNITY_INCLUDE_TESTS"]`). **MonoBehaviour-derived test presenters (e.g., `TestUiPresenter`, `TestDataUiPresenter`) MUST live here**, not under `Tests/EditMode/`. Placing a MonoBehaviour in the editor-only EditMode asmdef makes Unity reject `AddComponent<T>()` calls (silent `null` return + warning: `Can't add script behaviour '<name>' because it is an editor script`), which causes tests that create prefabs via `TestHelpers.CreateTestPresenterPrefab<T>` to run without ever attaching the presenter component.
-  - **Performance test pattern (`Measure.Method`)**: the body runs `WarmupCount + MeasurementCount` times. Stateful operations against `UiService` (Load/Unload/Open/Close) MUST use `.SetUp()` and/or `.CleanUp()` to reset per-iteration state — otherwise iterations 2+ hit the cache and log `The Ui <X> was already loaded` / `<X> is already open`, and the benchmark measures a no-op cache hit instead of the real operation. Correct shapes:
-    - Measuring **Load**: `body = Load; CleanUp = Unload;`
-    - Measuring **Unload**: `SetUp = Load; body = Unload;`
-    - See `Tests/PlayMode/Performance/PerformanceTests.cs` (`Perf_LoadUi_SinglePresenter`, `Perf_UnloadUi_SinglePresenter`) for the pattern.
-  - **`LogAssert.Expect` scope — asserts, does not silence**: `UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, regex)` ensures a matching warning appears during the test (test fails if it doesn't) and prevents the warning from failing the test run for being "unexpected". It does **NOT** suppress the warning from `Editor.log` or the Unity Console — the log line is still emitted. Use it to **pin expected-warning contracts** (service behavior under test), not to reduce console noise. For the latter, restructure the test (see Performance test pattern above) or change the runtime log site — not `LogAssert`.
+  - Before reading, editing, or creating any file in `Tests/`, you **MUST** read [`Tests/AGENTS.md`](Tests/AGENTS.md) first.
+  - Test asmdef layout, MonoBehaviour-presenter placement, the `Measure.Method` performance pattern, `LogAssert.Expect` scope, and TMPro/`UnityEngine.UI` test-asmdef references now live there — do not duplicate them here.
 
 ## 4. Important Behaviors / Gotchas
 - **Instance address normalization**
@@ -100,11 +103,17 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
 - **Layering**
   - `UiService` enforces sorting by setting `Canvas.sortingOrder` or `UIDocument.sortingOrder` to the config layer when adding/loading.
   - Loaded presenters are instantiated under the `"Ui"` root directly (no per-layer container GameObjects).
+- **`UiConfig.Layer` is not a total order once render modes mix**
+  - Screen Space - Overlay canvases composite after ALL URP rendering, straight to the backbuffer. A `UiCameraStackFeature` presenter (Screen Space - Camera, URP-stacked) at a high `Layer` still draws underneath an Overlay presenter at `Layer` 0 the moment both exist in the same scene. This is a fundamental property of how the two render modes composite, not a bug — there is no runtime fix. Keep Overlay and camera-stacked presenters visually separated (e.g. HUD as Overlay, world-anchored UI as stacked), or accept the fixed relative order.
+  - `UiCameraStackFeature` is incompatible with pointing that presenter's camera at a `RenderTexture`: URP requires a stacked overlay camera to share the base camera's render target, but a render-texture-target camera by definition renders to its own texture. Pick one per presenter.
+- **Never mutate `PanelSettings` at runtime, and don't add a feature that does**
+  - N `UIDocument`s sharing one `PanelSettings` share **one panel**, ordered via `UIDocument.sortingOrder` (what `UiService` sets from `UiConfig.Layer`). Give a presenter its own `PanelSettings` instance and it gets its own panel, at which point cross-presenter ordering for that presenter switches to `PanelSettings.sortingOrder` and `UiConfig.Layer` silently stops applying to it.
+  - A `UiPanelSettingsFeature` that cloned `PanelSettings` per presenter was removed: it served only a UI Toolkit render-texture path that `PanelRenderMode.WorldSpace` supersedes, needed a second component on every prefab, and per-presenter panels defeat batching. **Author additional `PanelSettings` assets instead.**
+  - Do not add a third sorting-order branch to `UiService.EnsureCanvasSortingOrder`. The `Canvas` / `UIDocument` pair it already handles is complete.
 - **UI Sets store types, not addresses**
   - UI sets are serialized as `UiSetEntry` (type name + instance address). The default editor populates `InstanceAddress` with the **addressable address** for uniqueness.
 - **`LoadSynchronously` persistence**
-  - `UiConfig.LoadSynchronously` exists and is respected by `AddressablesUiAssetLoader`.
-  - **However**: `UiConfigs.UiConfigSerializable` currently does **not** serialize `LoadSynchronously`, so configs loaded from a `UiConfigs` asset will produce `LoadSynchronously = false` in `UiConfigs.Configs`.
+  - `UiConfig.LoadSynchronously` is serialized through `UiConfigs.UiConfigSerializable` and round-trips correctly. It is respected by `AddressablesUiAssetLoader` for synchronous instantiation.
 - **Static events**
   - `UiService.OnResolutionChanged` / `UiService.OnOrientationChanged` are static `UnityEvent`s raised by `UiServiceMonoComponent`.
   - The service does not clear listeners; consumers must unsubscribe appropriately.
@@ -115,15 +124,7 @@ For user-facing docs, treat `docs/README.md` (and linked pages) as the primary d
 - **UI Toolkit visual tree timing and element recreation**
   - `UIDocument.rootVisualElement` may not be ready when `OnInitialized()` is called on a presenter.
   - UI Toolkit **recreates visual elements** when the presenter GameObject is deactivated/reactivated (close/reopen cycle), `AddVisualTreeAttachedListener(callback)` invokes  on **each open** to handle element recreation.
-- **UI Toolkit test `PanelSettings` creation — silence the theme warning**
-  - A runtime-created `PanelSettings` (no theme asset configured) makes Unity log `No Theme Style Sheet set to PanelSettings , UI will not render properly` **twice** per instantiation: once when assigned to `UIDocument.panelSettings`, and again when the hosting GameObject first goes `SetActive(true)`.
-  - Fix in test helpers: assign the theme **before** handing the panel to the document.
-    ```csharp
-    var panel = ScriptableObject.CreateInstance<PanelSettings>();
-    panel.themeStyleSheet = ScriptableObject.CreateInstance<ThemeStyleSheet>(); // empty theme is enough
-    document.panelSettings = panel;
-    ```
-  - See `Tests/PlayMode/Helpers/TestUiToolkitPresenter.cs` and `TestMultiFeatureToolkitPresenter.cs` for the pattern.
+- **UI Toolkit test `PanelSettings` creation** — see [`Tests/AGENTS.md`](Tests/AGENTS.md) §3 for the theme-before-document assignment order that avoids the duplicate "No Theme Style Sheet" warning.
 
 ## 5. Coding Standards (Unity 6 / C# 9.0)
 - **C#**: C# 9.0 syntax; no global `using`s; keep **explicit namespaces**.

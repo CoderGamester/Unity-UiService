@@ -7,20 +7,10 @@ namespace GameLovers.UiService.Tests
     public class UiSetConfigTests
     {
         [Test]
-        public void UiSetConfig_Creation_StoresSetId()
-        {
-            // Arrange & Act
-            var setConfig = new UiSetConfig
-            {
-                SetId = 42,
-                UiInstanceIds = new UiInstanceId[0]
-            };
-
-            // Assert
-            Assert.AreEqual(42, setConfig.SetId);
-        }
-
-        [Test]
+        // ADMIT: UiSetEntry.ToUiInstanceId must carry InstanceAddress into the resulting id — a set entry that
+        // loses its address resolves to the default instance and UiService opens the wrong one.
+        // RCR: UiSetConfig.cs UiSetEntry.ToUiInstanceId — pass `null` instead of the address ternary → RED
+        // (expected "test_instance", was ""). 2026-08-02
         public void UiSetEntry_ToUiInstanceId_ConvertsCorrectly()
         {
             // Arrange
@@ -39,6 +29,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiSetEntry.ToUiInstanceId normalises an empty serialized address to the default instance; any
+        // other sentinel makes an unnamed set entry stop matching the presenter UiService loaded.
+        // RCR: UiSetConfig.cs UiSetEntry.ToUiInstanceId — replace the ternary's `null` branch with `"__set__"` →
+        // RED (Assert.IsTrue(instanceId.IsDefault) fails). Leaves the named-address sibling green. 2026-08-02
         public void UiSetEntry_EmptyAddress_IsDefault()
         {
             // Arrange
@@ -56,6 +50,10 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiSetEntry.FromUiInstanceId must serialize the instance address, or a multi-instance set entry
+        // deserializes onto the default instance after a domain reload.
+        // RCR: UiSetConfig.cs UiSetEntry.FromUiInstanceId — replace the address with `string.Empty` → RED
+        // (deserialized[0] expected TestUiPresenter:inst1, was TestUiPresenter). 2026-08-02
         public void Serialization_RoundTrip_PreservesData()
         {
             // Arrange

@@ -49,6 +49,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.LoadUiSetAsync must queue a LoadUiAsync per set entry, or it returns an empty task list
+		// and the set silently never loads.
+		// RCR: UiService.cs LoadUiSetAsync — comment out the `uiTasks.Add(LoadUiAsync(...))` call → RED
+		// (expected 2 loaded presenters, was 0). 2026-08-02
 		public IEnumerator LoadUiSetAsync_ValidSet_LoadsAllPresenters()
 		{
 			// Act
@@ -63,6 +67,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: exercises UiService.LoadUiSetAsync's already-loaded `continue` skip over an entry the caller pre-loaded; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under LoadUiSetAsync_ValidSet_LoadsAllPresenters's mutation (radius 4, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator LoadUiSetAsync_PartiallyLoaded_LoadsOnlyMissing()
 		{
 			// Arrange - Pre-load one presenter
@@ -81,6 +88,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.CloseAllUiSet must call CloseUi for every entry in the set, or closing a set is a no-op
+		// that leaves the whole screen up.
+		// RCR: UiService.cs CloseAllUiSet — comment out `CloseUi(instanceId.PresenterType, instanceId.InstanceAddress);`
+		// → RED (expected 0 VisiblePresenters, was 2). 2026-08-02
 		public IEnumerator CloseAllUiSet_OpenSet_ClosesAllInSet()
 		{
 			// Arrange
@@ -110,6 +121,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.UnloadUiSet must call UnloadUi for each found entry, or unloading a set releases nothing
+		// and the presenters stay resident.
+		// RCR: UiService.cs UnloadUiSet — comment out the guarded `UnloadUi(instanceId.PresenterType, ...)` call →
+		// RED (expected 0 loaded presenters, was 2). 2026-08-02
 		public IEnumerator UnloadUiSet_LoadedSet_UnloadsAll()
 		{
 			// Arrange
@@ -127,6 +142,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	
 		[UnityTest]
+		// ADMIT: UiService.RemoveUiSet must return the presenters it detached — callers own their lifetime after a
+		// remove-without-unload, and an empty return list leaks them.
+		// RCR: UiService.cs RemoveUiSet — comment out `list.Add(ui);` → RED (expected 2 returned presenters, was 0;
+		// the loaded count assertion still passes, so this pins the return value specifically). 2026-08-02
 		public IEnumerator RemoveUiSet_LoadedSet_RemovesAndReturnsPresenters()
 		{
 			// Arrange
@@ -147,6 +166,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		#region OpenUiSetAsync Tests
 
 		[UnityTest]
+		// ADMIT: UiService.OpenUiSetAsync must queue an OpenUiAsync per set entry, or it awaits an empty task list
+		// and reports success while opening nothing.
+		// RCR: UiService.cs OpenUiSetAsync — comment out the `openTasks.Add(OpenUiAsync(...))` call → RED
+		// (expected 2 returned presenters, was 0). 2026-08-02
 		public IEnumerator OpenUiSetAsync_ValidSet_OpensAllPresenters()
 		{
 			// Act
@@ -157,10 +180,13 @@ namespace GameLovers.UiService.Tests.PlayMode
 			// Assert
 			Assert.AreEqual(2, presenters.Length);
 			Assert.AreEqual(2, _service.VisiblePresenters.Count);
-			Assert.IsTrue(presenters.All(p => p.gameObject.activeSelf));
+			Assert.IsTrue(presenters.All(p => p.IsOpen));
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.OpenUiSetAsync's load-on-miss path for a set no entry of which was pre-loaded; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiSetAsync_ValidSet_OpensAllPresenters's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OpenUiSetAsync_NotLoaded_LoadsAndOpensAll()
 		{
 			// Act - Open without pre-loading
@@ -175,6 +201,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.OpenUiSetAsync's per-entry PresenterType resolution in the returned array; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenUiSetAsync_ValidSet_OpensAllPresenters's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OpenUiSetAsync_ReturnsCorrectPresenterTypes()
 		{
 			// Act
@@ -188,6 +217,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.OpenUiSetAsync must open each entry at the set's InstanceAddress, or set-opened presenters
+		// register under an address CloseAllUiSet then cannot find.
+		// RCR: UiService.cs OpenUiSetAsync — replace `OpenUiAsync(..., instanceId.InstanceAddress, ct)` with
+		// `OpenUiAsync(..., string.Empty, ct)` → RED (expected 0 VisiblePresenters, was 2, plus "is not open"). 2026-08-02
 		public IEnumerator OpenUiSetAsync_ThenCloseAllUiSet_ClosesAll()
 		{
 			// Arrange - Open via set method
@@ -213,6 +246,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		#region Cross-Operation Compatibility Tests (Set + Individual methods)
 
 		[UnityTest]
+		// ADMIT: exercises UiService.CloseAllUiSet against presenters opened through the individual OpenUiAsync(Type) path; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseAllUiSet_OpenSet_ClosesAllInSet's mutation (radius 4, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator OpenUiAsync_WithoutPreload_ThenCloseAllUiSet_ClosesCorrectly()
 		{
 			// This test verifies the fix for the core bug:
@@ -242,6 +278,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.ResolveInstanceAddress must return the single loaded instance's own address, or every
+		// address-less CloseUi/UnloadUi/GetUi call targets a default instance that does not exist.
+		// RCR: UiService.cs ResolveInstanceAddress — replace `return instances[0].Address;` with
+		// `return string.Empty;` → RED ("is not open" warning; 2 VisiblePresenters). Broad sibling overlap. 2026-08-02
 		public IEnumerator OpenUiSetAsync_ThenCloseUi_ClosesIndividualPresenter()
 		{
 			// Verify that presenters opened via set can be closed individually
@@ -263,6 +303,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiService.CloseAllUiSet against presenters loaded by set but opened individually; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under CloseAllUiSet_OpenSet_ClosesAllInSet's mutation (radius 4, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator LoadUiSetAsync_ThenOpenUiAsync_ThenCloseAllUiSet_ClosesAll()
 		{
 			// Verify the scenario: Load via set, open via individual, close via set
@@ -294,6 +337,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.RemoveUi must drop the id from _visibleUiList, or unloading a still-open presenter leaves
+		// a dangling entry in VisiblePresenters pointing at a destroyed GameObject.
+		// RCR: UiService.cs RemoveUi(Type, string) — comment out `_visibleUiList.Remove(instanceId);` → RED
+		// (expected 0 VisiblePresenters, was 2). Distinct line from CloseUi's own Remove. 2026-08-02
 		public IEnumerator OpenUiAsync_WithoutPreload_ThenUnloadUiSet_UnloadsAll()
 		{
 			// Verify that UnloadUiSet works with presenters opened via individual methods
@@ -318,6 +365,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		#region ResolveInstanceAddress Consistency Tests
 
 		[UnityTest]
+		// ADMIT: UiService.OpenUiAsync(Type) must use config.Address, not string.Empty, as the default instance
+		// address — that consistency is what lets set operations later find individually-opened presenters.
+		// RCR: UiService.cs OpenUiAsync(Type, CancellationToken) — replace `config.Address` with `string.Empty` in
+		// the forwarding call → RED (expected loaded[0].Address "test_presenter", was ""). 2026-08-02
 		public IEnumerator OpenUiAsync_UsesConfigAddressWhenNotLoaded()
 		{
 			// This tests that ResolveInstanceAddress returns config.Address
@@ -334,6 +385,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.LoadUiAsync(Type) must use config.Address as the default instance address, matching the
+		// OpenUiAsync(Type) convention that UI-set lookups depend on.
+		// RCR: UiService.cs LoadUiAsync(Type, bool, CancellationToken) — replace `config.Address` with
+		// `string.Empty` in the forwarding call → RED (expected loaded[0].Address "test_presenter", was ""). 2026-08-02
 		public IEnumerator LoadUiAsync_WithoutAddress_UsesConfigAddress()
 		{
 			// Verify that LoadUiAsync(Type) without explicit address uses config.Address
@@ -353,6 +408,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		#region Unload Set with Open Presenters
 
 		[UnityTest]
+		// ADMIT: UiService.UnloadUiSet's per-entry TryFindPresenter test must admit presenters that are still
+		// visible; gating it wrongly would leave an open set permanently loaded.
+		// RCR: UiService.cs UnloadUiSet — disable the entry test with `if (false)` → RED
+		// (GetLoadedPresenters().Count expected 0, was 2). 2026-08-02
 		public IEnumerator UnloadUiSet_WithOpenPresenters_UnloadsAll()
 		{
 			// Verify that UnloadUiSet works even when presenters are still open
@@ -375,6 +434,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		#region OpenUiSetAsync Edge Cases
 
 		[Test]
+		// ADMIT: UiService.OpenUiSetAsync must reject an unknown setId with KeyNotFoundException; callers catch that
+		// specific type, and any other exception escapes their handler.
+		// RCR: UiService.cs OpenUiSetAsync — change the throw to `InvalidOperationException` → RED (Assert.ThrowsAsync
+		// reports InvalidOperationException where KeyNotFoundException was expected). 2026-08-02
 		public void OpenUiSetAsync_InvalidSetId_ThrowsKeyNotFoundException()
 		{
 			// Assert
@@ -383,6 +446,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService.OpenUi's already-open guard is what keeps a re-issued OpenUiSetAsync from adding a
+		// second _visibleUiList entry per set member.
+		// RCR: UiService.cs OpenUi — disable with `if (false)` → RED (VisiblePresenters.Count expected 2, was 4,
+		// and neither expected "is already open" warning is received). 2026-08-02
 		public IEnumerator OpenUiSetAsync_CalledTwice_DoesNotDuplicatePresenters()
 		{
 			// First open

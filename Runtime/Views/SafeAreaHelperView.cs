@@ -26,6 +26,10 @@ namespace GameLovers.UiService.Views
 		private Rect _resolution;
 		private Rect _safeArea;
 
+		/// <summary>
+		/// Re-caches the transform, reference resolution and initial rect. Deliberately `internal` rather
+		/// than private so tests can force the re-cache without a real Inspector edit.
+		/// </summary>
 		internal void OnValidate()
 		{
 			_rectTransform = _rectTransform ? _rectTransform : GetComponent<RectTransform>();
@@ -55,6 +59,10 @@ namespace GameLovers.UiService.Views
 			}
 		}
 
+		/// <summary>
+		/// Re-applies the safe-area inset to the rect, returning early when the safe area covers the whole
+		/// screen. Deliberately `internal` rather than private so tests and the device simulator can force it.
+		/// </summary>
 		internal void UpdatePositions()
 		{
 

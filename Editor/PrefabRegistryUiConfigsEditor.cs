@@ -23,6 +23,7 @@ namespace GameLoversEditor.UiService
 		private SerializedProperty _prefabEntriesProperty;
 		private ListView _prefabListView;
 
+		/// <inheritdoc />
 		protected override void OnEnable()
 		{
 			// Must initialize _prefabEntriesProperty before base.OnEnable() 
@@ -31,6 +32,7 @@ namespace GameLoversEditor.UiService
 			base.OnEnable();
 		}
 
+		/// <inheritdoc />
 		protected override void SyncConfigs()
 		{
 			var configs = new List<UiConfig>();
@@ -83,10 +85,7 @@ namespace GameLoversEditor.UiService
 			EditorUtility.SetDirty(ScriptableObjectInstance);
 		}
 
-		/// <summary>
-		/// Updates addresses in prefab entries to match their prefab names.
-		/// Called during SyncConfigs to ensure addresses are always derived from prefab names.
-		/// </summary>
+		// An entry's address is always derived from its prefab name; SyncConfigs re-establishes that here.
 		private void UpdateAddressesFromPrefabs()
 		{
 			if (_prefabEntriesProperty == null) return;
@@ -114,11 +113,7 @@ namespace GameLoversEditor.UiService
 			}
 		}
 
-		/// <summary>
-		/// Adds multiple prefabs to the registry at once.
-		/// Validates that each prefab has a UiPresenter component and prevents duplicates.
-		/// </summary>
-		/// <param name="prefabs">The prefabs to add</param>
+		// Silently skips prefabs carrying no UiPresenter and ones already registered.
 		private void AddPrefabs(IEnumerable<GameObject> prefabs)
 		{
 			serializedObject.Update();
@@ -182,6 +177,7 @@ namespace GameLoversEditor.UiService
 			}
 		}
 
+		/// <inheritdoc />
 		public override VisualElement CreateInspectorGUI()
 		{
 			var root = base.CreateInspectorGUI();
@@ -225,9 +221,6 @@ namespace GameLoversEditor.UiService
 			return root;
 		}
 
-		/// <summary>
-		/// Creates a drop zone for batch prefab dropping.
-		/// </summary>
 		private VisualElement CreateDropZone()
 		{
 			var dropZone = new VisualElement();
@@ -385,12 +378,16 @@ namespace GameLoversEditor.UiService
 			});
 		}
 
+		/// <inheritdoc />
 		protected override IReadOnlyList<string> GetAddressList() => _uiConfigsAddress ?? new List<string>();
 
+		/// <inheritdoc />
 		protected override Dictionary<string, string> GetAssetPathLookup() => _assetPathLookup;
 
+		/// <inheritdoc />
 		protected override Dictionary<string, Type> GetUiTypesByAddress() => _uiTypesByAddress;
 
+		/// <inheritdoc />
 		protected override VisualElement CreateConfigElement()
 		{
 			var container = new VisualElement();
@@ -403,6 +400,7 @@ namespace GameLoversEditor.UiService
 			return container;
 		}
 
+		/// <inheritdoc />
 		protected override void BindConfigElement(VisualElement element, int index)
 		{
 			if (index >= ConfigsProperty.arraySize) return;

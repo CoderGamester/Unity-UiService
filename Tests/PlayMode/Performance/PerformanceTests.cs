@@ -70,6 +70,11 @@ namespace GameLovers.UiService.Tests.PlayMode
 		[UnityTest, Performance]
 		public IEnumerator Perf_LoadUiSet_MultiplePresenters()
 		{
+			// Unload after each iteration (.CleanUp, not part of the measured body) so every
+			// measurement benchmarks an actual Load-of-the-set, matching the
+			// Perf_UnloadUi_SinglePresenter reference pattern in this file. Previously the
+			// UnloadUiSet(1) call lived inside Measure.Method, so this benchmark measured
+			// load+unload under a name implying load-only cost.
 			Measure.Method(() =>
 			{
 				var tasks = _service.LoadUiSetAsync(1);
@@ -77,8 +82,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 				{
 					task.GetAwaiter().GetResult();
 				}
-				
-				// Cleanup for next measurement
+			})
+			.CleanUp(() =>
+			{
 				_service.UnloadUiSet(1);
 			})
 			.WarmupCount(1)
@@ -151,8 +157,14 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest, Performance]
-		public IEnumerator Perf_CloseAllUi_ManyPresenters()
+		public IEnumerator Perf_CloseAllUi_DispatchOnly()
 		{
+			// CloseAllUi's real work is the fire-and-forget InternalCloseProcessAsync per
+			// presenter (UiPresenter.InternalClose -> InternalCloseProcessAsync(...).Forget()),
+			// which this benchmark does not await. This measures only the synchronous dispatch
+			// cost of iterating _visibleUiList and kicking off each presenter's close, not the
+			// full close (including any transition features). Renamed from
+			// Perf_CloseAllUi_ManyPresenters, which implied full-close cost.
 			Measure.Method(() =>
 			{
 				_service.CloseAllUi();

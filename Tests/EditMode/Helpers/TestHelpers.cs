@@ -31,18 +31,7 @@ namespace GameLovers.UiService.Tests
 		{
 			var scriptableObject = ScriptableObject.CreateInstance<PrefabRegistryUiConfigs>();
 			scriptableObject.Configs = new List<UiConfig>(configs);
-
-			// We use the Serializable versions to set the data
-			var serializableSets = new List<UiSetConfigSerializable>();
-			foreach (var set in sets)
-			{
-				serializableSets.Add(UiSetConfigSerializable.FromUiSetConfig(set));
-			}
-
-			// We need reflection to set the private field _sets because it's the only way to bypass the read-only property
-			var field = typeof(UiConfigs).GetField("_sets", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-			field.SetValue(scriptableObject, serializableSets);
-
+			scriptableObject.SetSets(sets);
 			return scriptableObject;
 		}
 

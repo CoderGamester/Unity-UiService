@@ -39,6 +39,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.InitializeFeatures must discover ALL PresenterFeatureBase components via GetComponents;
+		// a single GetComponent silently drops every feature after the first on a multi-feature prefab.
+		// RCR: UiPresenter.cs InitializeFeatures — replace `GetComponents(_features);` with a single
+		// `GetComponent<PresenterFeatureBase>()` add → RED (FeatureB.WasOpened was False). 2026-08-02
 		public IEnumerator DualFeatures_BothReceiveLifecycleCallbacks()
 		{
 			// Act
@@ -52,6 +56,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync notifying exactly once across two ITransitionFeature components; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator DualFeatures_OnOpenTransitionCompleted_CalledOnce()
 		{
 			// Arrange
@@ -67,6 +74,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.WaitForOpenTransitionsAsync must WhenAll the transition tasks, not await just the first —
+		// otherwise the fastest feature releases the presenter while the others are still animating.
+		// RCR: UiPresenter.cs WaitForOpenTransitionsAsync — replace `UniTask.WhenAll(tasks)` with `tasks[0]` → RED
+		// (OpenTransitionCount is 2 after completing only FeatureA, expected 1). 2026-08-02
 		public IEnumerator DualFeatures_WithDelays_PresenterAwaitsAll()
 		{
 			// Arrange - First open without delays to get presenter reference
@@ -106,6 +117,10 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiPresenter.NotifyFeaturesOpened must notify features in GetComponents order; features on one prefab
+		// are authored assuming the component order they were added in.
+		// RCR: UiPresenter.cs NotifyFeaturesOpened — reverse the iteration to `for (var i = _features.Count - 1; ...)`
+		// → RED (FeatureA.OpenOrder < FeatureB.OpenOrder fails). FeatureOrder_Deterministic reddens too. 2026-08-02
 		public IEnumerator TripleFeatures_AllReceiveCallbacksInOrder()
 		{
 			// Act
@@ -124,6 +139,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InternalOpenProcessAsync notifying exactly once across three ITransitionFeature components; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under OpenTransitionCompleted_AlwaysCalled's mutation (radius 11, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator TripleFeatures_OnOpenTransitionCompleted_CalledOnce()
 		{
 			// Arrange
@@ -139,6 +157,9 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.NotifyFeaturesClosing fanning out to every feature discovered by InitializeFeatures; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under DualFeatures_BothReceiveLifecycleCallbacks's mutation (radius 6, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator MixedFeatures_CloseLifecycle_WorksCorrectly()
 		{
 			// Arrange
@@ -157,25 +178,42 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService must complete one open transition per open/close cycle; three cycles must reuse
+		// the single loaded instance.
+		// RCR: UiService.cs CloseUi(Type,string,bool) - comment out `_visibleUiList.Remove(instanceId);` ->
+		// RED (OpenTransitionCount expected 3, was 1). Not the InstantiateCallCount assertion: that is
+		// double-guarded by GetOrLoadUiAsync and LoadUiAsync's own duplicate check. 2026-08-04
 		public IEnumerator RapidOpenClose_FeaturesHandleCorrectly()
 		{
+			TestDualFeaturePresenter presenter = null;
+
 			// Act - Rapid open/close cycles
 			for (int i = 0; i < 3; i++)
 			{
 				var openTask = _service.OpenUiAsync(typeof(TestDualFeaturePresenter));
 				yield return openTask.ToCoroutine();
-				var presenter = openTask.GetAwaiter().GetResult() as TestDualFeaturePresenter;
+				var current = openTask.GetAwaiter().GetResult() as TestDualFeaturePresenter;
+
+				if (presenter == null) presenter = current;
+				Assert.AreSame(presenter, current, "Each cycle must reuse the loaded instance, not reload it.");
+
 				yield return presenter.OpenTransitionTask.ToCoroutine();
-				
+
 				_service.CloseUi(typeof(TestDualFeaturePresenter));
 				yield return presenter.CloseTransitionTask.ToCoroutine();
 			}
 
-			// Assert - Should not throw, all cycles completed
-			Assert.Pass("Rapid open/close cycles completed without errors");
+			// Assert - one instantiation shared by all three cycles, one open transition per cycle
+			Assert.AreEqual(1, _mockLoader.InstantiateCallCount);
+			Assert.AreEqual(3, presenter.OpenTransitionCount);
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InitializeFeatures producing the same notification shape on a fresh
+		// instance after UnloadUi; no unique one-line pin.
+		// RCR: no isolated mutation - UiPresenter.cs InitializeFeatures with `_features.Reverse();` appended
+		// reddens this and TripleFeatures_AllReceiveCallbacksInOrder alike, because run-to-run determinism is
+		// not breakable one line at a time. Shared-path coverage, not a duplicate.
 		public IEnumerator FeatureOrder_Deterministic()
 		{
 			// Test that feature order is consistent across multiple opens
@@ -208,12 +246,25 @@ namespace GameLovers.UiService.Tests.PlayMode
 			secondRunOrder[1] = presenter2.FeatureB.OpenOrder;
 			secondRunOrder[2] = presenter2.FeatureC.OpenOrder;
 
+			Assert.AreNotSame(presenter1, presenter2, "The unload must have produced a genuinely fresh instance.");
+
+			// TrackingFeature.OpenOrder comes from a global counter, so the two runs are only comparable
+			// as offsets from their own first feature.
+			var firstShape = new[] { 0, firstRunOrder[1] - firstRunOrder[0], firstRunOrder[2] - firstRunOrder[0] };
+			var secondShape = new[] { 0, secondRunOrder[1] - secondRunOrder[0], secondRunOrder[2] - secondRunOrder[0] };
+
+			CollectionAssert.AreEqual(firstShape, secondShape,
+				"Feature notification order must be identical across an unload/reload cycle, not merely ascending.");
+
 			// Assert - Order should be consistent (relative ordering, not absolute values)
 			Assert.IsTrue(secondRunOrder[0] < secondRunOrder[1]);
 			Assert.IsTrue(secondRunOrder[1] < secondRunOrder[2]);
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.WaitForCloseTransitionsAsync WhenAll-ing two features' close tasks before hiding; no unique one-line pin.
+		// RCR: no isolated mutation - reddens under TransitionFeature_PresenterAwaitsCloseTransition's mutation (radius 5, verified).
+		// Shared-path coverage, not a duplicate.
 		public IEnumerator MultipleFeatures_CloseTransition_PresenterAwaitsAll()
 		{
 			// Arrange
@@ -231,7 +282,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return null;
 
 			// GameObject should still be active (waiting for transitions)
-			Assert.IsTrue(presenter.gameObject.activeSelf);
+			Assert.IsTrue(presenter.IsOpen);
 			
 			// Complete both transitions
 			presenter.FeatureA.SimulateCloseTransitionComplete();
@@ -239,7 +290,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 			yield return presenter.CloseTransitionTask.ToCoroutine();
 
 			// Now GameObject should be hidden
-			Assert.IsFalse(presenter.gameObject.activeSelf);
+			Assert.IsFalse(presenter.IsOpen);
 		}
 	}
 }

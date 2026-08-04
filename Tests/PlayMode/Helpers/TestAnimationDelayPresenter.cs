@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace GameLovers.UiService.Tests.PlayMode
 {
-	/// <summary>
-	/// Test presenter with AnimationDelayFeature for testing animation behavior
-	/// </summary>
 	[RequireComponent(typeof(AnimationDelayFeature))]
 	[RequireComponent(typeof(Animation))]
 	public class TestAnimationDelayPresenter : UiPresenter
@@ -15,7 +12,6 @@ namespace GameLovers.UiService.Tests.PlayMode
 
 		private void Awake()
 		{
-			// Ensure Animation component exists
 			var animation = GetComponent<Animation>();
 			if (animation == null)
 			{
@@ -28,10 +24,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 				AnimationFeature = gameObject.AddComponent<AnimationDelayFeature>();
 			}
 
-			// Set animation reference via reflection
-			var animField = typeof(AnimationDelayFeature).GetField("_animation",
-				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-			animField?.SetValue(AnimationFeature, animation);
+			AnimationFeature.SetAnimation(animation);
 		}
 
 		protected override void OnOpenTransitionCompleted()
@@ -45,4 +38,3 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 	}
 }
-

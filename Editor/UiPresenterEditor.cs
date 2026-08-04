@@ -18,6 +18,7 @@ namespace GameLoversEditor.UiService
 		private VisualElement _statusIndicator;
 		private VisualElement _controlsContainer;
 
+		/// <inheritdoc />
 		public override VisualElement CreateInspectorGUI()
 		{
 			var root = new VisualElement();

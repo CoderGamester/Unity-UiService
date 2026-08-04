@@ -1,0 +1,20 @@
+{
+    "name": "GameLovers.UiService.Samples.UiSets.Editor",
+    "rootNamespace": "GameLoversEditor.UiService.Examples",
+    "references": [
+        "GameLovers.UiService",
+        "GameLovers.UiService.Editor",
+        "GameLovers.UiService.Samples.UiSets"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

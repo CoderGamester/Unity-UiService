@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace GameLovers.UiService.Tests.PlayMode
 {
-	/// <summary>
-	/// Test presenter with animation clips for testing clip-based delays
-	/// </summary>
 	[RequireComponent(typeof(AnimationDelayFeature))]
 	[RequireComponent(typeof(Animation))]
 	public class TestAnimationDelayWithClipPresenter : UiPresenter
@@ -25,23 +22,18 @@ namespace GameLovers.UiService.Tests.PlayMode
 				AnimationFeature = gameObject.AddComponent<AnimationDelayFeature>();
 			}
 
-			// Create a mock animation clip with known length
-			var introClip = new AnimationClip();
-			introClip.legacy = true;
-			
-			// Add a dummy curve to give it length
-			introClip.SetCurve("", typeof(Transform), "localPosition.x", 
+			var introClip = new AnimationClip { legacy = true };
+			introClip.SetCurve("", typeof(Transform), "localPosition.x",
 				AnimationCurve.Linear(0f, 0f, 0.1f, 1f));
 
-			// Set fields via reflection
-			var animField = typeof(AnimationDelayFeature).GetField("_animation",
-				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-			var introField = typeof(AnimationDelayFeature).GetField("_introAnimationClip",
-				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-			
-			animField?.SetValue(AnimationFeature, animation);
-			introField?.SetValue(AnimationFeature, introClip);
+			// Animation.Play() with no arguments plays the component's "default clip", which requires the
+			// clip to already be registered in the component's attached-animations list. Merely assigning
+			// AnimationDelayFeature's `_animation.clip = introClip` later does not retroactively register a
+			// freshly-created runtime clip that was never added via AddClip — Play() then logs "Default clip
+			// could not be found in attached animations list." and silently no-ops instead of playing.
+			animation.AddClip(introClip, introClip.name);
+
+			AnimationFeature.SetAnimation(animation, introClip);
 		}
 	}
 }
-
