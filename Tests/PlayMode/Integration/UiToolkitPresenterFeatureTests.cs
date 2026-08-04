@@ -142,12 +142,21 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiToolkitPresenterFeature.AddVisualTreeAttachedListener's null guard must return before the
+		// already-attached branch invokes the callback, which would dereference null.
+		// RCR: UiToolkitPresenterFeature.cs AddVisualTreeAttachedListener — `if (callback == null)` → `if (false)`
+		// → RED (NullReferenceException from `callback(Root)`). Opened, not merely loaded: while the GameObject
+		// is inactive `Root?.panel` is null, the invoke branch is unreachable, and the guard is unfalsifiable.
 		public IEnumerator AddVisualTreeAttachedListener_NullCallback_NoOpsInsteadOfThrowing()
 		{
-			var task = _service.LoadUiAsync(typeof(TestUiToolkitPresenter));
+			var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
 			Assert.IsNotNull(presenter?.ToolkitFeature);
+
+			yield return TestHelpers.WaitForPanelAttachment(presenter);
+			Assert.IsNotNull(presenter.ToolkitFeature.Root?.panel,
+				"The panel must be attached, or the guard's invoke branch is unreachable and the test proves nothing.");
 
 			Assert.DoesNotThrow(() => presenter.ToolkitFeature.AddVisualTreeAttachedListener(null));
 		}
