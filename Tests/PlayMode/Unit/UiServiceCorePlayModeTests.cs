@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
@@ -46,34 +47,55 @@ namespace GameLovers.UiService.Tests.PlayMode
         }
 
         [UnityTest]
+        // ADMIT: UiService.Init must copy the asset's sets into _uiSets and its configs into _uiConfigs; the
+        // ReadOnly wrappers are built by the constructor and say nothing about Init.
+        // RCR: UiService.cs Init - replace `AddUiSet(set);` inside the `foreach (var set in sets)` loop with
+        // `_ = set;` -> RED (UiSets.Count expected 1, was 0). 2026-08-04
         public IEnumerator Init_WithValidConfigs_InitializesCorrectly()
         {
             // Arrange
             _service = new UiService(_mockLoader);
-            var configs = TestHelpers.CreateTestConfigs(
-                TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "test_address", 0)
+            var configs = TestHelpers.CreateTestConfigsWithSets(
+                new[] { TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "test_address", 0) },
+                new[] { TestHelpers.CreateTestUiSet(7, new UiInstanceId(typeof(TestUiPresenter), "test_address")) }
             );
 
             // Act
             _service.Init(configs);
 
-            // Assert - Check that service can accept load requests
-            Assert.IsNotNull(_service.UiSets);
-            Assert.IsNotNull(_service.VisiblePresenters);
+            // Assert - the sets half
+            Assert.AreEqual(1, _service.UiSets.Count);
+            Assert.IsTrue(_service.UiSets.ContainsKey(7));
+
+            // Assert - the configs half: a second add of the same type only warns if Init registered it.
+            LogAssert.Expect(LogType.Warning, new Regex("was already added"));
+            _service.AddUiConfig(TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "test_address", 0));
             yield return null;
         }
 
         [UnityTest]
+        // ADMIT: UiService.AddUiConfig must actually store the config - the TryAdd both stores it and reports
+        // the duplicate, so a guard that only checks membership registers nothing.
+        // RCR: UiService.cs AddUiConfig - replace `if (!_uiConfigs.TryAdd(config.UiType, config))` with
+        // `if (_uiConfigs.ContainsKey(config.UiType))` -> RED (LoadUiAsync throws KeyNotFoundException). 2026-08-04
         public IEnumerator AddUiConfig_NewConfig_AddsSuccessfully()
         {
             // Arrange
+            _mockLoader.RegisterPrefab<TestUiPresenter>("new_address");
             _service = new UiService(_mockLoader);
             _service.Init(TestHelpers.CreateTestConfigs());
             var config = TestHelpers.CreateTestConfig(typeof(TestUiPresenter), "new_address", 0);
 
-            // Act & Assert - Should not throw
-            Assert.DoesNotThrow(() => _service.AddUiConfig(config));
-            yield return null;
+            // Act
+            _service.AddUiConfig(config);
+
+            // Assert - registration is only observable through a load that would otherwise throw
+            var task = _service.LoadUiAsync(typeof(TestUiPresenter));
+            yield return task.ToCoroutine();
+            var presenter = task.GetAwaiter().GetResult();
+
+            Assert.IsNotNull(presenter);
+            Assert.AreEqual("new_address", _service.GetLoadedPresenters()[0].Address);
         }
 
         [UnityTest]

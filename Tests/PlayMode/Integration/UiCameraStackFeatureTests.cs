@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using GameLovers.UiService.Rendering;
 using NUnit.Framework;
@@ -288,14 +289,16 @@ namespace GameLovers.UiService.Tests.PlayMode
 	}
 
 	/// <summary>
-	/// Light integration smoke test through the real UiService + MockAssetLoader pipeline,
-	/// confirming the feature initializes without throwing when the default
-	/// the default resolver (Camera.main) finds nothing in the test scene.
+	/// Integration coverage through the real UiService + MockAssetLoader pipeline, exercising the
+	/// feature's default base-camera resolver (Camera.main) rather than an injected one.
+	/// The fixture establishes the absence of a Main Camera itself; see the SetUp comment.
 	/// </summary>
 	[TestFixture]
 	public class UiCameraStackFeatureIntegrationTests
 	{
 		private const string Address = "camerastack_presenter";
+
+		private readonly List<Camera> _disabledMainCameras = new List<Camera>();
 
 		private MockAssetLoader _mockLoader;
 		private UiService _service;
@@ -309,6 +312,21 @@ namespace GameLovers.UiService.Tests.PlayMode
 			_service = new UiService(_mockLoader);
 			_service.Init(TestHelpers.CreateTestConfigs(
 				TestHelpers.CreateTestConfig(typeof(TestCameraStackPresenter), Address, layer: 0)));
+
+			// Camera.main is a property of the loaded scene, not of this package: batchmode's empty scene
+			// has none, an Editor run against a scene with a Main Camera has one. Establish the absence
+			// here so IsStacked is an assertion about UiCameraStackFeature, not about the runner (A6).
+			foreach (var camera in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
+			{
+				if (camera.enabled && camera.CompareTag("MainCamera"))
+				{
+					camera.enabled = false;
+					_disabledMainCameras.Add(camera);
+				}
+			}
+
+			Assume.That(Camera.main == null, Is.True,
+				"Precondition: UiCameraStackFeature's default resolver must find no base camera.");
 		}
 
 		[TearDown]
@@ -316,24 +334,30 @@ namespace GameLovers.UiService.Tests.PlayMode
 		{
 			_service?.Dispose();
 			_mockLoader?.Cleanup();
+
+			foreach (var camera in _disabledMainCameras)
+			{
+				if (camera != null) camera.enabled = true;
+			}
+			_disabledMainCameras.Clear();
 		}
 
 		[UnityTest]
+		// ADMIT: UiCameraStackFeature's default Camera.main resolver must reach InsertIntoStack's null-base
+		// guard through the real UiService load path; every sibling injects a resolver via ConfigureForTest.
+		// RCR: UiCameraStackFeature.cs ResolveMainCamera - `=> Camera.main` -> a non-null fallback camera ->
+		// RED (IsStacked expected False, was True). The absence of Camera.main is established in SetUp and
+		// restored in TearDown, never inherited from the runner's scene (A6). 2026-08-04
 		public IEnumerator LoadThroughUiService_DoesNotThrow_WithNoMainCameraInScene()
 		{
-			Assert.DoesNotThrow(() =>
-			{
-				var task = _service.OpenUiAsync(typeof(TestCameraStackPresenter));
-				task.Forget();
-			});
+			var task = _service.OpenUiAsync(typeof(TestCameraStackPresenter));
+			yield return task.ToCoroutine();
+			var presenter = task.GetAwaiter().GetResult() as TestCameraStackPresenter;
 
-			yield return null;
-			yield return null;
-
-			var presenter = Object.FindAnyObjectByType<TestCameraStackPresenter>();
 			Assert.IsNotNull(presenter);
 			Assert.IsNotNull(presenter.StackFeature);
-			Assert.IsFalse(presenter.StackFeature.IsStacked, "No Camera.main in the test scene, so nothing should be stacked.");
+			Assert.IsFalse(presenter.StackFeature.IsStacked,
+				"The default Camera.main resolver returns null here, so InsertIntoStack must bail before stacking.");
 		}
 	}
 }

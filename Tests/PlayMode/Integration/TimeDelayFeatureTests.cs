@@ -36,17 +36,24 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
-		public IEnumerator TimeDelayFeature_DefaultValues_AreCorrect()
+		// ADMIT: TimeDelayFeature.OpenDelayInSeconds must return the configured field; a getter reporting 0
+		// hides a delay the presenter still waits on.
+		// RCR: TimeDelayFeature.cs OpenDelayInSeconds - `=> _openDelayInSeconds` -> `=> 0f` -> RED
+		// (expected 0.1, was 0). OnPresenterOpened reads the field directly, so the transition siblings stay
+		// green - this getter is this test's own pin. 2026-08-04
+		public IEnumerator TimeDelayFeature_ConfiguredDelays_AreExposedByTheGetters()
 		{
 			// Act
 			var task = _service.LoadUiAsync(typeof(TestTimeDelayPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestTimeDelayPresenter;
 
-			// Assert
+			// Assert - the values TestTimeDelayPresenter writes through SetDelays, not the serialized defaults
 			Assert.IsNotNull(presenter.DelayFeature);
 			Assert.AreEqual(0.1f, presenter.DelayFeature.OpenDelayInSeconds, 0.001f);
 			Assert.AreEqual(0.05f, presenter.DelayFeature.CloseDelayInSeconds, 0.001f);
+			Assert.AreNotEqual(0f, presenter.DelayFeature.OpenDelayInSeconds,
+				"A zero open delay would skip OnPresenterOpened's OpenWithDelayAsync branch entirely.");
 		}
 
 		[UnityTest]

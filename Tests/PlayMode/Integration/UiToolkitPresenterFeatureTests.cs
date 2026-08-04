@@ -49,14 +49,24 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiToolkitPresenterFeature.Root must surface the UIDocument's live root; the `?.` makes it
+		// unthrowable, so only an identity assertion can see it stop resolving.
+		// RCR: UiToolkitPresenterFeature.cs Root - `=> _document?.rootVisualElement` -> `=> null` -> RED
+		// (Assert.IsNotNull fails). RegisterPanelCallbacks/TryInvokeListeners also read Root, so the two
+		// listener tests redden as collateral. 2026-08-04
 		public IEnumerator UiToolkitFeature_Root_ReturnsRootVisualElement()
 		{
-			var task = _service.LoadUiAsync(typeof(TestUiToolkitPresenter));
+			// Opened, not merely loaded: UIDocument nulls its rootVisualElement while the GameObject is
+			// inactive, which would make the identity assertion below a null-equals-null tautology.
+			var task = _service.OpenUiAsync(typeof(TestUiToolkitPresenter));
 			yield return task.ToCoroutine();
 			var presenter = task.GetAwaiter().GetResult() as TestUiToolkitPresenter;
 
 			Assert.IsNotNull(presenter);
-			Assert.DoesNotThrow(() => { var _ = presenter.ToolkitFeature.Root; });
+			yield return TestHelpers.WaitForPanelAttachment(presenter);
+
+			Assert.IsNotNull(presenter.ToolkitFeature.Root);
+			Assert.AreSame(presenter.ToolkitFeature.Document.rootVisualElement, presenter.ToolkitFeature.Root);
 		}
 
 

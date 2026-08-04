@@ -178,25 +178,42 @@ namespace GameLovers.UiService.Tests.PlayMode
 		}
 
 		[UnityTest]
+		// ADMIT: UiService must complete one open transition per open/close cycle; three cycles must reuse
+		// the single loaded instance.
+		// RCR: UiService.cs CloseUi(Type,string,bool) - comment out `_visibleUiList.Remove(instanceId);` ->
+		// RED (OpenTransitionCount expected 3, was 1). Not the InstantiateCallCount assertion: that is
+		// double-guarded by GetOrLoadUiAsync and LoadUiAsync's own duplicate check. 2026-08-04
 		public IEnumerator RapidOpenClose_FeaturesHandleCorrectly()
 		{
+			TestDualFeaturePresenter presenter = null;
+
 			// Act - Rapid open/close cycles
 			for (int i = 0; i < 3; i++)
 			{
 				var openTask = _service.OpenUiAsync(typeof(TestDualFeaturePresenter));
 				yield return openTask.ToCoroutine();
-				var presenter = openTask.GetAwaiter().GetResult() as TestDualFeaturePresenter;
+				var current = openTask.GetAwaiter().GetResult() as TestDualFeaturePresenter;
+
+				if (presenter == null) presenter = current;
+				Assert.AreSame(presenter, current, "Each cycle must reuse the loaded instance, not reload it.");
+
 				yield return presenter.OpenTransitionTask.ToCoroutine();
-				
+
 				_service.CloseUi(typeof(TestDualFeaturePresenter));
 				yield return presenter.CloseTransitionTask.ToCoroutine();
 			}
 
-			// Assert - Should not throw, all cycles completed
-			Assert.Pass("Rapid open/close cycles completed without errors");
+			// Assert - one instantiation shared by all three cycles, one open transition per cycle
+			Assert.AreEqual(1, _mockLoader.InstantiateCallCount);
+			Assert.AreEqual(3, presenter.OpenTransitionCount);
 		}
 
 		[UnityTest]
+		// ADMIT: exercises UiPresenter.InitializeFeatures producing the same notification shape on a fresh
+		// instance after UnloadUi; no unique one-line pin.
+		// RCR: no isolated mutation - UiPresenter.cs InitializeFeatures with `_features.Reverse();` appended
+		// reddens this and TripleFeatures_AllReceiveCallbacksInOrder alike, because run-to-run determinism is
+		// not breakable one line at a time. Shared-path coverage, not a duplicate.
 		public IEnumerator FeatureOrder_Deterministic()
 		{
 			// Test that feature order is consistent across multiple opens
@@ -228,6 +245,16 @@ namespace GameLovers.UiService.Tests.PlayMode
 			secondRunOrder[0] = presenter2.FeatureA.OpenOrder;
 			secondRunOrder[1] = presenter2.FeatureB.OpenOrder;
 			secondRunOrder[2] = presenter2.FeatureC.OpenOrder;
+
+			Assert.AreNotSame(presenter1, presenter2, "The unload must have produced a genuinely fresh instance.");
+
+			// TrackingFeature.OpenOrder comes from a global counter, so the two runs are only comparable
+			// as offsets from their own first feature.
+			var firstShape = new[] { 0, firstRunOrder[1] - firstRunOrder[0], firstRunOrder[2] - firstRunOrder[0] };
+			var secondShape = new[] { 0, secondRunOrder[1] - secondRunOrder[0], secondRunOrder[2] - secondRunOrder[0] };
+
+			CollectionAssert.AreEqual(firstShape, secondShape,
+				"Feature notification order must be identical across an unload/reload cycle, not merely ascending.");
 
 			// Assert - Order should be consistent (relative ordering, not absolute values)
 			Assert.IsTrue(secondRunOrder[0] < secondRunOrder[1]);
