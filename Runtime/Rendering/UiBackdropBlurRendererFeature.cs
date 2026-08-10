@@ -19,7 +19,9 @@ namespace GameLovers.UiService.Rendering
 	{
 		private const string ShaderPath = "Packages/com.gamelovers.uiservice/Runtime/Rendering/Shaders/UiBackdropBlur.shader";
 
-		/// <summary>Inclusive bounds for <see cref="IterationsOverride"/>, matching the authored field's range.</summary>
+		/// <summary>
+		/// Inclusive bounds for <see cref="IterationsOverride"/>, matching the authored field's range.
+		/// </summary>
 		public const int MinIterations = 1;
 
 		public const int MaxIterations = 8;
@@ -37,7 +39,9 @@ namespace GameLovers.UiService.Rendering
 		private Material _blurMaterial;
 		private UiBackdropBlurPass _pass;
 
-		/// <summary>True once an instance exists on a loaded Renderer asset, letting presenters warn when it is absent.</summary>
+		/// <summary>
+		/// True once an instance exists on a loaded Renderer asset, letting presenters warn when it is absent.
+		/// </summary>
 		internal static bool IsInstalled => _isInstalled;
 
 		/// <summary>

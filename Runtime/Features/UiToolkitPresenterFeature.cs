@@ -29,7 +29,9 @@ namespace GameLovers.UiService
 		/// </summary>
 		public VisualElement Root => _document?.rootVisualElement;
 
-		/// <summary>The shared <see cref="PanelSettings"/> driving this document's panel. Inspect only; never mutate at runtime.</summary>
+		/// <summary>
+		/// The shared <see cref="PanelSettings"/> driving this document's panel. Inspect only; never mutate at runtime.
+		/// </summary>
 		/// <remarks>
 		/// Every <see cref="UIDocument"/> sharing this asset shares one panel, which is what makes ordering
 		/// by <see cref="UIDocument.sortingOrder"/> work; writing to it reconfigures every other presenter
@@ -147,4 +149,3 @@ namespace GameLovers.UiService
 		}
 	}
 }
-

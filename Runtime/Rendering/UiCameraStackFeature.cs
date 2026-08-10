@@ -57,7 +57,10 @@ namespace GameLovers.UiService.Rendering
 			return index;
 		}
 
-		/// <summary>Resolves the base camera to stack onto. Assign before the presenter opens; null restores <see cref="Camera.main"/>.</summary>
+		/// <summary>
+		/// Resolves the base camera to stack onto. Assign before the presenter opens; null restores
+		/// <see cref="Camera.main"/>.
+		/// </summary>
 		public Func<Camera> BaseCameraResolver
 		{
 			get => _baseCameraResolver;
