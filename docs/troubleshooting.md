@@ -298,7 +298,7 @@ void OnDestroy()
 
 ### Reporting a Bug
 
-Create an issue at [GitHub Issues](https://github.com/CoderGamester/com.gamelovers.uiservice/issues) with:
+Create an issue at [GitHub Issues](https://github.com/CoderGamester/Unity-UiService/issues) with:
 
 - **Unity version** (e.g., 6000.0.5f1)
 - **Package version** (from `package.json`)
@@ -308,7 +308,7 @@ Create an issue at [GitHub Issues](https://github.com/CoderGamester/com.gamelove
 
 ### Feature Requests
 
-Use [GitHub Discussions](https://github.com/CoderGamester/com.gamelovers.uiservice/discussions) to:
+Use the repository's issue tracker for support and feature requests:
 - Suggest new features
 - Ask questions
 - Share how you're using the package
@@ -327,4 +327,3 @@ When something isn't working, check these in order:
 - [ ] UniTask and Addressables packages are installed
 - [ ] No compilation errors in project
 - [ ] Feature components (if any) are attached and configured
-

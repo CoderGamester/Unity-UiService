@@ -1,5 +1,7 @@
 # UI Service Samples
 
+> **Unity compatibility:** Minimum Unity version `6000.0`; reference streams are `6000.0.x`, `6000.3.x`, and `6000.5.x`. UI Service is **URP-only**. See the [package compatibility matrix](../README.md#unity-compatibility).
+
 This folder contains example implementations demonstrating the **feature composition** pattern of the UI Service.
 
 ---

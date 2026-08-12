@@ -1,5 +1,7 @@
 # Multi-Instance Sample
 
+> **Unity compatibility:** Minimum Unity version `6000.0`; reference streams are `6000.0.x`, `6000.3.x`, and `6000.5.x`. UI Service is **URP-only**. See the [package compatibility matrix](../../README.md#unity-compatibility).
+
 This sample demonstrates creating multiple instances of the same UI type, commonly used for popups and notifications.
 
 ## Design Philosophy

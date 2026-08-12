@@ -4,7 +4,8 @@ This guide walks you through setting up the UI Service in your Unity project and
 
 ## Prerequisites
 
-- **Unity** 6000.0 or higher
+- **Unity** 6000.0 or higher; the reference streams are 6000.0.x, 6000.3.x, and 6000.5.x.
+- **Universal Render Pipeline** 17.0.1 or higher. UI Service is URP-only.
 - **Addressables** 2.6.0 or higher
 - **UniTask** 2.5.10 or higher
 
@@ -16,7 +17,7 @@ This guide walks you through setting up the UI Service in your Unity project and
 2. Click the `+` button and select `Add package from git URL`
 3. Enter the following URL:
    ```
-   https://github.com/CoderGamester/com.gamelovers.uiservice.git
+   https://github.com/CoderGamester/Unity-UiService.git#1.3.0
    ```
 
 ### Via manifest.json
@@ -26,25 +27,18 @@ Add the following line to your project's `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.gamelovers.uiservice": "https://github.com/CoderGamester/com.gamelovers.uiservice.git"
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2.5.10",
+    "com.gamelovers.uiservice": "https://github.com/CoderGamester/Unity-UiService.git#1.3.0"
   }
 }
 ```
-
-### Via OpenUPM
-
-```bash
-openupm add com.gamelovers.uiservice
-```
-
----
 
 ## Step 1: Create UI Configuration
 
 The UI Service requires a configuration asset to know about your UI presenters.
 
 1. Right-click in Project View
-2. Navigate to `Create` → `ScriptableObjects` → `Configs` → `UiConfigs`
+2. Navigate to `Create` → `GameLovers UiService` → `UiConfigs` → `PrefabRegistry`, `Resources`, or `Addressables`
 3. Name it (e.g., `GameUiConfigs`)
 
 This ScriptableObject will store:
@@ -273,4 +267,3 @@ Available samples:
 - **DataPresenter** - Data-driven UI
 - **DelayedPresenter** - Time and animation delays
 - **UiToolkit** - UI Toolkit integration
-

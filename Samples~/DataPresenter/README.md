@@ -1,5 +1,7 @@
 # Data Presenter Sample
 
+> **Unity compatibility:** Minimum Unity version `6000.0`; reference streams are `6000.0.x`, `6000.3.x`, and `6000.5.x`. UI Service is **URP-only**. See the [package compatibility matrix](../../README.md#unity-compatibility).
+
 This sample demonstrates data-driven UI presenters using `UiPresenter<T>` for typed data binding.
 
 ## Design Philosophy

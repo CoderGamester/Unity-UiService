@@ -1,5 +1,7 @@
 # Custom Features Sample
 
+> **Unity compatibility:** Minimum Unity version `6000.0`; reference streams are `6000.0.x`, `6000.3.x`, and `6000.5.x`. UI Service is **URP-only**. See the [package compatibility matrix](../../README.md#unity-compatibility).
+
 This sample demonstrates creating custom presenter features by extending `PresenterFeatureBase`.
 
 ## Design Philosophy

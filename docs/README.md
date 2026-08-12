@@ -1,5 +1,7 @@
 # UI Service Documentation
 
+> **Unity compatibility:** Minimum Unity version `6000.0`; reference streams are `6000.0.x`, `6000.3.x`, and `6000.5.x`. UI Service is **URP-only**. See the [package compatibility matrix](../README.md#unity-compatibility).
+
 Welcome to the GameLovers UI Service documentation. This guide covers everything you need to know to effectively use the UI Service in your Unity projects.
 
 ## Quick Navigation
@@ -106,4 +108,3 @@ See [CHANGELOG.md](../CHANGELOG.md) for version history and release notes.
 ## Contributing
 
 See the main [README.md](../README.md) for contribution guidelines.
-
