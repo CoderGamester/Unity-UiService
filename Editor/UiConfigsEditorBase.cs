@@ -168,7 +168,7 @@ namespace GameLoversEditor.UiService
 		}
 
 		/// <summary>
-		/// Writes <paramref name="newLayer"/> onto the prefab's <c>Canvas</c> / <c>UIDocument</c> sorting order.
+		/// Writes <paramref name="newLayer"/> through the prefab's resolved UI surface.
 		/// </summary>
 		protected virtual void SyncLayerToPrefab(string address, int newLayer)
 		{
@@ -178,20 +178,7 @@ namespace GameLoversEditor.UiService
 			var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
 			if (prefab == null) return;
 
-			bool changed = false;
-
-			if (prefab.TryGetComponent<Canvas>(out var canvas))
-			{
-				canvas.sortingOrder = newLayer;
-				changed = true;
-			}
-			else if (prefab.TryGetComponent<UnityEngine.UIElements.UIDocument>(out var document))
-			{
-				document.sortingOrder = newLayer;
-				changed = true;
-			}
-
-			if (changed)
+			if (UiSurfaceEditorUtility.ApplyOrder(prefab, newLayer))
 			{
 				EditorUtility.SetDirty(prefab);
 				AssetDatabase.SaveAssets();

@@ -2,6 +2,7 @@ using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using UnityEngine;
 
 // ReSharper disable CheckNamespace
 
@@ -140,6 +141,19 @@ namespace GameLovers.UiService
 		/// <returns>A task that completes with the loaded UI.</returns>
 		/// <exception cref="KeyNotFoundException">Thrown if the service does not contain a UI configuration for the specified type.</exception>
 		UniTask<T> LoadUiAsync<T>(bool openAfter = false, CancellationToken cancellationToken = default) where T : UiPresenter;
+
+		/// <summary>
+		/// Loads a presenter under a runtime target when its configuration uses follow-target placement.
+		/// </summary>
+		/// <typeparam name="T">The presenter type to load.</typeparam>
+		/// <param name="followTarget">The runtime hierarchy target.</param>
+		/// <param name="openAfter">Whether to open the presenter after loading.</param>
+		/// <param name="cancellationToken">Cancellation token for the load.</param>
+		/// <returns>A task that completes with the loaded presenter.</returns>
+		UniTask<T> LoadUiAsync<T>(
+			Transform followTarget,
+			bool openAfter = false,
+			CancellationToken cancellationToken = default) where T : UiPresenter;
 
 		/// <summary>
 		/// Loads the UI of the specified type asynchronously.

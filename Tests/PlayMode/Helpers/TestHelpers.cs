@@ -41,7 +41,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 		public static GameObject CreateTestPresenterPrefab<T>(string name = null) where T : UiPresenter
 		{
 			var go = new GameObject(name ?? typeof(T).Name);
-			go.AddComponent<Canvas>(); // Most presenters need a canvas
+			go.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay; // Most presenters need a canvas
 			go.AddComponent<T>(); // Add presenter after canvas so it can find it
 			go.SetActive(false);
 			return go;

@@ -32,6 +32,23 @@ This guide adds package-specific rules to the host repository guide. Consumer us
 - Runtime backdrop tuning uses the existing non-serialized static override/sentinel pattern and resets on subsystem registration. Never persist runtime look changes into the shared `ScriptableRendererFeature` asset.
 - Test assemblies may reference URP directly when the tested type's base class lives in URP. Do not move code merely to avoid an honest package dependency.
 
+## Optional Rive integration
+
+- `docs/rive-integration.md` owns consumer-facing Rive setup, lifecycle, rendering, input, and
+  performance guidance. Update it whenever the public Rive integration contract or samples change.
+- The core package and `package.json` never reference Rive. Rive support compiles in the conditional
+  `GameLovers.UiService.Rive` assembly only when `app.rive.rive-unity` is installed.
+- Every panel in one shared Rive atlas uses `DrawWhenChanged`. One `AlwaysDraw` panel disables native
+  dirt checking for the whole atlas, so runtime assignment enforces the invariant and editor tooling
+  must report it before Play mode.
+- Rive 0.4.3 on Unity 6000.4 or newer requires URP Render Graph. Compatibility Mode bypasses its only
+  compiled render-pass path and produces blank textures.
+- A Screen Space Camera that samples a Rive render texture before Rive's
+  `AfterRenderingTransparents` pass displays the previous frame. Use Screen Space Overlay by default
+  and visually validate any camera-space exception.
+- `RiveAddressableFileLease` disposes `Rive.File` before releasing its Addressables asset handle.
+  Shared render-target strategies are reference-counted and destroyed after their last presenter.
+
 ## Assemblies, samples, and tests
 
 - Runtime and URP rendering code compile into `GameLovers.UiService`; Editor tooling stays under `Editor/`.

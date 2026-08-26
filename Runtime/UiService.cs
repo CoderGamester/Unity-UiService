@@ -32,8 +32,10 @@ namespace GameLovers.UiService
 
 		private readonly IReadOnlyDictionary<int, UiSetConfig> _uiSetsReadOnly;
 		private readonly IReadOnlyList<UiInstanceId> _visiblePresentersReadOnly;
+		private readonly IUiInputRouter _inputRouter;
 
 		private Transform _uiParent;
+		private IUiPlacement _placement;
 		private bool _disposed;
 
 		/// <inheritdoc />
@@ -45,8 +47,23 @@ namespace GameLovers.UiService
 		public UiService() : this(new AddressablesUiAssetLoader()) { }
 
 		public UiService(IUiAssetLoader assetLoader)
+			: this(assetLoader, null, null)
+		{
+		}
+
+		public UiService(IUiAssetLoader assetLoader, IUiPlacement placement)
+			: this(assetLoader, placement, null)
+		{
+		}
+
+		public UiService(
+			IUiAssetLoader assetLoader,
+			IUiPlacement placement,
+			IUiInputRouter inputRouter)
 		{
 			_assetLoader = assetLoader;
+			_placement = placement;
+			_inputRouter = inputRouter;
 			
 			// Set static reference for editor/debugging access
 			CurrentService = this;
@@ -96,6 +113,7 @@ namespace GameLovers.UiService
 			}
 
 			_uiParent = new GameObject("Ui").transform;
+			_placement ??= new DefaultUiPlacement(_uiParent);
 
 			_uiParent.gameObject.AddComponent<UiServiceMonoComponent>();
 			Object.DontDestroyOnLoad(_uiParent.gameObject);
@@ -203,8 +221,7 @@ namespace GameLovers.UiService
 			}
 			instanceList.Add(new UiInstance(type, instanceAddress, ui));
 			
-			// Ensure Canvas sorting order matches layer
-			EnsureCanvasSortingOrder(ui.gameObject, layer);
+			ApplySurfaceOrder(ui, layer);
 
 			ui.Init(this, instanceAddress);
 
@@ -300,6 +317,21 @@ namespace GameLovers.UiService
 		}
 
 		/// <inheritdoc />
+		public async UniTask<T> LoadUiAsync<T>(
+			Transform followTarget,
+			bool openAfter = false,
+			CancellationToken cancellationToken = default) where T : UiPresenter
+		{
+			if (!_uiConfigs.TryGetValue(typeof(T), out var config))
+			{
+				throw new KeyNotFoundException(
+					$"The UiConfig of type {typeof(T)} was not added to the service. Call {nameof(AddUiConfig)} first");
+			}
+
+			return await LoadUiAsync(typeof(T), config.Address, followTarget, openAfter, cancellationToken) as T;
+		}
+
+		/// <inheritdoc />
 		public async UniTask<UiPresenter> LoadUiAsync(Type type, bool openAfter = false, CancellationToken cancellationToken = default)
 		{
 			// Use config.Address as the default/singleton instance address to ensure consistency with UI set operations. ResolveInstanceAddress is only for existing instances
@@ -320,6 +352,25 @@ namespace GameLovers.UiService
 		/// <returns>A task that completes with the loaded UI</returns>
 		public async UniTask<UiPresenter> LoadUiAsync(Type type, string instanceAddress, bool openAfter = false, CancellationToken cancellationToken = default)
 		{
+			return await LoadUiAsync(type, instanceAddress, null, openAfter, cancellationToken);
+		}
+
+		/// <summary>
+		/// Loads a UI presenter using a runtime target when its config uses follow-target placement.
+		/// </summary>
+		/// <param name="type">The type of UI presenter to load.</param>
+		/// <param name="instanceAddress">The address that identifies this presenter instance.</param>
+		/// <param name="followTarget">The runtime parent required by follow-target placement.</param>
+		/// <param name="openAfter">Whether to open the presenter after loading it.</param>
+		/// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+		/// <returns>A task that completes with the loaded presenter.</returns>
+		public async UniTask<UiPresenter> LoadUiAsync(
+			Type type,
+			string instanceAddress,
+			Transform followTarget,
+			bool openAfter = false,
+			CancellationToken cancellationToken = default)
+		{
 			if (!_uiConfigs.TryGetValue(type, out var config))
 			{
 				throw new KeyNotFoundException($"The UiConfig of type {type} was not added to the service. Call {nameof(AddUiConfig)} first");
@@ -334,8 +385,8 @@ namespace GameLovers.UiService
 				return existingUi;
 			}
 
-			// Parent directly to _uiParent - no layer GameObjects needed
-			var gameObject = await _assetLoader.InstantiatePrefab(config, _uiParent, cancellationToken);
+			var parent = ResolvePlacement(config.Placement, followTarget);
+			var gameObject = await _assetLoader.InstantiatePrefab(config, parent, cancellationToken);
 
 			// Double check if the same UiPresenter was already loaded. This can happen if the coder spam calls LoadUiAsync
 			if (TryFindPresenter(type, instanceAddress, out var uiDouble))
@@ -349,6 +400,7 @@ namespace GameLovers.UiService
 
 			gameObject.SetActive(false);
 			AddUi(uiPresenter, config.Layer, instanceAddress, openAfter);
+			ValidateSurfaceSpace(uiPresenter, config.Space);
 
 			return uiPresenter;
 		}
@@ -687,16 +739,49 @@ namespace GameLovers.UiService
 			return false;
 		}
 
-		private void EnsureCanvasSortingOrder(GameObject gameObject, int layer)
+		private void ApplySurfaceOrder(UiPresenter presenter, int layer)
 		{
-			if (gameObject.TryGetComponent<Canvas>(out var canvas))
+			if (UiSurfaceResolver.TryResolve(presenter.gameObject, out var surface))
 			{
-				canvas.sortingOrder = layer;
+				surface.ApplyOrder(layer);
+				_inputRouter?.Prepare(presenter, surface);
+				return;
 			}
-			else if (gameObject.TryGetComponent<UnityEngine.UIElements.UIDocument>(out var document))
+
+			Debug.LogWarning(
+				$"[UiService] Presenter '{presenter.GetType().Name}' on GameObject '{presenter.gameObject.name}' has no UI surface. " +
+				$"Add a Canvas, UIDocument, or component implementing {nameof(IUiSurface)} so layer {layer} can be applied.",
+				presenter);
+		}
+
+		private Transform ResolvePlacement(UiPlacementSpace placement, Transform followTarget)
+		{
+			if (_placement != null)
 			{
-				document.sortingOrder = layer;
+				return _placement.Resolve(placement, followTarget);
 			}
+
+			if (placement == UiPlacementSpace.ScreenRoot)
+			{
+				return _uiParent;
+			}
+
+			throw new InvalidOperationException(
+				$"{nameof(UiService)} must be initialized before resolving {placement} placement.");
+		}
+
+		private void ValidateSurfaceSpace(UiPresenter presenter, UiSurfaceSpace expectedSpace)
+		{
+			if (!UiSurfaceResolver.TryResolve(presenter.gameObject, out var surface) ||
+				surface.SurfaceSpace == expectedSpace)
+			{
+				return;
+			}
+
+			Debug.LogWarning(
+				$"[UiService] Presenter '{presenter.GetType().Name}' resolved as {surface.SurfaceSpace}, " +
+				$"but its UiConfig declares {expectedSpace}. Update the prefab or config so placement, ordering, and input agree.",
+				presenter);
 		}
 
 		private void OpenUi(UiInstanceId instanceId)

@@ -75,6 +75,30 @@ namespace GameLovers.UiService.Tests
         }
 
         [Test]
+        // ADMIT: UiConfig serialization must preserve world-space and follow-target policy instead of resetting both to defaults.
+        // RCR: UiConfigSerializable(UiConfig) — force Space to ScreenOverlay → RED (expected World). 2026-08-13
+        public void ConfigsSetter_RoundTrip_PreservesSurfaceAndPlacement()
+        {
+            var configs = ScriptableObject.CreateInstance<PrefabRegistryUiConfigs>();
+            configs.Configs = new System.Collections.Generic.List<UiConfig>
+            {
+                new UiConfig
+                {
+                    Address = "world",
+                    UiType = typeof(TestUiPresenter),
+                    Space = UiSurfaceSpace.World,
+                    Placement = UiPlacementSpace.FollowTarget
+                }
+            };
+
+            UiConfig roundTripped = configs.Configs[0];
+
+            Assert.That(roundTripped.Space, Is.EqualTo(UiSurfaceSpace.World));
+            Assert.That(roundTripped.Placement, Is.EqualTo(UiPlacementSpace.FollowTarget));
+            ScriptableObject.DestroyImmediate(configs);
+        }
+
+        [Test]
         // ADMIT: UiConfigs.SetSetsSize drops set entries whose UiTypeName no longer matches any config; without it
         // a renamed or deleted presenter type stays in the set and UiService loads a null type at runtime.
         // RCR: UiConfigs.cs SetSetsSize — neuter the filter to `set.UiEntries.RemoveAll(entry => false);` → RED

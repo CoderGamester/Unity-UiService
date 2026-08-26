@@ -42,6 +42,7 @@ namespace GameLoversEditor.UiService
 
 				var sortingOrder = GetSortingOrder(uiPresenter);
 				var existingConfigIndex = existingConfigs.FindIndex(c => c.Address == asset.address);
+				var existingConfig = existingConfigIndex >= 0 ? existingConfigs[existingConfigIndex] : default;
 				var presenterType = uiPresenter.GetType();
 				
 				var config = new UiConfig
@@ -50,7 +51,11 @@ namespace GameLoversEditor.UiService
 					Layer = existingConfigIndex >= 0 && sortingOrder < 0 ? existingConfigs[existingConfigIndex].Layer : 
 					        sortingOrder < 0 ? 0 : sortingOrder,
 					UiType = presenterType,
-					LoadSynchronously = Attribute.IsDefined(presenterType, typeof(LoadSynchronouslyAttribute))
+					LoadSynchronously = Attribute.IsDefined(presenterType, typeof(LoadSynchronouslyAttribute)),
+					Space = existingConfigIndex >= 0
+						? existingConfig.Space
+						: UiSurfaceEditorUtility.GetSpace(uiPresenter),
+					Placement = existingConfig.Placement
 				};
 
 				configs.Add(config);
@@ -102,6 +107,16 @@ namespace GameLoversEditor.UiService
 			layerField.style.marginRight = 5;
 			container.Add(layerField);
 
+			var spaceField = new EnumField { name = "space-field" };
+			spaceField.style.width = 120;
+			spaceField.style.marginRight = 5;
+			container.Add(spaceField);
+
+			var placementField = new EnumField { name = "placement-field" };
+			placementField.style.width = 120;
+			placementField.style.marginRight = 5;
+			container.Add(placementField);
+
 			return container;
 		}
 
@@ -113,22 +128,28 @@ namespace GameLoversEditor.UiService
 			var itemProperty = ConfigsProperty.GetArrayElementAtIndex(index);
 			var addressProperty = itemProperty.FindPropertyRelative(nameof(UiConfigs.UiConfigSerializable.Address));
 			var layerProperty = itemProperty.FindPropertyRelative(nameof(UiConfigs.UiConfigSerializable.Layer));
+			var spaceProperty = itemProperty.FindPropertyRelative(nameof(UiConfigs.UiConfigSerializable.Space));
+			var placementProperty = itemProperty.FindPropertyRelative(nameof(UiConfigs.UiConfigSerializable.Placement));
 
 			var label = element.Q<Label>();
 			var layerField = element.Q<IntegerField>();
+			var spaceField = element.Q<EnumField>("space-field");
+			var placementField = element.Q<EnumField>("placement-field");
 
 			label.text = addressProperty.stringValue;
 			layerField.Unbind();
 			layerField.BindProperty(layerProperty);
 			layerField.userData = addressProperty.stringValue;
 			layerField.RegisterValueChangedCallback(OnLayerChanged);
+			spaceField.Init((UiSurfaceSpace)spaceProperty.enumValueIndex);
+			spaceField.BindProperty(spaceProperty);
+			placementField.Init((UiPlacementSpace)placementProperty.enumValueIndex);
+			placementField.BindProperty(placementProperty);
 		}
 
 		private int GetSortingOrder(UiPresenter presenter)
 		{
-			if (presenter.TryGetComponent<Canvas>(out var canvas)) return canvas.sortingOrder;
-			if (presenter.TryGetComponent<UnityEngine.UIElements.UIDocument>(out var document)) return (int)document.sortingOrder;
-			return -1;
+			return UiSurfaceEditorUtility.GetOrder(presenter);
 		}
 
 		private static List<AddressableAssetEntry> GetAssetList()

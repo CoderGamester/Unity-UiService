@@ -14,11 +14,19 @@ namespace GameLovers.UiService
 	/// </summary>
 	public struct UiConfig
 	{
+		/// <summary>Gets the loader address used to instantiate this presenter.</summary>
 		[FormerlySerializedAs("AddressableAddress")]
 		public string Address;
+		/// <summary>Gets the order applied to the presenter's resolved surface.</summary>
 		public int Layer;
+		/// <summary>Gets the presenter type represented by this configuration.</summary>
 		public Type UiType;
+		/// <summary>Gets whether supported loaders should instantiate this presenter synchronously.</summary>
 		public bool LoadSynchronously;
+		/// <summary>Gets the expected render space of the presenter.</summary>
+		public UiSurfaceSpace Space;
+		/// <summary>Gets the hierarchy placement used when the presenter is instantiated.</summary>
+		public UiPlacementSpace Placement;
 	}
 
 	/// <summary>
@@ -104,11 +112,19 @@ namespace GameLovers.UiService
 		[Serializable]
 		public struct UiConfigSerializable
 		{
+			/// <summary>Gets the serialized loader address.</summary>
 			[FormerlySerializedAs("AddressableAddress")]
 			public string Address;
+			/// <summary>Gets the serialized surface order.</summary>
 			public int Layer;
+			/// <summary>Gets the assembly-qualified presenter type name.</summary>
 			public string UiType;
+			/// <summary>Gets whether supported loaders should instantiate this presenter synchronously.</summary>
 			public bool LoadSynchronously;
+			/// <summary>Gets the serialized expected render space.</summary>
+			public UiSurfaceSpace Space;
+			/// <summary>Gets the serialized hierarchy placement.</summary>
+			public UiPlacementSpace Placement;
 
 			/// <summary>
 			/// Rehydrates the runtime config, resolving <see cref="UiConfig.UiType"/> from the stored
@@ -121,7 +137,9 @@ namespace GameLovers.UiService
 					Address = serializable.Address,
 					Layer = serializable.Layer,
 					UiType = Type.GetType(serializable.UiType),
-					LoadSynchronously = serializable.LoadSynchronously
+					LoadSynchronously = serializable.LoadSynchronously,
+					Space = serializable.Space,
+					Placement = serializable.Placement
 				};
 			}
 
@@ -136,7 +154,9 @@ namespace GameLovers.UiService
 					Address = config.Address,
 					Layer = config.Layer,
 					UiType = config.UiType.AssemblyQualifiedName,
-					LoadSynchronously = config.LoadSynchronously
+					LoadSynchronously = config.LoadSynchronously,
+					Space = config.Space,
+					Placement = config.Placement
 				};
 			}
 		}
