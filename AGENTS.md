@@ -32,22 +32,20 @@ This guide adds package-specific rules to the host repository guide. Consumer us
 - Runtime backdrop tuning uses the existing non-serialized static override/sentinel pattern and resets on subsystem registration. Never persist runtime look changes into the shared `ScriptableRendererFeature` asset.
 - Test assemblies may reference URP directly when the tested type's base class lives in URP. Do not move code merely to avoid an honest package dependency.
 
-## Optional Rive integration
+## Surfaces, placement, and world space
 
-- `docs/rive-integration.md` owns consumer-facing Rive setup, lifecycle, rendering, input, and
-  performance guidance. Update it whenever the public Rive integration contract or samples change.
-- The core package and `package.json` never reference Rive. Rive support compiles in the conditional
-  `GameLovers.UiService.Rive` assembly only when `app.rive.rive-unity` is installed.
-- Every panel in one shared Rive atlas uses `DrawWhenChanged`. One `AlwaysDraw` panel disables native
-  dirt checking for the whole atlas, so runtime assignment enforces the invariant and editor tooling
-  must report it before Play mode.
-- Rive 0.4.3 on Unity 6000.4 or newer requires URP Render Graph. Compatibility Mode bypasses its only
-  compiled render-pass path and produces blank textures.
-- A Screen Space Camera that samples a Rive render texture before Rive's
-  `AfterRenderingTransparents` pass displays the previous frame. Use Screen Space Overlay by default
-  and visually validate any camera-space exception.
-- `RiveAddressableFileLease` disposes `Rive.File` before releasing its Addressables asset handle.
-  Shared render-target strategies are reference-counted and destroyed after their last presenter.
+- A presenter's ordering target is an `IUiSurface`, resolved from an explicit component, a child
+  `Canvas`, or a `UIDocument`. Never reintroduce a root-only `GetComponent<Canvas>` assumption.
+- `UiConfig.Space` and `UiConfig.Placement` are authored per entry. A `FollowTarget` placement needs a
+  caller-supplied target, so it cannot be reached through a UI set.
+- `IUiInputRouter` establishes only the prerequisites a surface needs. The consumer supplies the input
+  module because only the application knows whether Legacy Input or the Input System is authoritative.
+- World-space visibility features change render activity through `IUiRenderActivity` and never
+  deactivate the presenter. `UiPresenter` remains the only owner of presenter GameObject visibility
+  after close transitions.
+- An optional vendor backend compiles behind `versionDefines` on its package plus `defineConstraints`
+  on every dependent runtime, editor, test, and sample assembly, so the core package keeps no vendor
+  reference and a consumer without the package still compiles.
 
 ## Assemblies, samples, and tests
 

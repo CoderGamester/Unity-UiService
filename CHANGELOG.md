@@ -8,15 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 **New**:
 - Added backend-agnostic surface, placement, input-routing, follow-target, billboard, and distance-visibility contracts for screen and world UI.
-- Added optional Rive support in conditional runtime/editor assemblies, including shared atlas and pooled render-target ownership, cached ViewModel binding, and Addressables file leases.
-- Added Rive screen and world-space samples.
+- Added `IUiSurface` ordering resolution through an explicit component, a child `Canvas`, or a `UIDocument`.
+- Added `IUiPlacement` so a presenter can be instantiated under the screen root, a world root, or a caller-supplied follow target.
+- Added `IUiInputRouter` and `EventSystemUiInputRouter` so the package can establish raycaster and world-camera prerequisites while the consumer keeps ownership of the input module.
 
 **Changed**:
 - Declared Unity 6000.0 as the package minimum and documented 6000.0.x, 6000.3.x, and 6000.5.x as compatibility reference streams.
 - UI config editors now preserve and expose render space and hierarchy placement, and synchronize ordering through the selected surface backend.
-
-**Docs**:
-- Documented Rive composition, ownership, input, URP Render Graph, atlas, and camera-order requirements.
 
 ## [1.3.0] - 2026-08-04
 

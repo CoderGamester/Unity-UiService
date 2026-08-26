@@ -13,7 +13,6 @@ Welcome to the GameLovers UI Service documentation. This guide covers everything
 | [API Reference](api-reference.md) | Complete API documentation with examples |
 | [Advanced Topics](advanced.md) | Performance optimization, helper views |
 | [URP Rendering Features](urp-rendering.md) | Camera stacking, backdrop blur (**required Renderer-asset setup**), render-texture authoring, layering hazards |
-| [Rive Integration](rive-integration.md) | Optional Rive screen/world architecture, ownership, input, and performance |
 | [Troubleshooting](troubleshooting.md) | Common issues and solutions |
 
 ## Overview

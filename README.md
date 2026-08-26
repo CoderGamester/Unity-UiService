@@ -9,10 +9,9 @@ URP-only Unity 6 UI orchestration built around presenter lifecycles, UI sets, co
 ## When to use it
 
 Use UI Service when presenters need a consistent load, open, close, and unload lifecycle. It
-supports uGUI, UI Toolkit, and optional Rive screen/world surfaces when `app.rive.rive-unity` is
-installed; see [Rive integration](docs/rive-integration.md). It is **URP-only** because its rendering
-features use URP camera and renderer APIs; do not install it in a BiRP or HDRP project expecting
-those assemblies to compile.
+supports uGUI and UI Toolkit surfaces in screen or world space. It is **URP-only** because its
+rendering features use URP camera and renderer APIs; do not install it in a BiRP or HDRP project
+expecting those assemblies to compile.
 
 ## Unity compatibility
 
@@ -89,14 +88,12 @@ Backdrop blur requires `UiBackdropBlurRendererFeature` on the active URP Rendere
 | Custom Features | Custom presenter feature composition |
 | Asset Loading Strategies | PrefabRegistry, Resources, and Addressables |
 | URP Rendering | Camera stacking, backdrop blur, and layering hazards |
-| Rive Screen UI | Rive-first screen presentation and data binding |
-| Rive World UI | Shared-atlas world-space Rive presentation |
 
 Every UI Service sample requires URP. Import samples through Package Manager and follow the README beside the selected sample.
 
 ## Documentation and support
 
 Read [docs](docs/README.md), [URP rendering guidance](docs/urp-rendering.md),
-[Rive integration](docs/rive-integration.md), [troubleshooting](docs/troubleshooting.md), and
+[troubleshooting](docs/troubleshooting.md), and
 [CHANGELOG.md](CHANGELOG.md). Report issues at
 [Unity-UiService](https://github.com/CoderGamester/Unity-UiService/issues).

@@ -64,16 +64,6 @@
       "displayName": "URP Rendering",
       "description": "URP camera stacking and backdrop blur presenter features, plus the layer-ordering hazard between Screen Space - Overlay and Screen Space - Camera. Requires URP; auto-installs UiBackdropBlurRendererFeature onto your Renderer asset on import.",
       "path": "Samples~/UrpRendering"
-    },
-    {
-      "displayName": "Rive Screen UI",
-      "description": "Rive-first screen presenter setup with data binding and a shared Canvas panel.",
-      "path": "Samples~/RiveScreen"
-    },
-    {
-      "displayName": "Rive World UI",
-      "description": "World-space Rive texture rendering with shared-atlas policy and distance culling.",
-      "path": "Samples~/RiveWorld"
     }
   ]
 }
