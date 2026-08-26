@@ -9,14 +9,19 @@ namespace GameLovers.UiService
 		/// <summary>Attempts to resolve the surface that owns a presenter's ordering.</summary>
 		internal static bool TryResolve(GameObject presenterObject, out IUiSurface surface)
 		{
-			var behaviours = presenterObject.GetComponentsInChildren<MonoBehaviour>(true);
-			foreach (var behaviour in behaviours)
+			// The presenter root owns ordering, so it is exhausted before any descendant is
+			// considered. Searching children first lets a nested sub-panel hijack the layer the
+			// config authored for the presenter.
+			if (TryResolveOn(presenterObject, out surface))
 			{
-				if (behaviour is IUiSurface customSurface)
-				{
-					surface = customSurface;
-					return true;
-				}
+				return true;
+			}
+
+			var childSurface = presenterObject.GetComponentInChildren<IUiSurface>(true);
+			if (childSurface != null)
+			{
+				surface = childSurface;
+				return true;
 			}
 
 			var canvas = presenterObject.GetComponentInChildren<Canvas>(true);
@@ -28,6 +33,31 @@ namespace GameLovers.UiService
 
 			var document = presenterObject.GetComponentInChildren<UIDocument>(true);
 			if (document != null)
+			{
+				surface = new UiDocumentUiSurface(document);
+				return true;
+			}
+
+			surface = null;
+			return false;
+		}
+
+		private static bool TryResolveOn(GameObject target, out IUiSurface surface)
+		{
+			var customSurface = target.GetComponent<IUiSurface>();
+			if (customSurface != null)
+			{
+				surface = customSurface;
+				return true;
+			}
+
+			if (target.TryGetComponent(out Canvas canvas))
+			{
+				surface = new CanvasUiSurface(canvas);
+				return true;
+			}
+
+			if (target.TryGetComponent(out UIDocument document))
 			{
 				surface = new UiDocumentUiSurface(document);
 				return true;
@@ -81,7 +111,19 @@ namespace GameLovers.UiService
 		private readonly UIDocument _document;
 
 		/// <inheritdoc />
-		public UiSurfaceSpace SurfaceSpace => UiSurfaceSpace.ScreenOverlay;
+		public UiSurfaceSpace SurfaceSpace
+		{
+			get
+			{
+				// A document without PanelSettings cannot render at all; report the screen default
+				// rather than inventing a world surface the panel will never present.
+				var settings = _document.panelSettings;
+
+				return settings != null && settings.renderMode == PanelRenderMode.WorldSpace
+					? UiSurfaceSpace.World
+					: UiSurfaceSpace.ScreenOverlay;
+			}
+		}
 
 		/// <inheritdoc />
 		public int Order => (int)_document.sortingOrder;

@@ -112,6 +112,8 @@ namespace GameLovers.UiService
 				AddUiSet(set);
 			}
 
+			ValidateSetPlacements();
+
 			_uiParent = new GameObject("Ui").transform;
 			_placement ??= new DefaultUiPlacement(_uiParent);
 
@@ -316,7 +318,14 @@ namespace GameLovers.UiService
 			return await LoadUiAsync(typeof(T), openAfter, cancellationToken) as T;
 		}
 
-		/// <inheritdoc />
+		/// <summary>
+		/// Loads a presenter under a runtime target when its configuration uses follow-target placement.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately absent from <see cref="IUiService"/>. A follow target is a caller-supplied
+		/// runtime reference that no set-driven or type-driven load can supply, so it stays on the
+		/// concrete service alongside the other instance-address overloads.
+		/// </remarks>
 		public async UniTask<T> LoadUiAsync<T>(
 			Transform followTarget,
 			bool openAfter = false,
@@ -768,6 +777,29 @@ namespace GameLovers.UiService
 
 			throw new InvalidOperationException(
 				$"{nameof(UiService)} must be initialized before resolving {placement} placement.");
+		}
+
+		private void ValidateSetPlacements()
+		{
+			// A set load has no caller-supplied follow target, so a FollowTarget member could only
+			// fail later inside DefaultUiPlacement. Reject the combination at Init where the config
+			// author can still see which set and which presenter are wrong.
+			foreach (var set in _uiSets.Values)
+			{
+				foreach (var instanceId in set.UiInstanceIds)
+				{
+					if (!_uiConfigs.TryGetValue(instanceId.PresenterType, out var config) ||
+						config.Placement != UiPlacementSpace.FollowTarget)
+					{
+						continue;
+					}
+
+					throw new ArgumentException(
+						$"UiConfig for type '{instanceId.PresenterType.Name}' uses {nameof(UiPlacementSpace.FollowTarget)} " +
+						$"placement but belongs to UI set {set.SetId}. A set load cannot supply a follow target. " +
+						$"Load it directly through {nameof(LoadUiAsync)} or change its placement.");
+				}
+			}
 		}
 
 		private void ValidateSurfaceSpace(UiPresenter presenter, UiSurfaceSpace expectedSpace)
