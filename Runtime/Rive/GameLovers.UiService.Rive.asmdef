@@ -1,0 +1,29 @@
+{
+    "name": "GameLovers.UiService.Rive",
+    "rootNamespace": "GameLovers.UiService.Rive",
+    "references": [
+        "GameLovers.UiService",
+        "Rive.Runtime",
+        "Rive.Runtime.Components",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UISERVICE_RIVE"
+    ],
+    "versionDefines": [
+        {
+            "name": "app.rive.rive-unity",
+            "expression": "0.4.3",
+            "define": "UISERVICE_RIVE"
+        }
+    ],
+    "noEngineReferences": false
+}

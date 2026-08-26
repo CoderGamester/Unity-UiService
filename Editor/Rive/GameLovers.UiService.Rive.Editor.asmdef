@@ -1,0 +1,29 @@
+{
+    "name": "GameLovers.UiService.Rive.Editor",
+    "rootNamespace": "GameLoversEditor.UiService.Rive",
+    "references": [
+        "GameLovers.UiService",
+        "GameLovers.UiService.Rive",
+        "Rive.Runtime",
+        "Rive.Runtime.Components"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UISERVICE_RIVE"
+    ],
+    "versionDefines": [
+        {
+            "name": "app.rive.rive-unity",
+            "expression": "0.4.3",
+            "define": "UISERVICE_RIVE"
+        }
+    ],
+    "noEngineReferences": false
+}
