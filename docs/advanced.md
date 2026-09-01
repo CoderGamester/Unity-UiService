@@ -14,16 +14,29 @@ This document covers advanced features including performance optimization and he
 
 Built-in components for common UI needs.
 
-### SafeAreaHelperView
+### SafeAreaPanelView
 
-Automatically adjusts UI for device safe areas (notches, Dynamic Island, rounded corners).
+Maps a stretched uGUI container to the device safe area on all four edges. Parent HUD or screen chrome to that container.
 
 ```csharp
-// Add to any RectTransform that should respect safe areas
+// Stretch a child under the canvas, then:
+gameObject.AddComponent<SafeAreaPanelView>();
+```
+
+Uses `UnityEngine.Device.Screen` so Device Simulator and player builds share the same inset. Applies only in Play Mode.
+
+**Use for:** A fullscreen HUD or screen root whose children should inherit the notch inset.
+
+### SafeAreaHelperView
+
+Nudges a single edge-anchored `RectTransform` (header, pause, bottom bar) by `anchoredPosition` / `sizeDelta`.
+
+```csharp
+// Add to a left/right/top/bottom-anchored widget
 gameObject.AddComponent<SafeAreaHelperView>();
 ```
 
-**Use for:** Header bars, bottom navigation, fullscreen content that shouldn't be obscured.
+**Use for:** One widget at a time. Do not use this as a stretched screen root; use `SafeAreaPanelView` instead.
 
 ### NonDrawingView
 

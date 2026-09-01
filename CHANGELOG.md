@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 **New**:
+- Added `SafeAreaPanelView` to map a stretched uGUI container onto `UnityEngine.Device.Screen.safeArea` on all four edges. Use it as a HUD or screen root; keep `SafeAreaHelperView` for per-widget edge offsets.
 - Added backend-agnostic surface, placement, input-routing, follow-target, billboard, and distance-visibility contracts for screen and world UI.
 - Added `IUiSurface` ordering resolution through an explicit component, a child `Canvas`, or a `UIDocument`.
 - Added `IUiPlacement` so a presenter can be instantiated under the screen root, a world root, or a caller-supplied follow target.
