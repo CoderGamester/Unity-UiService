@@ -7,13 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 **New**:
-- Added `SafeAreaPanelView` to map a stretched uGUI container onto `UnityEngine.Device.Screen.safeArea` on all four edges. Use it as a HUD or screen root; keep `SafeAreaHelperView` for per-widget edge offsets.
+- Added `SafeAreaContainer` for UI Toolkit and `SafeAreaPanelView` for uGUI as self-contained, screen-space safe-area containers.
 - Added backend-agnostic surface, placement, input-routing, follow-target, billboard, and distance-visibility contracts for screen and world UI.
 - Added `IUiSurface` ordering resolution through an explicit component, a child `Canvas`, or a `UIDocument`.
 - Added `IUiPlacement` so a presenter can be instantiated under the screen root, a world root, or a caller-supplied follow target.
 - Added `IUiInputRouter` and `EventSystemUiInputRouter` so the package can establish raycaster and world-camera prerequisites while the consumer keeps ownership of the input module.
 
 **Changed**:
+- Safe-area containers refresh while attached/enabled, including safe-area changes without a resolution change and uGUI re-enable.
 - Declared Unity 6000.0 as the package minimum and documented 6000.0.x, 6000.3.x, and 6000.5.x as compatibility reference streams.
 - UI config editors now preserve and expose render space and hierarchy placement, and synchronize ordering through the selected surface backend.
 

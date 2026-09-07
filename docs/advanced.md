@@ -14,18 +14,57 @@ This document covers advanced features including performance optimization and he
 
 Built-in components for common UI needs.
 
-### SafeAreaPanelView
+### SafeAreaContainer (UI Toolkit)
 
-Maps a stretched uGUI container to the device safe area on all four edges. Parent HUD or screen chrome to that container.
+Use `SafeAreaContainer` as the full-panel content root of a screen-space `UIDocument`. It reads `UnityEngine.Device.Screen.safeArea`, converts pixels through the panel's `scaledPixelsPerPoint`, and applies the four insets as padding. It reacts to geometry changes and checks for device changes about every 100 ms while attached to a runtime panel. Edit Mode and UI Builder panels remain uninset.
+
+```xml
+<ui:UXML xmlns:ui="UnityEngine.UIElements"
+         xmlns:views="GameLovers.UiService.Views">
+    <ui:VisualElement class="screen-background" />
+    <views:SafeAreaContainer class="safe-area">
+        <ui:VisualElement class="safe-area__content">
+            <!-- HUD controls -->
+        </ui:VisualElement>
+    </views:SafeAreaContainer>
+</ui:UXML>
+```
+
+```css
+.screen-background {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.safe-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.safe-area__content {
+    position: relative;
+    flex-grow: 1;
+}
+```
+
+Keep edge-to-edge backgrounds outside the container. Put absolute-positioned controls inside the relatively positioned, growing content child so their offsets resolve from the safe content bounds.
+
+### SafeAreaPanelView (uGUI)
+
+Add `SafeAreaPanelView` to a full-parent stretched `RectTransform`. It maps all four device safe-area edges to normalized anchors, clears offsets, and keeps checking while enabled so a safe-area change is applied even when the screen resolution stays the same.
 
 ```csharp
-// Stretch a child under the canvas, then:
+// Stretch a child under a screen-space canvas, then:
 gameObject.AddComponent<SafeAreaPanelView>();
 ```
 
-Uses `UnityEngine.Device.Screen` so Device Simulator and player builds share the same inset. Applies only in Play Mode.
-
-**Use for:** A fullscreen HUD or screen root whose children should inherit the notch inset.
+Keep edge-to-edge backgrounds outside this rect and parent inset HUD controls beneath it. The component applies only in Play Mode.
 
 ### SafeAreaHelperView
 

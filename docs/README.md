@@ -86,6 +86,7 @@ Runtime/
 │   ├── AnimationDelayFeature.cs
 │   └── UiToolkitPresenterFeature.cs
 ├── Views/                 # Helper components
+│   ├── SafeAreaContainer.cs
 │   ├── SafeAreaPanelView.cs
 │   ├── SafeAreaHelperView.cs
 │   ├── NonDrawingView.cs
