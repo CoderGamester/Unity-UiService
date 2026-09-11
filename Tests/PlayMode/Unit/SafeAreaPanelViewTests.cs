@@ -51,7 +51,7 @@ namespace GameLovers.UiService.Tests.PlayMode
 		{
 			Assert.IsNotNull(_panel);
 
-			SafeAreaPanelView.ComputeNormalizedAnchors(
+			SafeAreaMath.ComputeNormalizedAnchors(
 				UnityEngine.Device.Screen.safeArea,
 				UnityEngine.Device.Screen.width,
 				UnityEngine.Device.Screen.height,

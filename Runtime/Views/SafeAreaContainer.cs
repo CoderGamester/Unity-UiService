@@ -30,26 +30,6 @@ namespace GameLovers.UiService.Views
 		}
 
 		/// <summary>
-		/// Converts a pixel safe area into UI Toolkit padding in panel points.
-		/// </summary>
-		internal static void ComputeInsets(Rect safeArea, int width, int height, float scaledPixelsPerPoint, out float left, out float top, out float right, out float bottom)
-		{
-			if (width <= 0 || height <= 0 || scaledPixelsPerPoint <= 0f)
-			{
-				left = 0f;
-				top = 0f;
-				right = 0f;
-				bottom = 0f;
-				return;
-			}
-
-			left = Mathf.Max(0f, safeArea.xMin) / scaledPixelsPerPoint;
-			top = Mathf.Max(0f, height - safeArea.yMax) / scaledPixelsPerPoint;
-			right = Mathf.Max(0f, width - safeArea.xMax) / scaledPixelsPerPoint;
-			bottom = Mathf.Max(0f, safeArea.yMin) / scaledPixelsPerPoint;
-		}
-
-		/// <summary>
 		/// Recalculates and applies the current safe-area padding.
 		/// </summary>
 		internal void Refresh()
@@ -69,7 +49,7 @@ namespace GameLovers.UiService.Views
 		internal void ApplySafeArea(Rect safeArea, int width, int height)
 		{
 			float scaledPixelsPerPoint = panel?.scaledPixelsPerPoint ?? 1f;
-			ComputeInsets(safeArea, width, height, scaledPixelsPerPoint, out float left, out float top, out float right, out float bottom);
+			SafeAreaMath.ComputeInsets(safeArea, width, height, scaledPixelsPerPoint, out float left, out float top, out float right, out float bottom);
 			ApplyInsets(left, top, right, bottom);
 		}
 

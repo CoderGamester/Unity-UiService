@@ -66,16 +66,17 @@ gameObject.AddComponent<SafeAreaPanelView>();
 
 Keep edge-to-edge backgrounds outside this rect and parent inset HUD controls beneath it. The component applies only in Play Mode.
 
-### SafeAreaHelperView
+### SurfaceOrientation (arrangement)
 
-Nudges a single edge-anchored `RectTransform` (header, pause, bottom bar) by `anchoredPosition` / `sizeDelta`.
+Use `SurfaceOrientationResolver.Resolve` to pick a one-column or side-by-side arrangement from the measured surface. `Automatic` follows the surface shape (wider-than-tall resolves Landscape; square and unmeasurable surfaces resolve Portrait), while `ForcePortrait` and `ForceLandscape` ignore the surface. Arrangement follows surface shape rather than `Screen.orientation`, so tablets, foldables, and split-view resolve correctly.
 
 ```csharp
-// Add to a left/right/top/bottom-anchored widget
-gameObject.AddComponent<SafeAreaHelperView>();
+SurfaceOrientation orientation = SurfaceOrientationResolver.Resolve(SurfaceOrientationMode.Automatic, width, height);
+if (orientation == SurfaceOrientation.Landscape)
+{
+    // Side-by-side columns.
+}
 ```
-
-**Use for:** One widget at a time. Do not use this as a stretched screen root; use `SafeAreaPanelView` instead.
 
 ### NonDrawingView
 

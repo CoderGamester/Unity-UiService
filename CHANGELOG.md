@@ -12,8 +12,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added `IUiSurface` ordering resolution through an explicit component, a child `Canvas`, or a `UIDocument`.
 - Added `IUiPlacement` so a presenter can be instantiated under the screen root, a world root, or a caller-supplied follow target.
 - Added `IUiInputRouter` and `EventSystemUiInputRouter` so the package can establish raycaster and world-camera prerequisites while the consumer keeps ownership of the input module.
+- Added `SafeAreaMath` as the single owner of safe-area anchor/inset math shared by the uGUI and UI Toolkit containers, with guards for degenerate and non-finite inputs.
+- Added `SurfaceOrientationMode`, `SurfaceOrientation`, and `SurfaceOrientationResolver` so screens can pick a stacked or side-by-side arrangement from the measured surface shape.
 
 **Changed**:
+- **BREAKING**: Removed `SafeAreaHelperView`; inset stretched screen roots with `SafeAreaPanelView` (uGUI) or `SafeAreaContainer` (UI Toolkit) instead.
+- Safe-area containers now resolve anchors and insets through the shared `SafeAreaMath` core.
 - Safe-area containers refresh while attached/enabled, including safe-area changes without a resolution change and uGUI re-enable.
 - Declared Unity 6000.0 as the package minimum and documented 6000.0.x, 6000.3.x, and 6000.5.x as compatibility reference streams.
 - UI config editors now preserve and expose render space and hierarchy placement, and synchronize ordering through the selected surface backend.
